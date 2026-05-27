@@ -1,0 +1,20 @@
+# EPA Class VI docket URLs — starter list.
+# Lines starting with # are ignored. One URL per line.
+#
+# This is a starting point — verify each URL works and add others as
+# you find them. The scraper handles unreachable pages gracefully
+# (logs the error, continues with the rest).
+
+# General Class VI landing pages (lots of guidance docs)
+https://www.epa.gov/uic/class-vi-wells-used-geologic-sequestration-carbon-dioxide
+https://www.epa.gov/uic/class-vi-geologic-sequestration-permit-application-and-permitting-tools
+https://www.epa.gov/uic/class-vi-permit-applications-region-5
+https://www.epa.gov/uic/class-vi-permit-application-templates
+https://www.epa.gov/uic/class-vi-guidance-documents
+
+# Current projects under review (link list to per-project pages)
+https://www.epa.gov/uic/current-class-vi-projects-under-review-epa
+
+# ADM Decatur — the primary reference case in our 7-permit corpus
+# (Update with the actual current docket URL once verified)
+https://www.epa.gov/uic/archer-daniels-midland-ccs1-class-vi-permit-documents
