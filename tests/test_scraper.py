@@ -99,8 +99,15 @@ def test_scrape_pages_writes_manifest(tmp_path, monkeypatch):
         def raise_for_status(self): pass
 
     class FakeSession:
-        headers: dict = {}
-        def get(self, url, timeout): return FakeResponse()
+        def __init__(self):
+            self.headers = {}
+
+        def mount(self, prefix, adapter):
+            # No-op for tests; real requests.Session uses this for retry adapters.
+            pass
+
+        def get(self, url, timeout):
+            return FakeResponse()
 
     # Patch requests.Session within the scraper module
     import scraper as scraper_module

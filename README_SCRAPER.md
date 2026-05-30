@@ -18,6 +18,20 @@ and ingest.
 
 ## Quick start
 
+## End-to-end scraper pipeline
+
+The scraper workflow now has two steps:
+
+1. Scrape EPA docket pages and create a manifest.
+2. Download the files listed in the manifest.
+
+A config-driven workflow is available through the scripts in `scripts/`.
+
+### Windows PowerShell
+
+```powershell
+.\scripts\run_scraper_pipeline.ps1
+
 ```bash
 # Install the two deps (in addition to whatever's already in requirements.txt)
 pip install requests beautifulsoup4
