@@ -24,12 +24,50 @@ from __future__ import annotations
 
 import json
 import logging
-from dataclasses import dataclass, field
+import time
+from dataclasses import dataclass
 from pathlib import Path
 from urllib.parse import urlparse
 
+import requests
+from requests.adapters import HTTPAdapter
+from urllib3.util.retry import Retry
+
 logger = logging.getLogger(__name__)
 
+DEFAULT_DOWNLOAD_TIMEOUT_SECONDS = 60
+DEFAULT_DOWNLOAD_DELAY_SECONDS = 1.0
+DEFAULT_DOWNLOAD_RETRIES = 3
+DEFAULT_DOWNLOAD_BACKOFF = 0.5
+DEFAULT_USER_AGENT = (
+    "NittCarb-AI-Scraper/0.1 (research; contact: team@nittcarb.local)"
+)
+
+
+def build_retry_session(
+    retries: int = DEFAULT_DOWNLOAD_RETRIES,
+    backoff_factor: float = DEFAULT_DOWNLOAD_BACKOFF,
+    user_agent: str = DEFAULT_USER_AGENT,
+) -> requests.Session:
+    """Create a requests session with retry logic for transient download failures."""
+    session = requests.Session()
+    session.headers.update({"User-Agent": user_agent})
+
+    retry_strategy = Retry(
+        total=retries,
+        connect=retries,
+        read=retries,
+        status=retries,
+        backoff_factor=backoff_factor,
+        status_forcelist=(429, 500, 502, 503, 504),
+        allowed_methods=("HEAD", "GET", "OPTIONS"),
+        raise_on_status=False,
+    )
+
+    adapter = HTTPAdapter(max_retries=retry_strategy)
+    session.mount("http://", adapter)
+    session.mount("https://", adapter)
+    return session
 
 @dataclass
 class ManifestEntry:
@@ -91,45 +129,67 @@ def load_manifest(manifest_path):
     return entries
 
 
-def download_manifest(manifest_path, dest_dir):
+def download_manifest(
+    manifest_path,
+    dest_dir,
+    timeout: int = DEFAULT_DOWNLOAD_TIMEOUT_SECONDS,
+    delay: float = DEFAULT_DOWNLOAD_DELAY_SECONDS,
+    retries: int = DEFAULT_DOWNLOAD_RETRIES,
+    backoff_factor: float = DEFAULT_DOWNLOAD_BACKOFF,
+    overwrite: bool = False,
+):
     """Load a manifest and download every referenced file to dest_dir.
 
-    Each entry's local_path is populated with the saved file path.
+    Each entry's local_path is populated with the saved file path. Failed
+    downloads are logged and skipped so one bad file does not abort the batch.
 
     Args:
         manifest_path: path to the scraper-generated JSON.
         dest_dir: directory to download files into. Created if missing.
+        timeout: request timeout in seconds.
+        delay: polite delay between downloads in seconds.
+        retries: number of retries for transient HTTP failures.
+        backoff_factor: exponential backoff factor for retries.
+        overwrite: if True, re-download files that already exist.
 
     Returns:
-        list of ManifestEntry objects with local_path filled in.
-
-    TODO (Phase 2):
-        - Implement using requests.get + streaming for large files.
-        - Skip files that already exist locally (idempotent re-runs).
-        - Polite delay between downloads (1s default).
-        - Handle download failures per-file without aborting the batch.
-
-    Sketch:
-        entries = load_manifest(manifest_path)
-        dest_dir = Path(dest_dir); dest_dir.mkdir(parents=True, exist_ok=True)
-        session = requests.Session()
-        for entry in entries:
-            local = dest_dir / entry.filename_from_url()
-            if local.exists():
-                entry.local_path = str(local)
-                continue
-            try:
-                resp = session.get(entry.url, stream=True, timeout=60)
-                resp.raise_for_status()
-                with local.open("wb") as f:
-                    for chunk in resp.iter_content(8192):
-                        f.write(chunk)
-                entry.local_path = str(local)
-                time.sleep(1)
-            except requests.RequestException as exc:
-                logger.error("Failed to download %s: %s", entry.url, exc)
-        return entries
+        list of ManifestEntry objects with local_path filled in when successful.
     """
     entries = load_manifest(manifest_path)
-    logger.warning("download_manifest not yet implemented")
+    dest_dir = Path(dest_dir)
+    dest_dir.mkdir(parents=True, exist_ok=True)
+
+    session = build_retry_session(
+        retries=retries,
+        backoff_factor=backoff_factor,
+    )
+
+    for i, entry in enumerate(entries):
+        local_path = dest_dir / entry.filename_from_url()
+
+        if local_path.exists() and not overwrite:
+            entry.local_path = str(local_path)
+            logger.info("Skipping existing file: %s", local_path)
+            continue
+
+        if i > 0 and delay > 0:
+            time.sleep(delay)
+
+        try:
+            logger.info("Downloading %s", entry.url)
+            response = session.get(entry.url, stream=True, timeout=timeout)
+            response.raise_for_status()
+
+            with local_path.open("wb") as f:
+                for chunk in response.iter_content(chunk_size=8192):
+                    if chunk:
+                        f.write(chunk)
+
+            entry.local_path = str(local_path)
+            logger.info("Saved %s", local_path)
+
+        except requests.RequestException as exc:
+            logger.error("Failed to download %s: %s", entry.url, exc)
+            entry.local_path = ""
+
     return entries

@@ -46,6 +46,9 @@ from urllib.parse import urljoin, urlparse
 import requests
 from bs4 import BeautifulSoup, Tag
 
+from requests.adapters import HTTPAdapter
+from urllib3.util.retry import Retry
+
 logger = logging.getLogger(__name__)
 
 
@@ -164,13 +167,18 @@ def scrape_pages(
     request_delay: float = DEFAULT_REQUEST_DELAY_SECONDS,
     timeout: int = DEFAULT_TIMEOUT_SECONDS,
     user_agent: str = DEFAULT_USER_AGENT,
+    retries: int = 3,
+    backoff_factor: float = 0.5,
 ) -> int:
     """Scrape multiple pages and write a combined JSON manifest.
 
     Returns the number of file entries written.
     """
-    session = requests.Session()
-    session.headers.update({"User-Agent": user_agent})
+    session = build_retry_session(
+        retries=retries,
+        backoff_factor=backoff_factor,
+        user_agent=user_agent,
+    )
 
     all_entries: list[FileEntry] = []
     for i, url in enumerate(urls):
@@ -223,6 +231,29 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         action="store_true",
         help="Enable debug-level logging.",
     )
+    parser.add_argument(
+        "--timeout",
+        type=int,
+        default=DEFAULT_TIMEOUT_SECONDS,
+        help="Request timeout in seconds. Default: 30",
+    )
+    parser.add_argument(
+        "--retries",
+        type=int,
+        default=3,
+        help="Number of retries for transient HTTP failures. Default: 3",
+    )
+    parser.add_argument(
+        "--backoff",
+        type=float,
+        default=0.5,
+        help="Retry backoff factor. Default: 0.5",
+    )
+    parser.add_argument(
+        "--render-js",
+        action="store_true",
+        help="Reserved for future JavaScript-rendered pages. Not implemented yet.",
+    )
     return parser.parse_args(argv)
 
 
@@ -248,9 +279,49 @@ def main(argv: list[str] | None = None) -> int:
               file=sys.stderr)
         return 1
 
-    count = scrape_pages(urls, args.output, request_delay=args.delay)
+    if args.render_js:
+        print(
+            "Error: --render-js is planned but not implemented yet. "
+            "Current scraper supports server-rendered HTML pages only.",
+            file=sys.stderr,
+        )
+        return 2
+
+    count = scrape_pages(
+        urls,
+        args.output,
+        request_delay=args.delay,
+        timeout=args.timeout,
+        retries=args.retries,
+        backoff_factor=args.backoff,
+    )
     print(f"Wrote {count} file entries to {args.output}")
     return 0
+
+def build_retry_session(
+    retries: int = 3,
+    backoff_factor: float = 0.5,
+    user_agent: str = DEFAULT_USER_AGENT,
+) -> requests.Session:
+    """Create a requests session with retry logic for transient failures."""
+    session = requests.Session()
+    session.headers.update({"User-Agent": user_agent})
+
+    retry_strategy = Retry(
+        total=retries,
+        connect=retries,
+        read=retries,
+        status=retries,
+        backoff_factor=backoff_factor,
+        status_forcelist=(429, 500, 502, 503, 504),
+        allowed_methods=("HEAD", "GET", "OPTIONS"),
+        raise_on_status=False,
+    )
+
+    adapter = HTTPAdapter(max_retries=retry_strategy)
+    session.mount("http://", adapter)
+    session.mount("https://", adapter)
+    return session
 
 
 if __name__ == "__main__":
