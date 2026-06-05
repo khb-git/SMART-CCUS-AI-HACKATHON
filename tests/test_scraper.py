@@ -160,7 +160,9 @@ def test_load_manifest_round_trip(tmp_path):
     assert len(entries) == 2
     assert isinstance(entries[0], ManifestEntry)
     assert entries[0].summary == "ADM Decatur Application"
-    assert entries[0].filename_from_url() == "adm.pdf"
+    assert entries[0].filename_from_url(unique=False) == "adm.pdf"
+    assert entries[0].filename_from_url().startswith("adm__")
+    assert entries[0].filename_from_url().endswith(".pdf")
 
 
 def test_load_manifest_rejects_missing_file(tmp_path):
