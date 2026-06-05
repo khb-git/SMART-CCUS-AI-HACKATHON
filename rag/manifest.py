@@ -25,6 +25,8 @@ from __future__ import annotations
 import json
 import logging
 import time
+import hashlib
+import re
 from dataclasses import dataclass
 from pathlib import Path
 from urllib.parse import urlparse
@@ -78,11 +80,28 @@ class ManifestEntry:
     source_page: str = ""
     local_path: str = ""  # populated after download
 
-    def filename_from_url(self) -> str:
-        """Derive a safe local filename from the URL."""
+    def filename_from_url(self, unique: bool = True, hash_length: int = 12) -> str:
+        """Derive a safe local filename from the URL.
+
+        If unique=True, append a stable hash of the full URL so files with the
+        same basename from different source paths do not overwrite each other.
+        """
         path = urlparse(self.url).path
-        name = Path(path).name
-        return name or "unnamed_file"
+        raw_name = Path(path).name or "unnamed_file"
+
+        safe_name = re.sub(r"[^A-Za-z0-9._-]+", "_", raw_name).strip("._")
+        if not safe_name:
+            safe_name = "unnamed_file"
+
+        if not unique:
+            return safe_name
+
+        file_path = Path(safe_name)
+        suffix = file_path.suffix
+        stem = file_path.stem or "unnamed_file"
+
+        url_hash = hashlib.sha256(self.url.encode("utf-8")).hexdigest()[:hash_length]
+        return f"{stem}__{url_hash}{suffix}"
 
 
 def load_manifest(manifest_path):
@@ -129,6 +148,30 @@ def load_manifest(manifest_path):
     return entries
 
 
+def write_manifest(manifest_path, entries):
+    """Write ManifestEntry objects back to the manifest JSON file.
+
+    This is used after downloads so downstream ingestion can reuse local_path
+    without needing to reconstruct filenames or re-download files.
+    """
+    manifest_path = Path(manifest_path)
+    manifest_path.parent.mkdir(parents=True, exist_ok=True)
+
+    payload = [
+        {
+            "summary": entry.summary,
+            "url": entry.url,
+            "source_page": entry.source_page,
+            "local_path": entry.local_path,
+        }
+        for entry in entries
+    ]
+
+    manifest_path.write_text(
+        json.dumps(payload, indent=2),
+        encoding="utf-8",
+    )
+
 def download_manifest(
     manifest_path,
     dest_dir,
@@ -137,6 +180,8 @@ def download_manifest(
     retries: int = DEFAULT_DOWNLOAD_RETRIES,
     backoff_factor: float = DEFAULT_DOWNLOAD_BACKOFF,
     overwrite: bool = False,
+    unique_filenames: bool = True,
+    update_manifest: bool = True,
 ):
     """Load a manifest and download every referenced file to dest_dir.
 
@@ -165,7 +210,7 @@ def download_manifest(
     )
 
     for i, entry in enumerate(entries):
-        local_path = dest_dir / entry.filename_from_url()
+        local_path = dest_dir / entry.filename_from_url(unique=unique_filenames)
 
         if local_path.exists() and not overwrite:
             entry.local_path = str(local_path)
@@ -191,5 +236,8 @@ def download_manifest(
         except requests.RequestException as exc:
             logger.error("Failed to download %s: %s", entry.url, exc)
             entry.local_path = ""
+
+    if update_manifest:
+        write_manifest(manifest_path, entries)
 
     return entries
