@@ -112,8 +112,14 @@ def test_ask_question_retrieves_packages_and_builds_answer(monkeypatch):
 
     assert calls["model_name"] == "fake-model"
     assert calls["persist_directory"] == "fake_chroma"
-    assert calls["reference_query"] == "Review injection pressure monitoring against EPA expectations."
-    assert calls["permit_query"] == "Review injection pressure monitoring against EPA expectations."
+    assert calls["reference_query"].startswith(
+        "Review injection pressure monitoring against EPA expectations."
+    )
+    assert calls["permit_query"].startswith(
+        "Review injection pressure monitoring against EPA expectations."
+    )
+    assert "Expanded retrieval terms:" in calls["reference_query"]
+    assert "Expanded retrieval terms:" in calls["permit_query"]
     assert calls["reference_section_id"] == "8"
     assert calls["permit_section_id"] == "8"
     assert calls["reference_k"] == 2
@@ -142,6 +148,7 @@ def test_ask_main_prints_formatted_answer(monkeypatch, capsys):
         fetch_k = 10
         max_per_source = 1
         intent = "auto"
+        no_query_expansion = False
 
     def fake_parse_args():
         return FakeArgs()
@@ -288,3 +295,59 @@ def test_ask_question_permit_intent_only_queries_permits(monkeypatch):
     assert calls["permits_called"]
     assert len(answer.evidence_items) == 1
     assert answer.evidence_items[0].collection == Collection.PERMITS
+
+def test_ask_question_can_disable_query_expansion(monkeypatch):
+    import rag.ask as ask_module
+
+    calls = {}
+
+    class FakeEmbeddings:
+        def __init__(self, model_name):
+            pass
+
+    class FakeVectorStore:
+        def __init__(self, persist_directory):
+            pass
+
+    class FakeRetriever:
+        def __init__(self, embeddings, store):
+            pass
+
+        def retrieve_reference_diversified(
+            self,
+            query_text,
+            section_id="",
+            k=5,
+            fetch_k=30,
+            max_per_source=1,
+        ):
+            calls["reference_query"] = query_text
+            return []
+
+        def retrieve_permits_diversified(
+            self,
+            query_text,
+            section_id="",
+            k=5,
+            fetch_k=30,
+            max_per_source=1,
+        ):
+            calls["permit_query"] = query_text
+            return []
+
+    monkeypatch.setattr(ask_module, "Embeddings", FakeEmbeddings)
+    monkeypatch.setattr(ask_module, "VectorStore", FakeVectorStore)
+    monkeypatch.setattr(ask_module, "Retriever", FakeRetriever)
+
+    ask_module.ask_question(
+        question="Compare injection pressure monitoring against EPA expectations.",
+        intent="cross_check",
+        expand_retrieval_query=False,
+    )
+
+    assert calls["reference_query"] == (
+        "Compare injection pressure monitoring against EPA expectations."
+    )
+    assert calls["permit_query"] == (
+        "Compare injection pressure monitoring against EPA expectations."
+    )

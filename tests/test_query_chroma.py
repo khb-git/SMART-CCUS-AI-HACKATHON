@@ -79,7 +79,8 @@ def test_query_collection_uses_reference_retriever(monkeypatch):
     assert results == ["reference-result"]
     assert calls["model_name"] == "fake-model"
     assert calls["persist_directory"] == "fake_chroma"
-    assert calls["query"] == "testing and monitoring"
+    assert calls["query"].startswith("testing and monitoring")
+    assert "Expanded retrieval terms:" in calls["query"]
     assert calls["section_id"] == "8"
     assert calls["k"] == 3
 
@@ -171,8 +172,51 @@ def test_query_collection_uses_diversified_permit_retrieval(monkeypatch):
     )
 
     assert results == ["diversified-permit-result"]
-    assert calls["query"] == "monitoring pressure"
+    assert calls["query"].startswith("monitoring pressure")
+    assert "Expanded retrieval terms:" in calls["query"]
+    assert "injection pressure" in calls["query"]
+    assert "continuous recording devices" in calls["query"]
     assert calls["section_id"] == "8"
     assert calls["k"] == 5
     assert calls["fetch_k"] == 25
     assert calls["max_per_source"] == 2
+
+def test_query_collection_can_disable_query_expansion(monkeypatch):
+    import rag.query_chroma as query_module
+
+    calls = {}
+
+    class FakeEmbeddings:
+        def __init__(self, model_name):
+            pass
+
+    class FakeVectorStore:
+        def __init__(self, persist_directory):
+            pass
+
+    class FakeRetriever:
+        def __init__(self, embeddings, store):
+            pass
+
+        def retrieve_reference(self, query, section_id="", k=5):
+            calls["query"] = query
+            return ["reference-result"]
+
+        def retrieve_permits(self, query, section_id="", k=5):
+            return ["permit-result"]
+
+    monkeypatch.setattr(query_module, "Embeddings", FakeEmbeddings)
+    monkeypatch.setattr(query_module, "VectorStore", FakeVectorStore)
+    monkeypatch.setattr(query_module, "Retriever", FakeRetriever)
+
+    query_module.query_collection(
+        query="testing and monitoring",
+        collection=query_module.Collection.REFERENCE,
+        persist_directory="fake_chroma",
+        model_name="fake-model",
+        k=3,
+        section_id="8",
+        expand_retrieval_query=False,
+    )
+
+    assert calls["query"] == "testing and monitoring"

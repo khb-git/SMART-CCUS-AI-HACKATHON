@@ -20,6 +20,7 @@ from rag.vectorstore import VectorStore
 
 from rag.query_intent import QueryIntent, classify_query_intent
 from rag.types import Collection
+from rag.query_expansion import expand_query
 
 
 def ask_question(
@@ -32,6 +33,7 @@ def ask_question(
     fetch_k: int = 30,
     max_per_source: int = 1,
     intent: str = "auto",
+    expand_retrieval_query: bool = True,
 ):
     """Answer a review question using reference and permit evidence."""
     embeddings = Embeddings(model_name=model_name)
@@ -63,9 +65,14 @@ def ask_question(
     reference_results = []
     permit_results = []
 
+    retrieval_query = expand_query(
+        question,
+        enabled=expand_retrieval_query,
+    )
+
     if route.uses_reference():
         reference_results = retriever.retrieve_reference_diversified(
-            query_text=question,
+            query_text=retrieval_query,
             section_id=section_id,
             k=k_reference,
             fetch_k=fetch_k,
@@ -74,7 +81,7 @@ def ask_question(
 
     if route.uses_permits():
         permit_results = retriever.retrieve_permits_diversified(
-            query_text=question,
+            query_text=retrieval_query,
             section_id=section_id,
             k=k_permits,
             fetch_k=fetch_k,
@@ -159,6 +166,11 @@ def parse_args():
         ],
         help="Retrieval intent. Default: auto.",
     )
+    parser.add_argument(
+        "--no-query-expansion",
+        action="store_true",
+        help="Disable rule-based query expansion during retrieval.",
+    )
     return parser.parse_args()
 
 
@@ -175,6 +187,7 @@ def main():
         fetch_k=args.fetch_k,
         max_per_source=args.max_per_source,
         intent=args.intent,
+        expand_retrieval_query=not args.no_query_expansion,
     )
 
     print(format_review_answer(review_answer))
