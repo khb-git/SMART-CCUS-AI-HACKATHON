@@ -12,6 +12,8 @@ from dataclasses import dataclass
 
 from rag.evidence import EvidenceItem, format_evidence_context
 
+from rag.answer_synthesis import build_evidence_grounded_answer
+
 
 @dataclass
 class ReviewAnswer:
@@ -101,27 +103,10 @@ def build_template_answer(question: str, evidence_items: list[EvidenceItem]) -> 
             evidence_items=[],
         )
 
-    if reference_items and permit_items:
-        answer = (
-            "The retrieved evidence includes both regulatory/reference context and "
-            "permit precedent. Use the reference evidence as the authoritative basis "
-            "and the permit evidence as examples of how applicants have addressed the topic."
-        )
-    elif reference_items:
-        answer = (
-            "The retrieved evidence is regulatory/reference-focused. It can support "
-            "an answer about EPA expectations, guidance, or Class VI requirements."
-        )
-    elif permit_items:
-        answer = (
-            "The retrieved evidence is permit-precedent-focused. It can support an "
-            "answer about how applicants have addressed this topic in submitted plans."
-        )
-    else:
-        answer = (
-            "Evidence was retrieved, but it was not categorized as reference or permit "
-            "precedent."
-        )
+    answer = build_evidence_grounded_answer(
+        question=question,
+        evidence_items=evidence_items,
+    )
 
     evidence_summary = summarize_evidence_sources(evidence_items)
 
