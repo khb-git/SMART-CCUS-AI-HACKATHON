@@ -41,6 +41,130 @@ def document_type_for_collection(collection: Collection) -> DocumentType:
         return DocumentType.EPA_GUIDANCE
     return DocumentType.PERMIT_APPLICATION
 
+REFERENCE_KEYWORDS = [
+    "implementation manual",
+    "guidance",
+    "class vi guidance",
+    "final class vi",
+    "cfr",
+    "40 cfr",
+    "regulation",
+    "regulatory",
+    "statutory",
+    "application outline",
+    "completeness tool",
+    "template",
+    "pamphlet",
+    "report to congress",
+    "rules and tools",
+    "crosswalk",
+    "compendium",
+    "deep saline formation",
+]
+
+PERMIT_KEYWORDS = [
+    "adm",
+    "hgcs",
+    "lorain",
+    "marquis",
+    "wabash",
+    "one earth",
+    "one carbon",
+    "project narrative",
+    "aor",
+    "corrective action",
+    "well construction",
+    "testing and monitoring plan",
+    "injection well plugging",
+    "pisc",
+    "site closure",
+    "emergency and remedial",
+    "errp",
+    "pre-operational testing",
+    "financial responsibility",
+    "cost estimates",
+]
+
+
+def normalize_for_routing(value):
+    """Normalize text for lightweight collection routing."""
+    return (
+        str(value or "")
+        .lower()
+        .replace("_", " ")
+        .replace("-", " ")
+        .replace("+", " ")
+        .replace("%20", " ")
+    )
+
+
+def infer_collection_target(document_attr, chunk_attr=None):
+    """Infer whether a chunk belongs in reference or permits.
+
+    Long-term, this should come from manifest-level metadata such as
+    collection_target. For now, this provides a practical fallback using
+    source metadata, filenames, URLs, and summaries.
+    """
+    chunk_attr = chunk_attr or {}
+
+    explicit = (
+        chunk_attr.get("collection_target")
+        or document_attr.get("collection_target")
+        or document_attr.get("collection")
+        or chunk_attr.get("collection")
+    )
+
+    if explicit:
+        explicit = normalize_for_routing(explicit)
+        if explicit in {"reference", "permits"}:
+            return Collection(explicit)
+
+    combined = " ".join(
+        [
+            normalize_for_routing(document_attr.get("datasource_name", "")),
+            normalize_for_routing(document_attr.get("online_link", "")),
+            normalize_for_routing(document_attr.get("source_page", "")),
+            normalize_for_routing(document_attr.get("summary", "")),
+            normalize_for_routing(chunk_attr.get("datasource_name", "")),
+            normalize_for_routing(chunk_attr.get("online_link", "")),
+            normalize_for_routing(chunk_attr.get("source_page", "")),
+            normalize_for_routing(chunk_attr.get("summary", "")),
+        ]
+    )
+
+    strong_reference_signals = [
+        "template",
+        "permit application templates",
+        "final class vi guidance",
+        "guidance documents",
+        "implementation manual",
+        "completeness tool",
+        "application completeness tool",
+        "application outline",
+        "pamphlet",
+        "report to congress",
+        "regulatory",
+        "statutory",
+        "rules and tools",
+        "crosswalk",
+        "compendium",
+    ]
+
+    if any(signal in combined for signal in strong_reference_signals):
+        return Collection.REFERENCE
+
+    reference_hits = sum(1 for keyword in REFERENCE_KEYWORDS if keyword in combined)
+    permit_hits = sum(1 for keyword in PERMIT_KEYWORDS if keyword in combined)
+
+    if reference_hits > permit_hits:
+        return Collection.REFERENCE
+
+    if permit_hits > reference_hits:
+        return Collection.PERMITS
+
+    # Conservative fallback: permit applications are the higher-risk source
+    # to accidentally mix into reference guidance.
+    return Collection.PERMITS
 
 def sorted_chunk_dirs(document_dir: Path):
     """Return chunk subdirectories sorted numerically when possible."""
@@ -160,6 +284,64 @@ def load_chunks_from_chunked_dir(
 
     return chunks
 
+def load_chunks_from_chunked_dir_auto(
+    chunked_dir,
+    project_name: str = "",
+) -> dict[Collection, list[Chunk]]:
+    """Load chunks and route each one to reference or permits automatically."""
+    chunked_dir = Path(chunked_dir)
+
+    if not chunked_dir.exists():
+        raise FileNotFoundError(f"Chunked directory not found: {chunked_dir}")
+
+    routed = {
+        Collection.REFERENCE: [],
+        Collection.PERMITS: [],
+    }
+
+    for document_dir in sorted(p for p in chunked_dir.iterdir() if p.is_dir()):
+        document_attr_path = document_dir / "attribute.json"
+
+        if not document_attr_path.exists():
+            continue
+
+        document_attr = load_json(document_attr_path)
+
+        for chunk_dir in sorted_chunk_dirs(document_dir):
+            content_path = chunk_dir / "content.txt"
+            chunk_attr_path = chunk_dir / "attribute.json"
+
+            if not content_path.exists() or not chunk_attr_path.exists():
+                continue
+
+            text = content_path.read_text(encoding="utf-8").strip()
+            if not text:
+                continue
+
+            chunk_attr = load_json(chunk_attr_path)
+            collection = infer_collection_target(document_attr, chunk_attr)
+
+            metadata = build_chunk_metadata(
+                document_attr=document_attr,
+                chunk_attr=chunk_attr,
+                collection=collection,
+                project_name=project_name,
+            )
+
+            chunk_id = (
+                chunk_attr.get("chunk_id")
+                or f"{document_dir.name}:{metadata.chunk_index}"
+            )
+
+            routed[collection].append(
+                Chunk(
+                    text=text,
+                    metadata=metadata,
+                    chunk_id=chunk_id,
+                )
+            )
+
+    return routed
 
 def batched(items, batch_size: int):
     """Yield batches from a list."""
@@ -215,6 +397,34 @@ def index_chunked_directory(
         batch_size=batch_size,
     )
 
+def index_chunked_directory_auto(
+    chunked_dir,
+    persist_directory="./chroma_data",
+    model_name=DEFAULT_MODEL,
+    batch_size: int = 64,
+    project_name: str = "",
+) -> dict[Collection, int]:
+    """Auto-route chunked ingestion output into reference/permits collections."""
+    routed_chunks = load_chunks_from_chunked_dir_auto(
+        chunked_dir=chunked_dir,
+        project_name=project_name,
+    )
+
+    embeddings = Embeddings(model_name=model_name)
+    store = VectorStore(persist_directory=persist_directory)
+
+    counts = {}
+
+    for collection, chunks in routed_chunks.items():
+        counts[collection] = index_chunks(
+            chunks=chunks,
+            collection=collection,
+            embeddings=embeddings,
+            store=store,
+            batch_size=batch_size,
+        )
+
+    return counts
 
 def parse_args():
     parser = argparse.ArgumentParser(
@@ -229,8 +439,8 @@ def parse_args():
     parser.add_argument(
         "--collection",
         required=True,
-        choices=[collection.value for collection in Collection],
-        help="Vector collection to index into: permits or reference.",
+        choices=[collection.value for collection in Collection] + ["auto"],
+        help="Vector collection to index into: permits, reference, or auto.",
     )
     parser.add_argument(
         "--persist-directory",
@@ -258,6 +468,20 @@ def parse_args():
 
 def main():
     args = parse_args()
+
+    if args.collection == "auto":
+        counts = index_chunked_directory_auto(
+            chunked_dir=args.chunked_dir,
+            persist_directory=args.persist_directory,
+            model_name=args.model_name,
+            batch_size=args.batch_size,
+            project_name=args.project_name,
+        )
+
+        print("Indexed chunks using automatic collection routing:")
+        for collection, count in counts.items():
+            print(f"- {collection.value}: {count}")
+        return
 
     count = index_chunked_directory(
         chunked_dir=args.chunked_dir,

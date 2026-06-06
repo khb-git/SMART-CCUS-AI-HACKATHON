@@ -179,3 +179,111 @@ def test_load_chunks_missing_directory_raises(tmp_path):
 
     with pytest.raises(FileNotFoundError):
         load_chunks_from_chunked_dir(tmp_path / "missing", Collection.PERMITS)
+
+def test_infer_collection_target_prefers_explicit_metadata():
+    from rag.index_chunks import infer_collection_target
+    from rag.types import Collection
+
+    document_attr = {
+        "datasource_name": "anything.pdf",
+        "collection_target": "reference",
+    }
+
+    assert infer_collection_target(document_attr) == Collection.REFERENCE
+
+
+def test_infer_collection_target_routes_guidance_to_reference():
+    from rag.index_chunks import infer_collection_target
+    from rag.types import Collection
+
+    document_attr = {
+        "datasource_name": "implementation_manual_508.pdf",
+        "summary": "EPA Class VI implementation manual and guidance",
+        "online_link": "https://www.epa.gov/uic/final-class-vi-guidance-documents",
+    }
+
+    assert infer_collection_target(document_attr) == Collection.REFERENCE
+
+
+def test_infer_collection_target_routes_permit_plan_to_permits():
+    from rag.index_chunks import infer_collection_target
+    from rag.types import Collection
+
+    document_attr = {
+        "datasource_name": "ADM_Testing_and_Monitoring_Plan.pdf",
+        "summary": "ADM Testing and Monitoring Plan",
+        "online_link": "https://www.epa.gov/system/files/documents/ADM_Testing_and_Monitoring_Plan.pdf",
+    }
+
+    assert infer_collection_target(document_attr) == Collection.PERMITS
+
+
+def test_load_chunks_from_chunked_dir_auto_routes_chunks(tmp_path):
+    from rag.index_chunks import load_chunks_from_chunked_dir_auto
+    from rag.types import Collection
+
+    chunked_dir = tmp_path / "chunked"
+
+    reference_doc = chunked_dir / "implementation_manual"
+    reference_chunk = reference_doc / "0"
+    reference_chunk.mkdir(parents=True)
+
+    write_json(
+        reference_doc / "attribute.json",
+        {
+            "datasource_name": "implementation_manual.pdf",
+            "summary": "EPA Class VI implementation manual guidance",
+            "online_link": "https://www.epa.gov/uic/final-class-vi-guidance-documents",
+        },
+    )
+    (reference_chunk / "content.txt").write_text("EPA guidance text.", encoding="utf-8")
+    write_json(
+        reference_chunk / "attribute.json",
+        {
+            "chunk_id": "reference-chunk",
+            "chunk_index": 0,
+            "datasource_name": "implementation_manual.pdf",
+        },
+    )
+
+    permit_doc = chunked_dir / "adm_testing_monitoring"
+    permit_chunk = permit_doc / "0"
+    permit_chunk.mkdir(parents=True)
+
+    write_json(
+        permit_doc / "attribute.json",
+        {
+            "datasource_name": "ADM_Testing_and_Monitoring_Plan.pdf",
+            "summary": "ADM Testing and Monitoring Plan",
+            "online_link": "https://www.epa.gov/system/files/documents/ADM_Testing_and_Monitoring_Plan.pdf",
+        },
+    )
+    (permit_chunk / "content.txt").write_text("Permit monitoring text.", encoding="utf-8")
+    write_json(
+        permit_chunk / "attribute.json",
+        {
+            "chunk_id": "permit-chunk",
+            "chunk_index": 0,
+            "datasource_name": "ADM_Testing_and_Monitoring_Plan.pdf",
+        },
+    )
+
+    routed = load_chunks_from_chunked_dir_auto(chunked_dir)
+
+    assert len(routed[Collection.REFERENCE]) == 1
+    assert len(routed[Collection.PERMITS]) == 1
+    assert routed[Collection.REFERENCE][0].chunk_id == "reference-chunk"
+    assert routed[Collection.PERMITS][0].chunk_id == "permit-chunk"
+
+def test_infer_collection_target_routes_templates_to_reference():
+    from rag.index_chunks import infer_collection_target
+    from rag.types import Collection
+
+    document_attr = {
+        "datasource_name": "tm_plan_template.docx",
+        "summary": "Testing and Monitoring Plan template",
+        "online_link": "https://www.epa.gov/system/files/documents/tm_plan_template.docx",
+        "source_page": "https://www.epa.gov/uic/class-vi-permit-application-templates",
+    }
+
+    assert infer_collection_target(document_attr) == Collection.REFERENCE
