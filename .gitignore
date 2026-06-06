@@ -9,3 +9,6 @@ venv/
 data/manifest.json
 data/raw_docs/
 data/chunked/
+
+# Local Chroma vector store data
+chroma_data/
