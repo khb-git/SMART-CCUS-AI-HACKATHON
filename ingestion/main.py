@@ -24,6 +24,138 @@ EPA_LINK = "https://www.epa.gov/uic/final-class-vi-guidance-documents"
 
 SUPPORTED_EXTENSIONS = {".pdf", ".docx", ".xlsx"}
 
+REVIEW_SECTION_METADATA = {
+    "project_narrative": {
+        "schema_section_id": "1",
+        "schema_section_title": "Project Narrative",
+    },
+    "site_geologic_characterization": {
+        "schema_section_id": "2",
+        "schema_section_title": "Site Geologic Characterization",
+    },
+    "aor_corrective_action": {
+        "schema_section_id": "3",
+        "schema_section_title": "AoR and Corrective Action Plan",
+    },
+    "financial_responsibility": {
+        "schema_section_id": "4",
+        "schema_section_title": "Financial Responsibility",
+    },
+    "well_construction": {
+        "schema_section_id": "5",
+        "schema_section_title": "Well Construction Plan",
+    },
+    "pre_operational_testing": {
+        "schema_section_id": "6",
+        "schema_section_title": "Pre-Operational Testing Plan",
+    },
+    "site_operating": {
+        "schema_section_id": "7",
+        "schema_section_title": "Site Operating Plan",
+    },
+    "testing_monitoring": {
+        "schema_section_id": "8",
+        "schema_section_title": "Testing and Monitoring Plan",
+    },
+    "injection_well_plugging": {
+        "schema_section_id": "9",
+        "schema_section_title": "Injection Well Plugging Plan",
+    },
+    "pisc_site_closure": {
+        "schema_section_id": "10",
+        "schema_section_title": "PISC and Site Closure Plan",
+    },
+    "emergency_remedial_response": {
+        "schema_section_id": "11",
+        "schema_section_title": "Emergency and Remedial Response Plan",
+    },
+    "unknown": {
+        "schema_section_id": "",
+        "schema_section_title": "",
+    },
+}
+
+
+def normalize_for_matching(value):
+    """Normalize text for lightweight plan-type matching."""
+    return (
+        str(value or "")
+        .lower()
+        .replace("-", " ")
+        .replace("_", " ")
+        .replace("+", " ")
+    )
+
+
+def infer_plan_type(file_path, metadata=None):
+    """Infer the Class VI plan/review type from filename and manifest metadata.
+
+    This is intentionally lightweight and rules-based for now. It gives the
+    future vector store useful metadata before we implement deeper schema-aware
+    section detection.
+    """
+    metadata = metadata or {}
+    file_path = Path(file_path)
+
+    combined = " ".join(
+        [
+            normalize_for_matching(file_path.name),
+            normalize_for_matching(metadata.get("summary", "")),
+            normalize_for_matching(metadata.get("url", "")),
+            normalize_for_matching(metadata.get("source_page", "")),
+        ]
+    )
+
+    # Order matters: more specific plans before broader narrative matches.
+    if any(term in combined for term in ["testing and monitoring", "tm plan", "t m plan"]):
+        return "testing_monitoring"
+
+    if any(term in combined for term in ["pre operational", "pre operation", "preoperational"]):
+        return "pre_operational_testing"
+
+    if any(term in combined for term in ["well construction", "construction details"]):
+        return "well_construction"
+
+    if any(term in combined for term in ["plugging plan", "injection well plugging"]):
+        return "injection_well_plugging"
+
+    if any(term in combined for term in ["emergency and remedial", "errp", "err plan"]):
+        return "emergency_remedial_response"
+
+    if any(term in combined for term in ["pisc", "post injection", "site closure"]):
+        return "pisc_site_closure"
+
+    if any(term in combined for term in ["financial responsibility", "cost estimates", "fr demonstration"]):
+        return "financial_responsibility"
+
+    if any(term in combined for term in ["aor", "area of review", "corrective action"]):
+        return "aor_corrective_action"
+
+    if any(term in combined for term in ["site operating", "operating plan", "operations plan"]):
+        return "site_operating"
+
+    if any(term in combined for term in ["site geologic", "geologic characterization", "site characterization"]):
+        return "site_geologic_characterization"
+
+    if any(term in combined for term in ["project narrative", "application narrative", "narrative"]):
+        return "project_narrative"
+
+    return "unknown"
+
+
+def build_review_metadata(file_path, metadata=None):
+    """Build review-schema metadata for a document/chunk."""
+    plan_type = infer_plan_type(file_path, metadata)
+    section_metadata = REVIEW_SECTION_METADATA.get(
+        plan_type,
+        REVIEW_SECTION_METADATA["unknown"],
+    )
+
+    return {
+        "plan_type": plan_type,
+        "schema_section_id": section_metadata["schema_section_id"],
+        "schema_section_title": section_metadata["schema_section_title"],
+    }
 
 def build_splitter(chunk_size=1000, chunk_overlap=100):
     """Create the LangChain text splitter used by ingestion."""
@@ -47,6 +179,7 @@ def write_chunks_for_document(file_path, chunks, output_root, metadata=None):
                 1/attribute.json
     """
     metadata = metadata or {}
+    review_metadata = build_review_metadata(file_path, metadata)
 
     file_path = Path(file_path)
     output_root = Path(output_root)
@@ -67,6 +200,9 @@ def write_chunks_for_document(file_path, chunks, output_root, metadata=None):
         "source_page": metadata.get("source_page", ""),
         "summary": metadata.get("summary", ""),
         "author_name": metadata.get("author_name", "Environmental Protection Agency"),
+        "plan_type": review_metadata["plan_type"],
+        "schema_section_id": review_metadata["schema_section_id"],
+        "schema_section_title": review_metadata["schema_section_title"],
     }
 
     with (file_output_dir / "attribute.json").open("w", encoding="utf-8") as f:
@@ -98,6 +234,9 @@ def write_chunks_for_document(file_path, chunks, output_root, metadata=None):
             "online_link": metadata.get("url", EPA_LINK),
             "source_page": metadata.get("source_page", ""),
             "summary": metadata.get("summary", ""),
+            "plan_type": review_metadata["plan_type"],
+            "schema_section_id": review_metadata["schema_section_id"],
+            "schema_section_title": review_metadata["schema_section_title"],
         }
 
         with (chunk_folder / "attribute.json").open("w", encoding="utf-8") as f:
