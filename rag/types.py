@@ -60,6 +60,10 @@ class ChunkMetadata:
     source_page: str = ""
     summary: str = ""
 
+    section_heading: str = ""
+    local_section_title: str = ""
+    detected_heading_on_page: str = ""
+
     def to_dict(self):
         """Flatten to a plain dict for vector store storage.
 
@@ -86,6 +90,9 @@ class ChunkMetadata:
             "online_link": self.online_link,
             "source_page": self.source_page,
             "summary": self.summary,
+            "section_heading": self.section_heading,
+            "local_section_title": self.local_section_title,
+            "detected_heading_on_page": self.detected_heading_on_page,
         }
 
 

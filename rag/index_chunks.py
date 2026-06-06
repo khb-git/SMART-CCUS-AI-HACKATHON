@@ -225,6 +225,9 @@ def build_chunk_metadata(
         online_link=chunk_attr.get("online_link", document_attr.get("online_link", "")),
         source_page=chunk_attr.get("source_page", document_attr.get("source_page", "")),
         summary=chunk_attr.get("summary", document_attr.get("summary", "")),
+        section_heading=chunk_attr.get("section_heading", ""),
+        local_section_title=chunk_attr.get("local_section_title", ""),
+        detected_heading_on_page=chunk_attr.get("detected_heading_on_page", ""),
     )
 
 

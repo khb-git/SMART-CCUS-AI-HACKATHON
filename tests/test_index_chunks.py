@@ -54,6 +54,9 @@ def make_chunked_fixture(tmp_path):
             "plan_type": "testing_monitoring",
             "schema_section_id": "8",
             "schema_section_title": "Testing and Monitoring Plan",
+            "section_heading": "3.2 Injection Rate and Pressure Monitoring",
+            "local_section_title": "3.2 Injection Rate and Pressure Monitoring",
+            "detected_heading_on_page": "3.2 Injection Rate and Pressure Monitoring",
         },
     )
 
@@ -91,6 +94,11 @@ def test_load_chunks_from_chunked_dir_preserves_metadata(tmp_path):
     assert metadata.row_start == 1
     assert metadata.row_end == 10
     assert metadata.local_path.endswith("ADM_Testing_and_Monitoring_Plan.pdf")
+    assert metadata.section_heading == "3.2 Injection Rate and Pressure Monitoring"
+    assert metadata.local_section_title == "3.2 Injection Rate and Pressure Monitoring"
+    assert metadata.detected_heading_on_page == (
+        "3.2 Injection Rate and Pressure Monitoring"
+    )
 
 
 def test_reference_collection_uses_epa_guidance_document_type(tmp_path):
