@@ -75,7 +75,7 @@ def test_build_template_answer_with_reference_and_permit_evidence():
         evidence_items=[reference, permit],
     )
 
-    assert "both regulatory/reference context and permit precedent" in answer.answer
+    assert "Based on the retrieved regulatory/reference and permit-precedent evidence" in answer.answer
     assert "[E1] REGULATORY REFERENCE" in answer.evidence_summary
     assert "[E2] PERMIT PRECEDENT" in answer.evidence_summary
     assert answer.evidence_items == [reference, permit]
