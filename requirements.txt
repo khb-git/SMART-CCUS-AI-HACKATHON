@@ -23,3 +23,5 @@ pytest
 
 python-docx
 pdfplumber
+
+openpyxl

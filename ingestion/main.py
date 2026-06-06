@@ -22,7 +22,7 @@ manifest_path = os.getenv("PATH_TO_MANIFEST")
 # Constant for EPA source
 EPA_LINK = "https://www.epa.gov/uic/final-class-vi-guidance-documents"
 
-SUPPORTED_EXTENSIONS = {".pdf", ".docx"}
+SUPPORTED_EXTENSIONS = {".pdf", ".docx", ".xlsx"}
 
 
 def build_splitter(chunk_size=1000, chunk_overlap=100):
@@ -90,6 +90,9 @@ def write_chunks_for_document(file_path, chunks, output_root, metadata=None):
             "chunk_index": i,
             "content_type": content_type,
             "table_index": chunk.metadata.get("table_index"),
+            "sheet_name": chunk.metadata.get("sheet_name"),
+            "row_start": chunk.metadata.get("row_start"),
+            "row_end": chunk.metadata.get("row_end"),
             "datasource_name": file_path.name,
             "local_path": str(file_path),
             "online_link": metadata.get("url", EPA_LINK),
@@ -222,6 +225,54 @@ def extract_docx_documents(file_path):
     return documents
 
 
+def extract_xlsx_documents(file_path, max_rows_per_chunk=50):
+    """Extract XLSX sheets as Markdown table chunks.
+
+    Each sheet is chunked by row windows so large spreadsheets do not become
+    one huge chunk. XLSX content is treated as table data only.
+    """
+    from openpyxl import load_workbook
+
+    workbook = load_workbook(filename=str(file_path), data_only=True)
+    documents = []
+
+    for sheet in workbook.worksheets:
+        rows = []
+
+        for row in sheet.iter_rows(values_only=True):
+            cleaned_row = [
+                "" if cell is None else str(cell).replace("\n", " ").strip()
+                for cell in row
+            ]
+
+            if any(cell for cell in cleaned_row):
+                rows.append(cleaned_row)
+
+        if not rows:
+            continue
+
+        for start in range(0, len(rows), max_rows_per_chunk):
+            window = rows[start:start + max_rows_per_chunk]
+            markdown = table_to_markdown(window)
+
+            if not markdown:
+                continue
+
+            documents.append(
+                IngestionDocument(
+                    page_content=markdown,
+                    metadata={
+                        "page": 0,
+                        "content_type": "table",
+                        "sheet_name": sheet.title,
+                        "row_start": start + 1,
+                        "row_end": start + len(window),
+                    },
+                )
+            )
+
+    return documents
+
 def process_pdf(file_path, output_root, metadata=None, chunk_size=1000, chunk_overlap=100):
     """Load one PDF, split text, extract tables, and write chunk files."""
     file_path = Path(file_path)
@@ -283,6 +334,19 @@ def process_docx(file_path, output_root, metadata=None, chunk_size=1000, chunk_o
         metadata=metadata,
     )
 
+def process_xlsx(file_path, output_root, metadata=None, chunk_size=1000, chunk_overlap=100):
+    """Load one XLSX workbook and write sheet/table chunks."""
+    file_path = Path(file_path)
+
+    table_chunks = extract_xlsx_documents(file_path)
+
+    return write_chunks_for_document(
+        file_path=file_path,
+        chunks=table_chunks,
+        output_root=output_root,
+        metadata=metadata,
+    )
+
 def process_file(file_path, output_root, metadata=None, chunk_size=1000, chunk_overlap=100):
     """Dispatch supported files to the correct LangChain/table-aware processor."""
     file_path = Path(file_path)
@@ -299,6 +363,14 @@ def process_file(file_path, output_root, metadata=None, chunk_size=1000, chunk_o
 
     if suffix == ".docx":
         return process_docx(
+            file_path=file_path,
+            output_root=output_root,
+            metadata=metadata,
+            chunk_size=chunk_size,
+            chunk_overlap=chunk_overlap,
+        )
+    if suffix == ".xlsx":
+        return process_xlsx(
             file_path=file_path,
             output_root=output_root,
             metadata=metadata,

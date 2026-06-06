@@ -154,17 +154,17 @@ def test_chunk_from_manifest_skips_unsupported_file_type(tmp_path):
     raw_dir = tmp_path / "raw_docs"
     raw_dir.mkdir()
 
-    xlsx_path = raw_dir / "permit.xlsx"
-    xlsx_path.write_text("fake xlsx placeholder", encoding="utf-8")
+    csv_path = raw_dir / "permit.csv"
+    csv_path.write_text("fake,csv,placeholder", encoding="utf-8")
 
     manifest_path = tmp_path / "manifest.json"
     manifest_path.write_text(
         json.dumps([
             {
                 "summary": "Unsupported for current ingestion",
-                "url": "https://example.com/permit.docx",
+                "url": "https://example.com/permit.csv",
                 "source_page": "https://example.com/docket",
-                "local_path": str(xlsx_path),
+                "local_path": str(csv_path),
             }
         ]),
         encoding="utf-8",
