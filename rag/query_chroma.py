@@ -17,6 +17,7 @@ from rag.embeddings import DEFAULT_MODEL, Embeddings
 from rag.retriever import Retriever
 from rag.types import Collection
 from rag.vectorstore import VectorStore
+from rag.query_expansion import expand_query
 
 
 def format_result(result, index: int) -> str:
@@ -57,33 +58,39 @@ def query_collection(
     diversified: bool = False,
     fetch_k: int = 30,
     max_per_source: int = 1,
+    expand_retrieval_query: bool = True,
 ):
     """Query one Chroma collection using the existing Retriever."""
     embeddings = Embeddings(model_name=model_name)
     store = VectorStore(persist_directory=persist_directory)
     retriever = Retriever(embeddings=embeddings, store=store)
 
+    retrieval_query = expand_query(
+        query,
+        enabled=expand_retrieval_query,
+    )
+
     if collection == Collection.REFERENCE:
         if diversified:
             return retriever.retrieve_reference_diversified(
-                query,
+                retrieval_query,
                 section_id=section_id,
                 k=k,
                 fetch_k=fetch_k,
                 max_per_source=max_per_source,
             )
-        return retriever.retrieve_reference(query, section_id=section_id, k=k)
+        return retriever.retrieve_reference(retrieval_query, section_id=section_id, k=k)
 
     if collection == Collection.PERMITS:
         if diversified:
             return retriever.retrieve_permits_diversified(
-                query,
+                retrieval_query,
                 section_id=section_id,
                 k=k,
                 fetch_k=fetch_k,
                 max_per_source=max_per_source,
             )
-        return retriever.retrieve_permits(query, section_id=section_id, k=k)
+        return retriever.retrieve_permits(retrieval_query, section_id=section_id, k=k)
 
     raise ValueError(f"Unsupported collection: {collection}")
 
@@ -141,6 +148,11 @@ def parse_args():
         default=1,
         help="Maximum number of final results from the same source document. Default: 1.",
     )
+    parser.add_argument(
+        "--no-query-expansion",
+        action="store_true",
+        help="Disable rule-based query expansion during retrieval.",
+    )
     return parser.parse_args()
 
 
@@ -159,11 +171,13 @@ def main():
         diversified=args.diversified,
         fetch_k=args.fetch_k,
         max_per_source=args.max_per_source,
+        expand_retrieval_query=not args.no_query_expansion,
     )
 
     print(f"Query: {args.query}")
     print(f"Collection: {collection.value}")
     print(f"Diversified: {args.diversified}")
+    print(f"Query expansion: {not args.no_query_expansion}")
     print(f"Results: {len(results)}")
     print("=" * 80)
 
