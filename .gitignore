@@ -12,3 +12,7 @@ data/chunked/
 
 # Local Chroma vector store data
 chroma_data/
+
+# Local section-aware chunking smoke-test outputs
+data/chunked_section_test/
+chroma_data_section_test/

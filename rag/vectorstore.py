@@ -223,4 +223,7 @@ class VectorStore:
             online_link=metadata.get("online_link", ""),
             source_page=metadata.get("source_page", ""),
             summary=metadata.get("summary", ""),
+            section_heading=metadata.get("section_heading", ""),
+            local_section_title=metadata.get("local_section_title", ""),
+            detected_heading_on_page=metadata.get("detected_heading_on_page", ""),
         )

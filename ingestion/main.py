@@ -12,6 +12,8 @@ from rag.manifest import load_manifest
 
 from dataclasses import dataclass
 
+import re
+
 load_dotenv()
 
 # Environment variables
@@ -165,6 +167,117 @@ def build_splitter(chunk_size=1000, chunk_overlap=100):
         add_start_index=True,
     )
 
+SECTION_HEADING_PATTERNS = [
+    r"^\s*(\d+(?:\.\d+){0,4})\s+(.{3,120})$",
+    r"^\s*([A-Z]\.\d+(?:\.\d+)*)\s+(.{3,120})$",
+    r"^\s*(Appendix\s+[A-Z0-9]+[:.\-\s]+.{3,120})$",
+    r"^\s*(Section\s+\d+(?:\.\d+){0,4}[:.\-\s]+.{3,120})$",
+]
+
+
+def normalize_heading_text(value):
+    """Normalize heading text for metadata and chunk context."""
+    return " ".join(str(value or "").split()).strip()
+
+
+def looks_like_section_heading(line):
+    """Return True if a line looks like a section/subsection heading."""
+    line = normalize_heading_text(line)
+
+    if not line:
+        return False
+
+    if len(line) > 140:
+        return False
+
+    for pattern in SECTION_HEADING_PATTERNS:
+        if re.match(pattern, line, flags=re.IGNORECASE):
+            return True
+
+    # Common technical section headings without numbering.
+    lowered = line.lower()
+    heading_keywords = [
+        "injection rate and pressure monitoring",
+        "continuous recording",
+        "testing and monitoring",
+        "groundwater monitoring",
+        "plume and pressure front tracking",
+        "mechanical integrity",
+        "well construction",
+        "area of review",
+        "corrective action",
+        "site closure",
+        "emergency and remedial response",
+    ]
+
+    return any(keyword in lowered for keyword in heading_keywords)
+
+
+def extract_section_heading(line):
+    """Extract a stable heading string from a possible heading line."""
+    line = normalize_heading_text(line)
+
+    if not line:
+        return ""
+
+    for pattern in SECTION_HEADING_PATTERNS:
+        match = re.match(pattern, line, flags=re.IGNORECASE)
+        if match:
+            return normalize_heading_text(line)
+
+    if looks_like_section_heading(line):
+        return line
+
+    return ""
+
+
+def annotate_documents_with_section_context(documents):
+    """Attach nearest detected heading to each document before splitting.
+
+    This is a lightweight section-aware layer. It does not fully parse a PDF
+    outline, but it preserves useful local heading context for retrieval.
+    """
+    current_heading = ""
+
+    for doc in documents:
+        text = getattr(doc, "page_content", "") or ""
+        first_heading = ""
+
+        for line in text.splitlines():
+            heading = extract_section_heading(line)
+            if heading:
+                first_heading = heading
+                current_heading = heading
+                break
+
+        if current_heading:
+            doc.metadata["section_heading"] = current_heading
+            doc.metadata["local_section_title"] = current_heading
+
+        if first_heading:
+            doc.metadata["detected_heading_on_page"] = first_heading
+
+    return documents
+
+
+def add_section_context_to_chunks(chunks):
+    """Add section metadata and prepend heading context to text chunks."""
+    for chunk in chunks:
+        heading = normalize_heading_text(
+            chunk.metadata.get("section_heading")
+            or chunk.metadata.get("local_section_title")
+            or ""
+        )
+
+        if heading:
+            chunk.metadata["section_heading"] = heading
+            chunk.metadata["local_section_title"] = heading
+
+            prefix = f"Section context: {heading}\n\n"
+            if not chunk.page_content.startswith(prefix):
+                chunk.page_content = prefix + chunk.page_content
+
+    return chunks
 
 def write_chunks_for_document(file_path, chunks, output_root, metadata=None):
     """Write one document's chunks into the existing folder structure.
@@ -237,6 +350,9 @@ def write_chunks_for_document(file_path, chunks, output_root, metadata=None):
             "plan_type": review_metadata["plan_type"],
             "schema_section_id": review_metadata["schema_section_id"],
             "schema_section_title": review_metadata["schema_section_title"],
+            "section_heading": chunk.metadata.get("section_heading", ""),
+            "local_section_title": chunk.metadata.get("local_section_title", ""),
+            "detected_heading_on_page": chunk.metadata.get("detected_heading_on_page", ""),
         }
 
         with (chunk_folder / "attribute.json").open("w", encoding="utf-8") as f:
@@ -418,12 +534,14 @@ def process_pdf(file_path, output_root, metadata=None, chunk_size=1000, chunk_ov
 
     loader = PyPDFLoader(str(file_path))
     pages = loader.load()
+    pages = annotate_documents_with_section_context(pages)
 
     splitter = build_splitter(
         chunk_size=chunk_size,
         chunk_overlap=chunk_overlap,
     )
     text_chunks = splitter.split_documents(pages)
+    text_chunks = add_section_context_to_chunks(text_chunks)
 
     for chunk in text_chunks:
         chunk.metadata["content_type"] = "text"
@@ -461,9 +579,13 @@ def process_docx(file_path, output_root, metadata=None, chunk_size=1000, chunk_o
         if doc.metadata.get("content_type") == "table":
             final_chunks.append(doc)
         else:
-            split_docs = splitter.split_documents([doc])
+            annotated_docs = annotate_documents_with_section_context([doc])
+            split_docs = splitter.split_documents(annotated_docs)
+            split_docs = add_section_context_to_chunks(split_docs)
+
             for chunk in split_docs:
                 chunk.metadata["content_type"] = "text"
+
             final_chunks.extend(split_docs)
 
     return write_chunks_for_document(
