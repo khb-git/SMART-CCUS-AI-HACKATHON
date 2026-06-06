@@ -59,6 +59,7 @@ def query_collection(
     fetch_k: int = 30,
     max_per_source: int = 1,
     expand_retrieval_query: bool = True,
+    use_reranking: bool = True,
 ):
     """Query one Chroma collection using the existing Retriever."""
     embeddings = Embeddings(model_name=model_name)
@@ -78,6 +79,8 @@ def query_collection(
                 k=k,
                 fetch_k=fetch_k,
                 max_per_source=max_per_source,
+                rerank_query=query,
+                use_reranking=use_reranking,
             )
         return retriever.retrieve_reference(retrieval_query, section_id=section_id, k=k)
 
@@ -89,6 +92,8 @@ def query_collection(
                 k=k,
                 fetch_k=fetch_k,
                 max_per_source=max_per_source,
+                rerank_query=query,
+                use_reranking=use_reranking,
             )
         return retriever.retrieve_permits(retrieval_query, section_id=section_id, k=k)
 
@@ -153,6 +158,11 @@ def parse_args():
         action="store_true",
         help="Disable rule-based query expansion during retrieval.",
     )
+    parser.add_argument(
+        "--no-reranking",
+        action="store_true",
+        help="Disable local reranking after vector retrieval.",
+    )
     return parser.parse_args()
 
 
@@ -172,12 +182,14 @@ def main():
         fetch_k=args.fetch_k,
         max_per_source=args.max_per_source,
         expand_retrieval_query=not args.no_query_expansion,
+        use_reranking=not args.no_reranking,
     )
 
     print(f"Query: {args.query}")
     print(f"Collection: {collection.value}")
     print(f"Diversified: {args.diversified}")
     print(f"Query expansion: {not args.no_query_expansion}")
+    print(f"Reranking: {not args.no_reranking}")
     print(f"Results: {len(results)}")
     print("=" * 80)
 

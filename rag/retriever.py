@@ -12,6 +12,7 @@ which the retriever uses as a where-clause filter.
 
 from collections import defaultdict
 
+from rag.reranker import rerank_results
 from rag.types import Collection
 
 
@@ -37,6 +38,8 @@ class Retriever:
         k=5,
         fetch_k=30,
         max_per_source=1,
+        rerank_query="",
+        use_reranking=False,
     ):
         """Get diversified reference results."""
         return self._retrieve_diversified(
@@ -46,6 +49,8 @@ class Retriever:
             k=k,
             fetch_k=fetch_k,
             max_per_source=max_per_source,
+            rerank_query=rerank_query,
+            use_reranking=use_reranking,
         )
 
     def retrieve_permits_diversified(
@@ -55,6 +60,8 @@ class Retriever:
         k=5,
         fetch_k=30,
         max_per_source=1,
+        rerank_query="",
+        use_reranking=False,
     ):
         """Get diversified permit precedent results."""
         return self._retrieve_diversified(
@@ -64,6 +71,8 @@ class Retriever:
             k=k,
             fetch_k=fetch_k,
             max_per_source=max_per_source,
+            rerank_query=rerank_query,
+            use_reranking=use_reranking,
         )
 
     def retrieve_both(self, query_text, section_id="", k=5):
@@ -80,6 +89,8 @@ class Retriever:
         k=5,
         fetch_k=30,
         max_per_source=1,
+        rerank_query="",
+        use_reranking=False,
     ):
         """Query both collections with diversified results."""
         return {
@@ -89,6 +100,8 @@ class Retriever:
                 k=k,
                 fetch_k=fetch_k,
                 max_per_source=max_per_source,
+                rerank_query=rerank_query,
+                use_reranking=use_reranking,
             ),
             Collection.PERMITS: self.retrieve_permits_diversified(
                 query_text,
@@ -96,6 +109,8 @@ class Retriever:
                 k=k,
                 fetch_k=fetch_k,
                 max_per_source=max_per_source,
+                rerank_query=rerank_query,
+                use_reranking=use_reranking,
             ),
         }
 
@@ -112,8 +127,10 @@ class Retriever:
         k=5,
         fetch_k=30,
         max_per_source=1,
+        rerank_query="",
+        use_reranking=False,
     ):
-        """Retrieve more results, then diversify by source document.
+        """Retrieve more results, optionally rerank, then diversify by source document.
 
         This avoids returning many near-duplicate chunks from the same PDF/DOCX/XLSX.
         """
@@ -126,6 +143,12 @@ class Retriever:
             section_id=section_id,
             k=fetch_k,
         )
+
+        if use_reranking:
+            raw_results = rerank_results(
+                question=rerank_query or query_text,
+                results=raw_results,
+            )
 
         return diversify_results_by_source(
             raw_results,

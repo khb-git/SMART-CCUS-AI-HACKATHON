@@ -144,6 +144,8 @@ def test_query_collection_uses_diversified_permit_retrieval(monkeypatch):
             k=5,
             fetch_k=30,
             max_per_source=1,
+            rerank_query="",
+            use_reranking=False,
         ):
             calls["query"] = query
             calls["section_id"] = section_id

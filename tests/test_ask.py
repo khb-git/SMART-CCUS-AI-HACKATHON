@@ -51,12 +51,14 @@ def test_ask_question_retrieves_packages_and_builds_answer(monkeypatch):
             calls["retriever_created"] = True
 
         def retrieve_reference_diversified(
-            self,
-            query_text,
-            section_id="",
-            k=5,
-            fetch_k=30,
-            max_per_source=1,
+                self,
+                query_text,
+                section_id="",
+                k=5,
+                fetch_k=30,
+                max_per_source=1,
+                rerank_query="",
+                use_reranking=False,
         ):
             calls["reference_query"] = query_text
             calls["reference_section_id"] = section_id
@@ -79,6 +81,8 @@ def test_ask_question_retrieves_packages_and_builds_answer(monkeypatch):
             k=5,
             fetch_k=30,
             max_per_source=1,
+            rerank_query="",
+            use_reranking=False,
         ):
             calls["permit_query"] = query_text
             calls["permit_section_id"] = section_id
@@ -149,6 +153,7 @@ def test_ask_main_prints_formatted_answer(monkeypatch, capsys):
         max_per_source = 1
         intent = "auto"
         no_query_expansion = False
+        no_reranking = False
 
     def fake_parse_args():
         return FakeArgs()
@@ -192,12 +197,14 @@ def test_ask_question_reference_intent_only_queries_reference(monkeypatch):
             pass
 
         def retrieve_reference_diversified(
-            self,
-            query_text,
-            section_id="",
-            k=5,
-            fetch_k=30,
-            max_per_source=1,
+                self,
+                query_text,
+                section_id="",
+                k=5,
+                fetch_k=30,
+                max_per_source=1,
+                rerank_query="",
+                use_reranking=False,
         ):
             calls["reference_called"] = True
             return [
@@ -215,6 +222,8 @@ def test_ask_question_reference_intent_only_queries_reference(monkeypatch):
             k=5,
             fetch_k=30,
             max_per_source=1,
+            rerank_query="",
+            use_reranking=False,
         ):
             calls["permits_called"] = True
             return []
@@ -255,12 +264,14 @@ def test_ask_question_permit_intent_only_queries_permits(monkeypatch):
             pass
 
         def retrieve_reference_diversified(
-            self,
-            query_text,
-            section_id="",
-            k=5,
-            fetch_k=30,
-            max_per_source=1,
+                self,
+                query_text,
+                section_id="",
+                k=5,
+                fetch_k=30,
+                max_per_source=1,
+                rerank_query="",
+                use_reranking=False,
         ):
             calls["reference_called"] = True
             return []
@@ -272,6 +283,8 @@ def test_ask_question_permit_intent_only_queries_permits(monkeypatch):
             k=5,
             fetch_k=30,
             max_per_source=1,
+            rerank_query="",
+            use_reranking=False,
         ):
             calls["permits_called"] = True
             return [
@@ -314,12 +327,14 @@ def test_ask_question_can_disable_query_expansion(monkeypatch):
             pass
 
         def retrieve_reference_diversified(
-            self,
-            query_text,
-            section_id="",
-            k=5,
-            fetch_k=30,
-            max_per_source=1,
+                self,
+                query_text,
+                section_id="",
+                k=5,
+                fetch_k=30,
+                max_per_source=1,
+                rerank_query="",
+                use_reranking=False,
         ):
             calls["reference_query"] = query_text
             return []
@@ -331,6 +346,8 @@ def test_ask_question_can_disable_query_expansion(monkeypatch):
             k=5,
             fetch_k=30,
             max_per_source=1,
+            rerank_query="",
+            use_reranking=False,
         ):
             calls["permit_query"] = query_text
             return []
