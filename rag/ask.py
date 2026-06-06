@@ -18,6 +18,9 @@ from rag.retriever import Retriever
 from rag.review_answer import build_template_answer, format_review_answer
 from rag.vectorstore import VectorStore
 
+from rag.query_intent import QueryIntent, classify_query_intent
+from rag.types import Collection
+
 
 def ask_question(
     question: str,
@@ -28,27 +31,55 @@ def ask_question(
     k_permits: int = 5,
     fetch_k: int = 30,
     max_per_source: int = 1,
+    intent: str = "auto",
 ):
     """Answer a review question using reference and permit evidence."""
     embeddings = Embeddings(model_name=model_name)
     store = VectorStore(persist_directory=persist_directory)
     retriever = Retriever(embeddings=embeddings, store=store)
 
-    reference_results = retriever.retrieve_reference_diversified(
-        query_text=question,
-        section_id=section_id,
-        k=k_reference,
-        fetch_k=fetch_k,
-        max_per_source=max_per_source,
-    )
+    route = classify_query_intent(question)
 
-    permit_results = retriever.retrieve_permits_diversified(
-        query_text=question,
-        section_id=section_id,
-        k=k_permits,
-        fetch_k=fetch_k,
-        max_per_source=max_per_source,
-    )
+    if intent != "auto":
+        if intent == QueryIntent.REGULATORY_REQUIREMENT.value:
+            route.collections = [Collection.REFERENCE]
+            route.intent = QueryIntent.REGULATORY_REQUIREMENT
+            route.reason = "User explicitly requested reference-only routing."
+        elif intent == QueryIntent.PERMIT_PRECEDENT.value:
+            route.collections = [Collection.PERMITS]
+            route.intent = QueryIntent.PERMIT_PRECEDENT
+            route.reason = "User explicitly requested permit-only routing."
+        elif intent == QueryIntent.CROSS_CHECK.value:
+            route.collections = [Collection.REFERENCE, Collection.PERMITS]
+            route.intent = QueryIntent.CROSS_CHECK
+            route.reason = "User explicitly requested cross-check routing."
+        elif intent == QueryIntent.GENERAL_REVIEW.value:
+            route.collections = [Collection.REFERENCE, Collection.PERMITS]
+            route.intent = QueryIntent.GENERAL_REVIEW
+            route.reason = "User explicitly requested general-review routing."
+        else:
+            raise ValueError(f"Unsupported intent: {intent}")
+
+    reference_results = []
+    permit_results = []
+
+    if route.uses_reference():
+        reference_results = retriever.retrieve_reference_diversified(
+            query_text=question,
+            section_id=section_id,
+            k=k_reference,
+            fetch_k=fetch_k,
+            max_per_source=max_per_source,
+        )
+
+    if route.uses_permits():
+        permit_results = retriever.retrieve_permits_diversified(
+            query_text=question,
+            section_id=section_id,
+            k=k_permits,
+            fetch_k=fetch_k,
+            max_per_source=max_per_source,
+        )
 
     reference_evidence = package_evidence(
         reference_results,
@@ -116,6 +147,18 @@ def parse_args():
         default=1,
         help="Maximum evidence items per source document. Default: 1.",
     )
+    parser.add_argument(
+        "--intent",
+        default="auto",
+        choices=[
+            "auto",
+            QueryIntent.REGULATORY_REQUIREMENT.value,
+            QueryIntent.PERMIT_PRECEDENT.value,
+            QueryIntent.CROSS_CHECK.value,
+            QueryIntent.GENERAL_REVIEW.value,
+        ],
+        help="Retrieval intent. Default: auto.",
+    )
     return parser.parse_args()
 
 
@@ -131,6 +174,7 @@ def main():
         k_permits=args.k_permits,
         fetch_k=args.fetch_k,
         max_per_source=args.max_per_source,
+        intent=args.intent,
     )
 
     print(format_review_answer(review_answer))
