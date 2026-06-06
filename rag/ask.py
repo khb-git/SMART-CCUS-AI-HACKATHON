@@ -34,6 +34,7 @@ def ask_question(
     max_per_source: int = 1,
     intent: str = "auto",
     expand_retrieval_query: bool = True,
+    use_reranking: bool = True,
 ):
     """Answer a review question using reference and permit evidence."""
     embeddings = Embeddings(model_name=model_name)
@@ -77,6 +78,8 @@ def ask_question(
             k=k_reference,
             fetch_k=fetch_k,
             max_per_source=max_per_source,
+            rerank_query=question,
+            use_reranking=use_reranking,
         )
 
     if route.uses_permits():
@@ -86,6 +89,8 @@ def ask_question(
             k=k_permits,
             fetch_k=fetch_k,
             max_per_source=max_per_source,
+            rerank_query=question,
+            use_reranking=use_reranking,
         )
 
     reference_evidence = package_evidence(
@@ -171,6 +176,11 @@ def parse_args():
         action="store_true",
         help="Disable rule-based query expansion during retrieval.",
     )
+    parser.add_argument(
+        "--no-reranking",
+        action="store_true",
+        help="Disable local reranking after vector retrieval.",
+    )
     return parser.parse_args()
 
 
@@ -188,6 +198,7 @@ def main():
         max_per_source=args.max_per_source,
         intent=args.intent,
         expand_retrieval_query=not args.no_query_expansion,
+        use_reranking=not args.no_reranking,
     )
 
     print(format_review_answer(review_answer))
