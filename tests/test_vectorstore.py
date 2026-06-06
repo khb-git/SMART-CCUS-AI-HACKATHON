@@ -167,3 +167,21 @@ def test_unknown_collection_raises_error():
 
     with pytest.raises(ValueError, match="Unknown collection"):
         store.query("not_a_collection", query_embedding=[0.1], k=1)
+
+
+def test_metadata_sanitization_removes_none_values():
+    from rag.vectorstore import VectorStore
+
+    raw_metadata = {
+        "source_document": "doc.pdf",
+        "table_index": None,
+        "sheet_name": None,
+        "page_number": 1,
+    }
+
+    sanitized = VectorStore._sanitize_metadata(raw_metadata)
+
+    assert sanitized["source_document"] == "doc.pdf"
+    assert sanitized["table_index"] == ""
+    assert sanitized["sheet_name"] == ""
+    assert sanitized["page_number"] == 1

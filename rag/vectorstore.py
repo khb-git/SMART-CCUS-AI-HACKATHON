@@ -77,6 +77,25 @@ class VectorStore:
         source = metadata.source_document or "unknown_source"
         return f"{source}:{metadata.chunk_index}:{fallback_index}"
 
+    @staticmethod
+    def _sanitize_metadata_value(value):
+        """Convert metadata values into Chroma-compatible scalar values."""
+        if value is None:
+            return ""
+
+        if isinstance(value, (str, int, float, bool)):
+            return value
+
+        return str(value)
+
+    @classmethod
+    def _sanitize_metadata(cls, metadata):
+        """Ensure every metadata value is accepted by Chroma."""
+        return {
+            key: cls._sanitize_metadata_value(value)
+            for key, value in metadata.items()
+        }
+
     def add(self, collection, chunks, embeddings):
         """Add chunks and their vectors to a collection.
 
@@ -103,7 +122,10 @@ class VectorStore:
             for i, chunk in enumerate(chunks)
         ]
         documents = [chunk.text for chunk in chunks]
-        metadatas = [chunk.metadata.to_dict() for chunk in chunks]
+        metadatas = [
+            self._sanitize_metadata(chunk.metadata.to_dict())
+            for chunk in chunks
+        ]
 
         chroma_collection.add(
             ids=ids,
@@ -189,4 +211,16 @@ class VectorStore:
             page_number=int(metadata.get("page_number", 0) or 0),
             chunk_index=int(metadata.get("chunk_index", 0) or 0),
             cfr_citation=metadata.get("cfr_citation", ""),
+            plan_type=metadata.get("plan_type", ""),
+            schema_section_id=metadata.get("schema_section_id", ""),
+            schema_section_title=metadata.get("schema_section_title", ""),
+            content_type=metadata.get("content_type", "text"),
+            table_index=int(metadata.get("table_index", -1) or -1),
+            sheet_name=metadata.get("sheet_name", ""),
+            row_start=int(metadata.get("row_start", -1) or -1),
+            row_end=int(metadata.get("row_end", -1) or -1),
+            local_path=metadata.get("local_path", ""),
+            online_link=metadata.get("online_link", ""),
+            source_page=metadata.get("source_page", ""),
+            summary=metadata.get("summary", ""),
         )
