@@ -118,3 +118,61 @@ def test_query_collection_uses_permit_retriever(monkeypatch):
     )
 
     assert results == ["permit-result"]
+
+def test_query_collection_uses_diversified_permit_retrieval(monkeypatch):
+    import rag.query_chroma as query_module
+
+    calls = {}
+
+    class FakeEmbeddings:
+        def __init__(self, model_name):
+            pass
+
+    class FakeVectorStore:
+        def __init__(self, persist_directory):
+            pass
+
+    class FakeRetriever:
+        def __init__(self, embeddings, store):
+            pass
+
+        def retrieve_permits_diversified(
+            self,
+            query,
+            section_id="",
+            k=5,
+            fetch_k=30,
+            max_per_source=1,
+        ):
+            calls["query"] = query
+            calls["section_id"] = section_id
+            calls["k"] = k
+            calls["fetch_k"] = fetch_k
+            calls["max_per_source"] = max_per_source
+            return ["diversified-permit-result"]
+
+        def retrieve_permits(self, query, section_id="", k=5):
+            return ["regular-permit-result"]
+
+    monkeypatch.setattr(query_module, "Embeddings", FakeEmbeddings)
+    monkeypatch.setattr(query_module, "VectorStore", FakeVectorStore)
+    monkeypatch.setattr(query_module, "Retriever", FakeRetriever)
+
+    results = query_module.query_collection(
+        query="monitoring pressure",
+        collection=query_module.Collection.PERMITS,
+        persist_directory="fake_chroma",
+        model_name="fake-model",
+        k=5,
+        section_id="8",
+        diversified=True,
+        fetch_k=25,
+        max_per_source=2,
+    )
+
+    assert results == ["diversified-permit-result"]
+    assert calls["query"] == "monitoring pressure"
+    assert calls["section_id"] == "8"
+    assert calls["k"] == 5
+    assert calls["fetch_k"] == 25
+    assert calls["max_per_source"] == 2

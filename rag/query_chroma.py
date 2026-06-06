@@ -54,6 +54,9 @@ def query_collection(
     model_name: str = DEFAULT_MODEL,
     k: int = 5,
     section_id: str = "",
+    diversified: bool = False,
+    fetch_k: int = 30,
+    max_per_source: int = 1,
 ):
     """Query one Chroma collection using the existing Retriever."""
     embeddings = Embeddings(model_name=model_name)
@@ -61,9 +64,25 @@ def query_collection(
     retriever = Retriever(embeddings=embeddings, store=store)
 
     if collection == Collection.REFERENCE:
+        if diversified:
+            return retriever.retrieve_reference_diversified(
+                query,
+                section_id=section_id,
+                k=k,
+                fetch_k=fetch_k,
+                max_per_source=max_per_source,
+            )
         return retriever.retrieve_reference(query, section_id=section_id, k=k)
 
     if collection == Collection.PERMITS:
+        if diversified:
+            return retriever.retrieve_permits_diversified(
+                query,
+                section_id=section_id,
+                k=k,
+                fetch_k=fetch_k,
+                max_per_source=max_per_source,
+            )
         return retriever.retrieve_permits(query, section_id=section_id, k=k)
 
     raise ValueError(f"Unsupported collection: {collection}")
@@ -105,6 +124,23 @@ def parse_args():
         default="",
         help="Optional metadata filter for schema/section id, such as 8.",
     )
+    parser.add_argument(
+        "--diversified",
+        action="store_true",
+        help="Diversify results by source document.",
+    )
+    parser.add_argument(
+        "--fetch-k",
+        type=int,
+        default=30,
+        help="Number of raw Chroma results to fetch before diversification. Default: 30.",
+    )
+    parser.add_argument(
+        "--max-per-source",
+        type=int,
+        default=1,
+        help="Maximum number of final results from the same source document. Default: 1.",
+    )
     return parser.parse_args()
 
 
@@ -120,10 +156,14 @@ def main():
         model_name=args.model_name,
         k=args.k,
         section_id=args.section_id,
+        diversified=args.diversified,
+        fetch_k=args.fetch_k,
+        max_per_source=args.max_per_source,
     )
 
     print(f"Query: {args.query}")
     print(f"Collection: {collection.value}")
+    print(f"Diversified: {args.diversified}")
     print(f"Results: {len(results)}")
     print("=" * 80)
 
