@@ -154,8 +154,8 @@ def test_chunk_from_manifest_skips_unsupported_file_type(tmp_path):
     raw_dir = tmp_path / "raw_docs"
     raw_dir.mkdir()
 
-    docx_path = raw_dir / "permit.docx"
-    docx_path.write_text("fake docx placeholder", encoding="utf-8")
+    xlsx_path = raw_dir / "permit.xlsx"
+    xlsx_path.write_text("fake xlsx placeholder", encoding="utf-8")
 
     manifest_path = tmp_path / "manifest.json"
     manifest_path.write_text(
@@ -164,7 +164,7 @@ def test_chunk_from_manifest_skips_unsupported_file_type(tmp_path):
                 "summary": "Unsupported for current ingestion",
                 "url": "https://example.com/permit.docx",
                 "source_page": "https://example.com/docket",
-                "local_path": str(docx_path),
+                "local_path": str(xlsx_path),
             }
         ]),
         encoding="utf-8",

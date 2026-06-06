@@ -10,6 +10,8 @@ from langchain_text_splitters import RecursiveCharacterTextSplitter
 
 from rag.manifest import load_manifest
 
+from dataclasses import dataclass
+
 load_dotenv()
 
 # Environment variables
@@ -20,7 +22,7 @@ manifest_path = os.getenv("PATH_TO_MANIFEST")
 # Constant for EPA source
 EPA_LINK = "https://www.epa.gov/uic/final-class-vi-guidance-documents"
 
-SUPPORTED_EXTENSIONS = {".pdf"}
+SUPPORTED_EXTENSIONS = {".pdf", ".docx"}
 
 
 def build_splitter(chunk_size=1000, chunk_overlap=100):
@@ -79,11 +81,15 @@ def write_chunks_for_document(file_path, chunks, output_root, metadata=None):
         with (chunk_folder / "content.txt").open("w", encoding="utf-8") as f:
             f.write(chunk.page_content)
 
+        content_type = chunk.metadata.get("content_type", "text")
+
         chunk_attr = {
             "chunk_id": chunk_uuid,
             "parent_document_id": doc_uuid,
             "page": chunk.metadata.get("page", 0) + 1,
             "chunk_index": i,
+            "content_type": content_type,
+            "table_index": chunk.metadata.get("table_index"),
             "datasource_name": file_path.name,
             "local_path": str(file_path),
             "online_link": metadata.get("url", EPA_LINK),
@@ -96,9 +102,128 @@ def write_chunks_for_document(file_path, chunks, output_root, metadata=None):
 
     return len(chunks)
 
+@dataclass
+class IngestionDocument:
+    """Small document object compatible with the existing chunk writer."""
+    page_content: str
+    metadata: dict
+
+
+def table_to_markdown(rows):
+    """Convert a list of table rows into a simple Markdown table."""
+    cleaned_rows = [
+        [str(cell or "").replace("\n", " ").strip() for cell in row]
+        for row in rows
+        if any(str(cell or "").strip() for cell in row)
+    ]
+
+    if not cleaned_rows:
+        return ""
+
+    max_cols = max(len(row) for row in cleaned_rows)
+    normalized = [
+        row + [""] * (max_cols - len(row))
+        for row in cleaned_rows
+    ]
+
+    header = normalized[0]
+    separator = ["---"] * max_cols
+    body = normalized[1:]
+
+    lines = [
+        "| " + " | ".join(header) + " |",
+        "| " + " | ".join(separator) + " |",
+    ]
+
+    for row in body:
+        lines.append("| " + " | ".join(row) + " |")
+
+    return "\n".join(lines)
+
+
+def extract_pdf_table_documents(file_path):
+    """Extract PDF tables as table chunks using pdfplumber.
+
+    These are separate from normal PDF text chunks so technical values in
+    tables remain searchable downstream.
+    """
+    import pdfplumber
+
+    table_docs = []
+
+    with pdfplumber.open(str(file_path)) as pdf:
+        for page_index, page in enumerate(pdf.pages):
+            tables = page.extract_tables() or []
+
+            for table_index, table in enumerate(tables):
+                markdown = table_to_markdown(table)
+                if not markdown:
+                    continue
+
+                table_docs.append(
+                    IngestionDocument(
+                        page_content=markdown,
+                        metadata={
+                            "page": page_index,
+                            "content_type": "table",
+                            "table_index": table_index,
+                        },
+                    )
+                )
+
+    return table_docs
+
+
+def extract_docx_documents(file_path):
+    """Extract DOCX paragraphs and tables as ingestion documents."""
+    from docx import Document
+
+    doc = Document(str(file_path))
+    documents = []
+
+    paragraph_text = "\n".join(
+        paragraph.text.strip()
+        for paragraph in doc.paragraphs
+        if paragraph.text.strip()
+    )
+
+    if paragraph_text:
+        documents.append(
+            IngestionDocument(
+                page_content=paragraph_text,
+                metadata={
+                    "page": 0,
+                    "content_type": "text",
+                },
+            )
+        )
+
+    for table_index, table in enumerate(doc.tables):
+        rows = [
+            [cell.text.strip() for cell in row.cells]
+            for row in table.rows
+        ]
+
+        markdown = table_to_markdown(rows)
+        if not markdown:
+            continue
+
+        documents.append(
+            IngestionDocument(
+                page_content=markdown,
+                metadata={
+                    "page": 0,
+                    "content_type": "table",
+                    "table_index": table_index,
+                },
+            )
+        )
+
+    return documents
+
 
 def process_pdf(file_path, output_root, metadata=None, chunk_size=1000, chunk_overlap=100):
-    """Load one PDF with LangChain, split it, and write chunk files."""
+    """Load one PDF, split text, extract tables, and write chunk files."""
     file_path = Path(file_path)
 
     loader = PyPDFLoader(str(file_path))
@@ -108,15 +233,80 @@ def process_pdf(file_path, output_root, metadata=None, chunk_size=1000, chunk_ov
         chunk_size=chunk_size,
         chunk_overlap=chunk_overlap,
     )
-    chunks = splitter.split_documents(pages)
+    text_chunks = splitter.split_documents(pages)
+
+    for chunk in text_chunks:
+        chunk.metadata["content_type"] = "text"
+
+    try:
+        table_chunks = extract_pdf_table_documents(file_path)
+    except Exception as exc:
+        print(f"Warning: failed to extract PDF tables from {file_path.name}: {exc}")
+        table_chunks = []
+
+    all_chunks = text_chunks + table_chunks
 
     return write_chunks_for_document(
         file_path=file_path,
-        chunks=chunks,
+        chunks=all_chunks,
         output_root=output_root,
         metadata=metadata,
     )
 
+
+def process_docx(file_path, output_root, metadata=None, chunk_size=1000, chunk_overlap=100):
+    """Load one DOCX, split paragraph text, extract tables, and write chunk files."""
+    file_path = Path(file_path)
+
+    documents = extract_docx_documents(file_path)
+
+    splitter = build_splitter(
+        chunk_size=chunk_size,
+        chunk_overlap=chunk_overlap,
+    )
+
+    final_chunks = []
+
+    for doc in documents:
+        if doc.metadata.get("content_type") == "table":
+            final_chunks.append(doc)
+        else:
+            split_docs = splitter.split_documents([doc])
+            for chunk in split_docs:
+                chunk.metadata["content_type"] = "text"
+            final_chunks.extend(split_docs)
+
+    return write_chunks_for_document(
+        file_path=file_path,
+        chunks=final_chunks,
+        output_root=output_root,
+        metadata=metadata,
+    )
+
+def process_file(file_path, output_root, metadata=None, chunk_size=1000, chunk_overlap=100):
+    """Dispatch supported files to the correct LangChain/table-aware processor."""
+    file_path = Path(file_path)
+    suffix = file_path.suffix.lower()
+
+    if suffix == ".pdf":
+        return process_pdf(
+            file_path=file_path,
+            output_root=output_root,
+            metadata=metadata,
+            chunk_size=chunk_size,
+            chunk_overlap=chunk_overlap,
+        )
+
+    if suffix == ".docx":
+        return process_docx(
+            file_path=file_path,
+            output_root=output_root,
+            metadata=metadata,
+            chunk_size=chunk_size,
+            chunk_overlap=chunk_overlap,
+        )
+
+    raise ValueError(f"Unsupported file type: {suffix}")
 
 def chunk_with_langchain(source_dir, output_root, chunk_size=1000, chunk_overlap=100):
     """Process all supported files in a raw data directory."""
@@ -143,7 +333,7 @@ def chunk_with_langchain(source_dir, output_root, chunk_size=1000, chunk_overlap
             continue
 
         try:
-            count = process_pdf(
+            count = process_file(
                 file_path=file_path,
                 output_root=output_root,
                 metadata={
@@ -199,7 +389,7 @@ def chunk_from_manifest(manifest_path, output_root, chunk_size=1000, chunk_overl
             continue
 
         try:
-            count = process_pdf(
+            count = process_file(
                 file_path=file_path,
                 output_root=output_root,
                 metadata={

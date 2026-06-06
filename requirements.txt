@@ -20,3 +20,6 @@ duckduckgo-search>=8.1.1
 wikipedia>=1.4.0
 
 pytest
+
+python-docx
+pdfplumber
