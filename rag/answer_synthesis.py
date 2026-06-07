@@ -45,6 +45,35 @@ TECHNICAL_BOOST_TERMS = {
     "wellhead",
 }
 
+NOISY_SENTENCE_PATTERNS = [
+    "parameter device",
+    "param eter",
+    "device(s)",
+    "| --- |",
+    "notes:",
+]
+
+
+def is_noisy_sentence(sentence: str) -> bool:
+    """Return True for table/OCR-like sentences that make poor answer bullets."""
+    normalized = " ".join(str(sentence or "").lower().split())
+
+    if not normalized:
+        return True
+
+    if len(normalized) < 25:
+        return True
+
+    if sum(1 for char in normalized if char == "|") >= 2:
+        return True
+
+    return any(pattern in normalized for pattern in NOISY_SENTENCE_PATTERNS)
+
+
+def normalize_sentence_for_dedup(sentence: str) -> str:
+    """Normalize a sentence for simple duplicate detection."""
+    tokens = tokenize(sentence)
+    return " ".join(sorted(tokens))
 
 @dataclass
 class EvidenceSentence:
@@ -118,6 +147,9 @@ def extract_relevant_sentences(
         sentences = split_sentences(item.excerpt)
 
         for sentence in sentences:
+            if is_noisy_sentence(sentence):
+                continue
+
             score = score_sentence(question_terms, sentence)
 
             if score <= 0:
@@ -136,27 +168,34 @@ def extract_relevant_sentences(
 
     selected: list[EvidenceSentence] = []
     used_evidence_ids = set()
+    used_sentence_keys = set()
 
-    # First pass: one best sentence per evidence item.
+    # First pass: one best non-duplicate sentence per evidence item.
     for candidate in all_candidates:
         if candidate.evidence_id in used_evidence_ids:
             continue
 
+        sentence_key = normalize_sentence_for_dedup(candidate.sentence)
+
+        if sentence_key in used_sentence_keys:
+            continue
+
         selected.append(candidate)
         used_evidence_ids.add(candidate.evidence_id)
+        used_sentence_keys.add(sentence_key)
 
         if len(selected) >= max_sentences:
             return selected
 
-    # Second pass: allow additional strong sentences if slots remain.
-    selected_sentences = {candidate.sentence for candidate in selected}
-
+    # Second pass: allow additional strong non-duplicate sentences if slots remain.
     for candidate in all_candidates:
-        if candidate.sentence in selected_sentences:
+        sentence_key = normalize_sentence_for_dedup(candidate.sentence)
+
+        if sentence_key in used_sentence_keys:
             continue
 
         selected.append(candidate)
-        selected_sentences.add(candidate.sentence)
+        used_sentence_keys.add(sentence_key)
 
         if len(selected) >= max_sentences:
             break

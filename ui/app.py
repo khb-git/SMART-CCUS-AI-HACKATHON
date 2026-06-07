@@ -101,6 +101,10 @@ with st.sidebar:
         value=True,
     )
 
+    st.caption(
+        "Similarity scores reflect retrieval similarity, not correctness probability."
+    )
+
 
 default_question = "How do applicants monitor injection pressure and flow rate?"
 
