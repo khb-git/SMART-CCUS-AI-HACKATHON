@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import shutil
 import tempfile
+import json
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
@@ -67,31 +68,76 @@ def copy_to_temporary_directory(source_path: str | Path, temp_dir: str | Path) -
     return destination
 
 
+def load_chunks_from_temporary_output(output_root: str | Path):
+    """Load chunk files written by ingestion processors from a temporary output root."""
+    output_root = Path(output_root)
+    chunks = []
+
+    if not output_root.exists():
+        return chunks
+
+    for content_path in sorted(output_root.glob("*/*/content.txt")):
+        chunk_dir = content_path.parent
+        attr_path = chunk_dir / "attribute.json"
+
+        text = content_path.read_text(encoding="utf-8")
+
+        metadata = {}
+        if attr_path.exists():
+            metadata = json.loads(attr_path.read_text(encoding="utf-8"))
+
+        chunks.append(
+            TemporaryReviewChunk(
+                text=text,
+                metadata=metadata,
+            )
+        )
+
+    return chunks
+
 def process_temporary_file(
     file_path: str | Path,
+    output_root: str | Path,
     chunk_size: int = 1000,
     chunk_overlap: int = 100,
 ):
-    """Process a temporary file into ingestion documents/chunks."""
+    """Process a temporary file into temporary chunk files."""
     file_path = Path(file_path)
+    output_root = Path(output_root)
     extension = file_path.suffix.lower()
+
+    metadata = {
+        "summary": "Temporary uploaded review document",
+        "source_page": "",
+        "url": "",
+    }
 
     if extension == ".pdf":
         return process_pdf(
-            file_path,
+            file_path=file_path,
+            output_root=output_root,
+            metadata=metadata,
             chunk_size=chunk_size,
             chunk_overlap=chunk_overlap,
         )
 
     if extension == ".docx":
         return process_docx(
-            file_path,
+            file_path=file_path,
+            output_root=output_root,
+            metadata=metadata,
             chunk_size=chunk_size,
             chunk_overlap=chunk_overlap,
         )
 
     if extension == ".xlsx":
-        return process_xlsx(file_path)
+        return process_xlsx(
+            file_path=file_path,
+            output_root=output_root,
+            metadata=metadata,
+            chunk_size=chunk_size,
+            chunk_overlap=chunk_overlap,
+        )
 
     raise ValueError(f"Unsupported review file type: {extension}")
 
@@ -134,12 +180,15 @@ def ingest_review_document_temporarily(
         temp_dir = Path(tempfile.mkdtemp())
         copied_file = copy_to_temporary_directory(file_path, temp_dir)
 
-        ingestion_chunks = process_temporary_file(
+        output_root = temp_dir / "chunked"
+
+        process_temporary_file(
             copied_file,
+            output_root=output_root,
             chunk_size=chunk_size,
             chunk_overlap=chunk_overlap,
         )
-        review_chunks = convert_ingestion_chunks(ingestion_chunks)
+        review_chunks = load_chunks_from_temporary_output(output_root)
 
         return TemporaryReviewDocument(
             original_filename=file_path.name,
@@ -153,12 +202,15 @@ def ingest_review_document_temporarily(
         temp_dir = Path(temp_dir_name)
         copied_file = copy_to_temporary_directory(file_path, temp_dir)
 
-        ingestion_chunks = process_temporary_file(
+        output_root = temp_dir / "chunked"
+
+        process_temporary_file(
             copied_file,
+            output_root=output_root,
             chunk_size=chunk_size,
             chunk_overlap=chunk_overlap,
         )
-        review_chunks = convert_ingestion_chunks(ingestion_chunks)
+        review_chunks = load_chunks_from_temporary_output(output_root)
 
         # Return extracted content only. Temporary paths are intentionally
         # cleared because the uploaded file has already been deleted.
