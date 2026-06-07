@@ -1,0 +1,257 @@
+checklist_id: testing_monitoring_v1
+plan_type: testing_monitoring
+section_id: "8"
+title: Testing and Monitoring Plan Checklist
+description: >
+  Review checklist for Class VI Testing and Monitoring Plans. This checklist
+  defines the minimum technical topics that should be checked before a plan is
+  considered review-ready.
+
+items:
+  - item_id: injection_pressure_monitoring
+    label: Injection pressure monitoring
+    description: >
+      The plan should describe how injection pressure will be monitored, including
+      whether pressure is measured at the wellhead, downhole, or annulus.
+    requirement_level: required
+    severity: critical
+    expected_evidence_terms:
+      - injection pressure
+      - wellhead pressure
+      - downhole pressure
+      - pressure transducer
+      - pressure gauge
+      - continuous recording
+    reference_queries:
+      - What does Class VI require for injection pressure monitoring?
+      - What does EPA guidance say about continuous pressure monitoring?
+    permit_precedent_queries:
+      - How do applicants monitor injection pressure?
+      - How do permit applications describe pressure transducers or gauges?
+    recommended_fix: >
+      Add a clear description of injection pressure monitoring devices,
+      measurement location, recording frequency, and how pressure data will be used.
+
+  - item_id: injection_rate_monitoring
+    label: Injection rate and flow monitoring
+    description: >
+      The plan should describe how injection rate or flow rate will be monitored.
+    requirement_level: required
+    severity: critical
+    expected_evidence_terms:
+      - injection rate
+      - flow rate
+      - mass flow rate
+      - mass flowmeter
+      - Coriolis meter
+      - orifice meter
+      - flow computer
+    reference_queries:
+      - What does Class VI require for injection rate monitoring?
+      - What does EPA guidance say about monitoring flow rate?
+    permit_precedent_queries:
+      - How do applicants monitor injection flow rate?
+      - How do applicants use Coriolis or orifice meters for injection monitoring?
+    recommended_fix: >
+      Add the flow-rate monitoring method, device type, location, calibration approach,
+      and whether data are continuously recorded.
+
+  - item_id: injection_volume_monitoring
+    label: Injection volume monitoring
+    description: >
+      The plan should describe how injected volume will be calculated, recorded,
+      and used in operational or computational models.
+    requirement_level: required
+    severity: moderate
+    expected_evidence_terms:
+      - injection volume
+      - injected volume
+      - cumulative volume
+      - calculated volume
+      - injection mass
+      - computational model
+    reference_queries:
+      - What does Class VI require for injection volume monitoring?
+    permit_precedent_queries:
+      - How do applicants calculate injection volume?
+      - How do applicants use injection volume in computational models?
+    recommended_fix: >
+      Add how injection volume is calculated, recorded, and used for modeling or
+      operational tracking.
+
+  - item_id: annular_pressure_monitoring
+    label: Annular pressure monitoring
+    description: >
+      The plan should describe monitoring of annular pressure or annulus fluid
+      volumes where applicable.
+    requirement_level: required
+    severity: critical
+    expected_evidence_terms:
+      - annular pressure
+      - annulus pressure
+      - annulus fluid
+      - casing annulus
+      - tubing and long-string casing
+    reference_queries:
+      - What does Class VI require for annular pressure monitoring?
+    permit_precedent_queries:
+      - How do applicants monitor annular pressure?
+      - How do applicants describe annulus pressure monitoring?
+    recommended_fix: >
+      Add annular pressure monitoring location, device, frequency, and response
+      actions for abnormal annular pressure.
+
+  - item_id: monitoring_frequency
+    label: Monitoring frequency
+    description: >
+      The plan should state how often each monitoring parameter is measured or recorded.
+    requirement_level: required
+    severity: critical
+    expected_evidence_terms:
+      - continuous
+      - frequency
+      - sampling rate
+      - once per second
+      - recording frequency
+      - monitoring frequency
+    reference_queries:
+      - What monitoring frequency does Class VI require?
+      - What does EPA guidance say about continuous monitoring?
+    permit_precedent_queries:
+      - How do applicants describe monitoring frequency?
+      - How do applicants describe continuous recording devices?
+    recommended_fix: >
+      Add monitoring frequency for each parameter, especially pressure, flow rate,
+      volume, temperature, and annular pressure.
+
+  - item_id: monitoring_locations
+    label: Monitoring locations
+    description: >
+      The plan should identify where each monitoring parameter is measured.
+    requirement_level: required
+    severity: moderate
+    expected_evidence_terms:
+      - surface
+      - wellhead
+      - downhole
+      - near injection packer
+      - reservoir
+      - monitoring location
+      - injection line
+    reference_queries:
+      - What does Class VI require for monitoring locations?
+    permit_precedent_queries:
+      - How do applicants describe monitoring locations for pressure and flow?
+    recommended_fix: >
+      Add monitoring locations for each parameter and clarify whether measurements
+      are taken at the surface, wellhead, downhole, annulus, reservoir, or injection line.
+
+  - item_id: monitoring_equipment
+    label: Monitoring equipment and devices
+    description: >
+      The plan should identify equipment used to collect monitoring data.
+    requirement_level: required
+    severity: moderate
+    expected_evidence_terms:
+      - pressure transducer
+      - pressure gauge
+      - temperature sensor
+      - Coriolis meter
+      - orifice meter
+      - flow meter
+      - SCADA
+      - data logger
+    reference_queries:
+      - What monitoring equipment is expected in a Class VI Testing and Monitoring Plan?
+    permit_precedent_queries:
+      - What equipment do applicants use for pressure and flow monitoring?
+    recommended_fix: >
+      Add device names, measurement parameters, and locations for each monitoring device.
+
+  - item_id: calibration_schedule
+    label: Calibration schedule
+    description: >
+      The plan should describe calibration frequency or quality control for monitoring equipment.
+    requirement_level: recommended
+    severity: moderate
+    expected_evidence_terms:
+      - calibration
+      - calibrated annually
+      - manufacturer recommended
+      - certified calibration
+      - quality assurance
+      - drift stability
+      - accuracy
+    reference_queries:
+      - What does EPA guidance say about calibration of monitoring equipment?
+    permit_precedent_queries:
+      - How do applicants describe calibration schedules for flow meters and pressure gauges?
+    recommended_fix: >
+      Add calibration frequency, calibration standard, and quality control procedures
+      for pressure, temperature, and flow monitoring devices.
+
+  - item_id: scada_or_data_recording
+    label: SCADA or data recording system
+    description: >
+      The plan should describe whether monitoring data are continuously recorded,
+      stored, or connected to a control system.
+    requirement_level: recommended
+    severity: moderate
+    expected_evidence_terms:
+      - SCADA
+      - continuous recording devices
+      - control system
+      - data logger
+      - analog output
+      - operational parameters
+    reference_queries:
+      - What does Class VI require for recording operational parameters?
+    permit_precedent_queries:
+      - How do applicants use SCADA or continuous recording systems?
+    recommended_fix: >
+      Add how monitoring devices connect to data recording, SCADA, or operational
+      control systems.
+
+  - item_id: anomaly_response
+    label: Response to anomalous monitoring results
+    description: >
+      The plan should explain how abnormal pressure, flow, or monitoring results
+      will be investigated or addressed.
+    requirement_level: recommended
+    severity: moderate
+    expected_evidence_terms:
+      - anomaly
+      - anomalous pressure
+      - investigation
+      - trigger
+      - abnormal
+      - loss of mechanical integrity
+      - blockage
+    reference_queries:
+      - What does EPA guidance say about responding to anomalous monitoring results?
+    permit_precedent_queries:
+      - How do applicants respond to anomalous pressure or flow readings?
+    recommended_fix: >
+      Add trigger conditions and response actions for anomalous monitoring results.
+
+  - item_id: reporting_procedure
+    label: Reporting procedure
+    description: >
+      The plan should describe how monitoring results will be reported or used in
+      compliance documentation.
+    requirement_level: recommended
+    severity: minor
+    expected_evidence_terms:
+      - report
+      - reporting
+      - annual report
+      - compliance
+      - submitted
+      - records
+    reference_queries:
+      - What reporting is required for Class VI monitoring data?
+    permit_precedent_queries:
+      - How do applicants report testing and monitoring results?
+    recommended_fix: >
+      Add reporting frequency, reporting destination, and which monitoring data
+      will be included in compliance records.
