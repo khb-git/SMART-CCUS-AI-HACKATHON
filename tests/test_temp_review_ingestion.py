@@ -47,9 +47,22 @@ def test_ingest_review_document_temporarily_cleans_up(monkeypatch, tmp_path):
         page_content = "Extracted review content."
         metadata = {"content_type": "text", "page": 1}
 
-    def fake_process_temporary_file(file_path, chunk_size=1000, chunk_overlap=100):
+    def fake_process_temporary_file(
+            file_path,
+            output_root,
+            chunk_size=1000,
+            chunk_overlap=100,
+    ):
         assert Path(file_path).exists()
-        return [FakeChunk()]
+        output_root = Path(output_root)
+        chunk_dir = output_root / "review" / "0"
+        chunk_dir.mkdir(parents=True, exist_ok=True)
+        (chunk_dir / "content.txt").write_text("Extracted review content.", encoding="utf-8")
+        (chunk_dir / "attribute.json").write_text(
+            '{"content_type": "text", "page": 1}',
+            encoding="utf-8",
+        )
+        return 1
 
     monkeypatch.setattr(
         "review.temp_ingestion.process_temporary_file",
@@ -81,9 +94,22 @@ def test_ingest_review_document_temporarily_can_keep_artifacts_for_debug(
         page_content = "Extracted PDF content."
         metadata = {"content_type": "text", "page": 1}
 
-    def fake_process_temporary_file(file_path, chunk_size=1000, chunk_overlap=100):
+    def fake_process_temporary_file(
+            file_path,
+            output_root,
+            chunk_size=1000,
+            chunk_overlap=100,
+    ):
         assert Path(file_path).exists()
-        return [FakeChunk()]
+        output_root = Path(output_root)
+        chunk_dir = output_root / "review" / "0"
+        chunk_dir.mkdir(parents=True, exist_ok=True)
+        (chunk_dir / "content.txt").write_text("Extracted review content.", encoding="utf-8")
+        (chunk_dir / "attribute.json").write_text(
+            '{"content_type": "text", "page": 1}',
+            encoding="utf-8",
+        )
+        return 1
 
     monkeypatch.setattr(
         "review.temp_ingestion.process_temporary_file",
@@ -104,3 +130,22 @@ def test_ingest_review_document_temporarily_can_keep_artifacts_for_debug(
     import shutil
 
     shutil.rmtree(document.temporary_directory)
+
+def test_load_chunks_from_temporary_output(tmp_path):
+    from review.temp_ingestion import load_chunks_from_temporary_output
+
+    chunk_dir = tmp_path / "doc" / "0"
+    chunk_dir.mkdir(parents=True)
+
+    (chunk_dir / "content.txt").write_text("Temporary chunk text.", encoding="utf-8")
+    (chunk_dir / "attribute.json").write_text(
+        '{"content_type": "text", "page": 3}',
+        encoding="utf-8",
+    )
+
+    chunks = load_chunks_from_temporary_output(tmp_path)
+
+    assert len(chunks) == 1
+    assert chunks[0].text == "Temporary chunk text."
+    assert chunks[0].metadata["content_type"] == "text"
+    assert chunks[0].metadata["page"] == 3
