@@ -59,6 +59,43 @@ def ask_api(
     return response.json()
 
 
+def review_document_api(
+    file_bytes: bytes,
+    filename: str,
+    plan_type: str = "auto",
+    chunk_size: int = 1000,
+    chunk_overlap: int = 100,
+    api_url: str = DEFAULT_API_URL,
+    timeout: int = 240,
+) -> dict[str, Any]:
+    """Call the backend /review-document endpoint."""
+    endpoint = f"{api_url.rstrip('/')}/review-document"
+
+    files = {
+        "file": (
+            filename,
+            file_bytes,
+            "application/octet-stream",
+        )
+    }
+
+    data = {
+        "plan_type": plan_type,
+        "chunk_size": str(chunk_size),
+        "chunk_overlap": str(chunk_overlap),
+    }
+
+    response = requests.post(
+        endpoint,
+        files=files,
+        data=data,
+        timeout=timeout,
+    )
+
+    response.raise_for_status()
+
+    return response.json()
+
 def format_similarity_score(value) -> str:
     """Format a retrieval similarity score for display."""
     if value is None or value == "":
@@ -80,3 +117,34 @@ def format_evidence_heading(item: dict[str, Any]) -> str:
     page_text = f", p. {page_number}" if page_number else ""
 
     return f"[{evidence_id}] {source_label}: {source_document}{page_text}"
+
+def status_label(status: str) -> str:
+    """Format review status labels for display."""
+    labels = {
+        "review_ready": "Review ready",
+        "mostly_complete": "Mostly complete",
+        "incomplete": "Incomplete",
+        "needs_revision": "Needs revision",
+        "present": "Present",
+        "partial": "Partial",
+        "missing": "Missing",
+        "unclear": "Unclear",
+    }
+
+    return labels.get(str(status or ""), str(status or "Unknown").replace("_", " ").title())
+
+
+def status_icon(status: str) -> str:
+    """Return a compact icon for review status."""
+    icons = {
+        "review_ready": "✅",
+        "mostly_complete": "🟡",
+        "incomplete": "🟠",
+        "needs_revision": "🔴",
+        "present": "✅",
+        "partial": "🟡",
+        "missing": "🔴",
+        "unclear": "⚪",
+    }
+
+    return icons.get(str(status or ""), "ℹ️")
