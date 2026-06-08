@@ -385,6 +385,70 @@ def classify_item_status(
 
     return GapStatus.PARTIAL
 
+def readable_list(values: list[str], empty: str = "none") -> str:
+    """Return a compact human-readable list."""
+    cleaned_values = [
+        str(value).strip()
+        for value in values
+        if str(value).strip()
+    ]
+
+    if not cleaned_values:
+        return empty
+
+    if len(cleaned_values) == 1:
+        return cleaned_values[0]
+
+    if len(cleaned_values) == 2:
+        return f"{cleaned_values[0]} and {cleaned_values[1]}"
+
+    return f"{', '.join(cleaned_values[:-1])}, and {cleaned_values[-1]}"
+
+
+def missing_evidence_group_names(
+    item: ReviewChecklistItem,
+    matched_group_names: list[str],
+) -> list[str]:
+    """Return evidence groups that were not matched for a checklist item."""
+    matched = set(matched_group_names)
+
+    return sorted(
+        group_name
+        for group_name in item.evidence_groups
+        if group_name not in matched
+    )
+
+
+def reviewer_next_step(
+    item: ReviewChecklistItem,
+    status: GapStatus,
+    matched_group_names: list[str],
+) -> str:
+    """Return a reviewer-facing next step for one finding."""
+    if status == GapStatus.PRESENT:
+        return "Reviewer should confirm the cited evidence is accurate and complete."
+
+    if status == GapStatus.PARTIAL:
+        missing_groups = missing_evidence_group_names(item, matched_group_names)
+
+        if missing_groups:
+            return (
+                "Reviewer should confirm the evidence and check for missing "
+                f"{readable_list(missing_groups)} details."
+            )
+
+        return (
+            "Reviewer should confirm whether the limited evidence fully satisfies "
+            "the checklist item."
+        )
+
+    if status == GapStatus.MISSING:
+        return (
+            "Reviewer should request this information or confirm whether it appears "
+            "elsewhere in the package."
+        )
+
+    return "Reviewer should confirm whether this checklist item applies."
 
 def build_finding_text(
     item: ReviewChecklistItem,
@@ -394,40 +458,51 @@ def build_finding_text(
 ) -> str:
     """Create reviewer-facing finding text."""
     matched_group_names = matched_group_names or []
+    next_step = reviewer_next_step(item, status, matched_group_names)
 
     if matched_group_names:
         evidence_summary = (
-            "matched evidence groups: "
-            f"{', '.join(matched_group_names)}"
+            "Evidence was found for "
+            f"{readable_list(matched_group_names)}."
+        )
+    elif matched_terms:
+        evidence_summary = (
+            "Evidence terms found: "
+            f"{readable_list(matched_terms)}."
         )
     else:
-        evidence_summary = (
-            "matched terms: "
-            f"{', '.join(matched_terms)}"
-        )
+        evidence_summary = "No checklist evidence terms were found."
 
     if status == GapStatus.PRESENT:
         return (
-            f"The document appears to address '{item.label}' based on "
-            f"{evidence_summary}."
+            f"{item.label}: appears addressed. "
+            f"{evidence_summary} {next_step}"
         )
 
     if status == GapStatus.PARTIAL:
+        missing_groups = missing_evidence_group_names(item, matched_group_names)
+
+        if missing_groups:
+            return (
+                f"{item.label}: evidence found, but the review is not fully settled. "
+                f"{evidence_summary} Missing or unconfirmed evidence groups: "
+                f"{readable_list(missing_groups)}. {next_step}"
+            )
+
         return (
-            f"Evidence was found for '{item.label}', but reviewer confirmation is "
-            f"recommended because only limited supporting evidence was found: "
-            f"{evidence_summary}."
+            f"{item.label}: evidence found, but reviewer confirmation is recommended. "
+            f"{evidence_summary} {next_step}"
         )
 
     if status == GapStatus.MISSING:
         return (
-            f"The document does not appear to address '{item.label}' based on the "
-            "expected evidence terms or evidence groups in the checklist."
+            f"{item.label}: not found in the reviewed text. "
+            f"{evidence_summary} {next_step}"
         )
 
     return (
-        f"The document could not be clearly evaluated for '{item.label}' because "
-        "the checklist item does not have enough expected evidence terms."
+        f"{item.label}: unclear. "
+        f"{evidence_summary} {next_step}"
     )
 
 
@@ -531,12 +606,22 @@ def build_summary(findings: list[ReviewFinding]) -> str:
     for finding in findings:
         counts[finding.status.value] += 1
 
+    if counts["missing"]:
+        next_action = "Review missing items first, especially critical or required items."
+    elif counts["evidence_found"]:
+        next_action = (
+            "Review evidence-found items to confirm whether the cited evidence is sufficient."
+        )
+    else:
+        next_action = "Confirm the cited evidence and proceed with reviewer sign-off."
+
     return (
         "Checklist review complete. "
         f"Present: {counts['present']}; "
         f"Evidence found: {counts['evidence_found']}; "
         f"Missing: {counts['missing']}; "
-        f"Unclear: {counts['unclear']}."
+        f"Unclear: {counts['unclear']}. "
+        f"Next step: {next_action}"
     )
 
 

@@ -275,7 +275,10 @@ def test_evidence_groups_can_mark_item_present_with_group_coverage():
     ]
     assert finding.matched_evidence_groups["parameter"] == ["injection pressure"]
     assert finding.matched_evidence_groups["equipment"] == ["pressure transducer"]
-    assert "matched evidence groups" in finding.finding
+    assert "appears addressed" in finding.finding
+    assert "Evidence was found for equipment, frequency, parameter, and recording." in finding.finding
+    assert "Reviewer should confirm" in finding.finding
+    assert "matched evidence groups" not in finding.finding
 
 
 def test_evidence_groups_keep_partial_when_only_some_groups_match():
@@ -394,3 +397,78 @@ def test_table_rows_support_evidence_group_matching():
     assert finding.supporting_excerpts[0] == (
         "Table row: Injection pressure | Continuous | SCADA"
     )
+
+def test_finding_text_for_present_item_is_reviewer_friendly():
+    from review.gap_analysis import GapStatus, build_finding_text
+    from review.schema import get_checklist_item, load_default_checklist
+
+    checklist = load_default_checklist("testing_monitoring")
+    item = get_checklist_item(checklist, "injection_pressure_monitoring")
+
+    text = build_finding_text(
+        item=item,
+        status=GapStatus.PRESENT,
+        matched_terms=["injection pressure", "pressure transducer"],
+        matched_group_names=["parameter", "equipment", "frequency", "location"],
+    )
+
+    assert "Injection pressure monitoring: appears addressed." in text
+    assert "Evidence was found for" in text
+    assert "Reviewer should confirm" in text
+    assert "matched evidence groups" not in text
+
+
+def test_finding_text_for_partial_item_names_missing_groups():
+    from review.gap_analysis import GapStatus, build_finding_text
+    from review.schema import get_checklist_item, load_default_checklist
+
+    checklist = load_default_checklist("testing_monitoring")
+    item = get_checklist_item(checklist, "injection_pressure_monitoring")
+
+    text = build_finding_text(
+        item=item,
+        status=GapStatus.PARTIAL,
+        matched_terms=["injection pressure"],
+        matched_group_names=["parameter"],
+    )
+
+    assert "evidence found" in text
+    assert "Missing or unconfirmed evidence groups" in text
+    assert "equipment" in text
+    assert "frequency" in text
+    assert "location" in text
+
+
+def test_finding_text_for_missing_item_gives_next_step():
+    from review.gap_analysis import GapStatus, build_finding_text
+    from review.schema import get_checklist_item, load_default_checklist
+
+    checklist = load_default_checklist("testing_monitoring")
+    item = get_checklist_item(checklist, "annular_pressure_monitoring")
+
+    text = build_finding_text(
+        item=item,
+        status=GapStatus.MISSING,
+        matched_terms=[],
+        matched_group_names=[],
+    )
+
+    assert "not found in the reviewed text" in text
+    assert "No checklist evidence terms were found." in text
+    assert "request this information" in text
+
+
+def test_build_summary_includes_next_step():
+    from review.gap_analysis import analyze_document_against_checklist
+    from review.schema import load_default_checklist
+
+    document = make_document(
+        "Testing and Monitoring Plan. "
+        "This section only discusses administrative contacts."
+    )
+
+    checklist = load_default_checklist("testing_monitoring")
+    report = analyze_document_against_checklist(document, checklist)
+
+    assert "Next step:" in report.summary
+    assert "Review missing items first" in report.summary
