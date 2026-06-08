@@ -36,7 +36,6 @@ DOCUMENT_TYPE_RULES = {
             "continuous recording of injection",
             "injection pressure monitoring",
             "injection rate monitoring",
-            "monitoring frequency",
             "plume and pressure front tracking",
         ],
         "supporting_terms": [
@@ -44,7 +43,7 @@ DOCUMENT_TYPE_RULES = {
             "flow rate",
             "annular pressure",
             "groundwater monitoring",
-            "mechanical integrity testing",
+            "monitoring frequency",
             "scada",
         ],
     },
@@ -146,6 +145,76 @@ DOCUMENT_TYPE_RULES = {
             "applicant",
         ],
     },
+    "pre_operational_testing": {
+        "label": "Pre-Operational Testing Plan",
+        "high_confidence_terms": [
+            "pre-operational testing plan",
+            "pre operational testing plan",
+            "pre-operational testing",
+            "pre operational testing",
+            "pre-injection testing",
+            "pre injection testing",
+            "formation testing",
+        ],
+        "supporting_terms": [
+            "mechanical integrity testing",
+            "baseline monitoring",
+            "logging before injection",
+            "formation testing",
+            "injectivity test",
+            "step-rate test",
+            "pressure falloff",
+        ],
+    },
+    "site_operating": {
+        "label": "Site Operating Plan",
+        "high_confidence_terms": [
+            "site operating plan",
+            "operating plan",
+            "site operations plan",
+        ],
+        "supporting_terms": [
+            "operating parameters",
+            "maximum injection pressure",
+            "injection rate",
+            "alarm setpoints",
+            "shutoff systems",
+            "shut-off systems",
+        ],
+    },
+    "site_geologic_characterization": {
+        "label": "Site Geologic Characterization",
+        "high_confidence_terms": [
+            "site geologic characterization",
+            "geologic characterization",
+            "site characterization",
+        ],
+        "supporting_terms": [
+            "injection zone",
+            "confining zone",
+            "faults",
+            "fractures",
+            "hydrogeology",
+            "usdw",
+            "geochemical data",
+        ],
+    },
+    "injection_well_plugging": {
+        "label": "Injection Well Plugging Plan",
+        "high_confidence_terms": [
+            "injection well plugging plan",
+            "well plugging plan",
+            "plugging plan",
+        ],
+        "supporting_terms": [
+            "plugging methods",
+            "cement plugs",
+            "plugging depths",
+            "pre-plugging conditions",
+            "plugging verification",
+            "abandonment",
+        ],
+    },
 }
 
 
@@ -185,14 +254,15 @@ def match_terms(text: str, terms: list[str]) -> list[str]:
     return [term for term in terms if normalize_text(term) in normalized]
 
 
-def score_document_type(text: str, rule: dict) -> tuple[int, list[str]]:
+def score_document_type(text: str, rule: dict) -> tuple[int, list[str], int]:
     """Score one document type rule."""
     high_matches = match_terms(text, rule.get("high_confidence_terms", []))
     supporting_matches = match_terms(text, rule.get("supporting_terms", []))
 
-    score = len(high_matches) * 5 + len(supporting_matches)
+    # Plan-title/high-confidence matches should dominate generic supporting terms.
+    score = len(high_matches) * 10 + len(supporting_matches)
 
-    return score, high_matches + supporting_matches
+    return score, high_matches + supporting_matches, len(high_matches)
 
 
 def confidence_from_score(score: int, matched_terms: list[str]) -> str:
@@ -215,14 +285,16 @@ def classify_review_document(document) -> DocumentClassification:
 
     best_type = "unknown"
     best_score = 0
+    best_high_match_count = 0
     best_terms: list[str] = []
 
     for document_type, rule in DOCUMENT_TYPE_RULES.items():
-        score, terms = score_document_type(text, rule)
+        score, terms, high_match_count = score_document_type(text, rule)
 
-        if score > best_score:
+        if (score, high_match_count) > (best_score, best_high_match_count):
             best_type = document_type
             best_score = score
+            best_high_match_count = high_match_count
             best_terms = terms
 
     confidence = confidence_from_score(best_score, best_terms)
