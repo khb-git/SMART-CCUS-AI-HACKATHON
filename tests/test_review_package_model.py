@@ -252,3 +252,78 @@ def test_review_package_still_detects_duplicate_plan_types_with_combined_documen
 
     assert "well_construction" in report.duplicate_plan_types
     assert "well_construction" in report.detected_plan_types
+
+def test_review_package_identifies_supporting_pisc_alternative_timeframe():
+    from review.package_review import review_document_package
+
+    documents = [
+        make_document(
+            "Marquis_PISC_and_Site_Closure_Plan__36aa081feef7.pdf",
+            (
+                "Post-Injection Site Care and Site Closure Plan. "
+                "The plan describes PISC monitoring and non-endangerment demonstration."
+            ),
+        ),
+        make_document(
+            "Marquis_Alternative_PISC_Timeframe__4b09b5518eb0.pdf",
+            (
+                "Alternative PISC Timeframe. "
+                "This document describes an alternative post-injection site care timeframe."
+            ),
+        ),
+    ]
+
+    report = review_document_package(
+        documents,
+        package_name="marquis_package",
+        expected_plan_types=["pisc_site_closure"],
+        required_plan_types=["pisc_site_closure"],
+    )
+
+    assert report.detected_plan_types == ["pisc_site_closure"]
+    assert report.duplicate_plan_types == []
+    assert report.supporting_documents == [
+        "Marquis_Alternative_PISC_Timeframe__4b09b5518eb0.pdf"
+    ]
+    assert "Supporting documents: 1" in report.summary
+
+    supporting_review = [
+        review
+        for review in report.document_reviews
+        if review.document_name == "Marquis_Alternative_PISC_Timeframe__4b09b5518eb0.pdf"
+    ][0]
+
+    assert supporting_review.document_role == "supporting"
+    assert supporting_review.supporting_document_type == (
+        "supporting_pisc_alternative_timeframe"
+    )
+    assert supporting_review.report is None
+    assert "Supporting document detected" in supporting_review.error
+
+
+def test_review_package_report_to_dict_includes_supporting_documents():
+    from review.package_review import review_document_package
+
+    documents = [
+        make_document(
+            "Marquis_Alternative_PISC_Timeframe__4b09b5518eb0.pdf",
+            "Alternative PISC Timeframe document.",
+        )
+    ]
+
+    report = review_document_package(
+        documents,
+        package_name="marquis_package",
+        expected_plan_types=[],
+        required_plan_types=[],
+    )
+
+    data = report.to_dict()
+
+    assert data["supporting_documents"] == [
+        "Marquis_Alternative_PISC_Timeframe__4b09b5518eb0.pdf"
+    ]
+    assert data["document_reviews"][0]["document_role"] == "supporting"
+    assert data["document_reviews"][0]["supporting_document_type"] == (
+        "supporting_pisc_alternative_timeframe"
+    )

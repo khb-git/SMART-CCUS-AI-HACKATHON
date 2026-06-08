@@ -12,6 +12,7 @@ from dataclasses import dataclass, field
 from typing import Any
 
 from review.document_classifier import classify_review_document
+from review.package_document_audit import audit_package_document_name
 from review.gap_analysis import GapAnalysisReport, analyze_document_against_checklist
 from review.schema import load_default_checklist
 
@@ -55,6 +56,8 @@ class PackageDocumentReview:
     classification: dict[str, Any]
     covered_plan_types: list[str] = field(default_factory=list)
     is_combined_document: bool = False
+    document_role: str = "main"
+    supporting_document_type: str = ""
     report: dict[str, Any] | None = None
     error: str = ""
 
@@ -67,6 +70,8 @@ class PackageDocumentReview:
             "classification": self.classification,
             "covered_plan_types": self.covered_plan_types,
             "is_combined_document": self.is_combined_document,
+            "document_role": self.document_role,
+            "supporting_document_type": self.supporting_document_type,
             "report": self.report,
             "error": self.error,
         }
@@ -86,6 +91,7 @@ class ReviewPackageReport:
     missing_expected_plan_types: list[str]
     duplicate_plan_types: list[str]
     unknown_documents: list[str]
+    supporting_documents: list[str]
     document_reviews: list[PackageDocumentReview] = field(default_factory=list)
 
     def to_dict(self) -> dict[str, Any]:
@@ -105,6 +111,7 @@ class ReviewPackageReport:
                 document_review.to_dict()
                 for document_review in self.document_reviews
             ],
+            "supporting_documents": self.supporting_documents,
         }
 
 
@@ -112,12 +119,23 @@ def document_name(document) -> str:
     """Return the original filename for a temporary review document."""
     return getattr(document, "original_filename", "uploaded_document")
 
+def supporting_document_audit(document) -> tuple[str, str]:
+    """Return package document role and supporting type from filename audit."""
+    audit_result = audit_package_document_name(document_name(document))
+
+    if audit_result.document_role == "supporting":
+        return "supporting", audit_result.document_type
+
+    return "main", ""
 
 def count_plan_types(document_reviews: list[PackageDocumentReview]) -> dict[str, int]:
-    """Count detected known document types, including combined-document coverage."""
+    """Count detected known main document types, including combined-document coverage."""
     counts: dict[str, int] = {}
 
     for review in document_reviews:
+        if review.document_role == "supporting":
+            continue
+
         covered_plan_types = review.covered_plan_types or [review.document_type]
 
         for plan_type in covered_plan_types:
@@ -142,10 +160,13 @@ def find_duplicate_plan_types(document_reviews: list[PackageDocumentReview]) -> 
 def detected_plan_types_from_reviews(
     document_reviews: list[PackageDocumentReview],
 ) -> list[str]:
-    """Return all detected package plan types, including combined-document coverage."""
+    """Return detected main package plan types, including combined-document coverage."""
     detected = set()
 
     for review in document_reviews:
+        if review.document_role == "supporting":
+            continue
+
         covered_plan_types = review.covered_plan_types or [review.document_type]
 
         for plan_type in covered_plan_types:
@@ -153,6 +174,16 @@ def detected_plan_types_from_reviews(
                 detected.add(plan_type)
 
     return sorted(detected)
+
+def supporting_document_names(
+    document_reviews: list[PackageDocumentReview],
+) -> list[str]:
+    """Return names of documents identified as supporting documents."""
+    return sorted(
+        review.document_name
+        for review in document_reviews
+        if review.document_role == "supporting"
+    )
 
 def determine_package_status(
     missing_required_plan_types: list[str],
@@ -190,7 +221,9 @@ def build_package_summary(
     missing_expected_plan_types: list[str],
     duplicate_plan_types: list[str],
     unknown_documents: list[str],
+    supporting_documents: list[str] | None = None,
 ) -> str:
+    supporting_documents = supporting_documents or []
     """Build a concise package-level summary."""
     return (
         "Package review complete. "
@@ -198,12 +231,14 @@ def build_package_summary(
         f"Missing required document types: {len(missing_required_plan_types)}; "
         f"Missing expected document types: {len(missing_expected_plan_types)}; "
         f"Duplicate document types: {len(duplicate_plan_types)}; "
+        f"Supporting documents: {len(supporting_documents)}; "
         f"Unknown documents: {len(unknown_documents)}."
     )
 
 
 def review_single_package_document(document) -> PackageDocumentReview:
     """Classify and review one temporarily ingested package document."""
+    document_role, supporting_type = supporting_document_audit(document)
     classification = classify_review_document(document)
 
     document_type = classification.document_type
@@ -217,8 +252,24 @@ def review_single_package_document(document) -> PackageDocumentReview:
             classification=classification_dict,
             covered_plan_types=[],
             is_combined_document=False,
+            document_role=document_role,
+            supporting_document_type=supporting_type,
             report=None,
             error="Document type could not be classified.",
+        )
+
+    if document_role == "supporting":
+        return PackageDocumentReview(
+            document_name=document_name(document),
+            document_type=document_type,
+            classification_confidence=classification.confidence,
+            classification=classification_dict,
+            covered_plan_types=[],
+            is_combined_document=False,
+            document_role=document_role,
+            supporting_document_type=supporting_type,
+            report=None,
+            error="Supporting document detected; no standalone checklist review was run.",
         )
 
     try:
@@ -234,6 +285,8 @@ def review_single_package_document(document) -> PackageDocumentReview:
             error=str(exc),
             covered_plan_types=classification.covered_plan_types,
             is_combined_document=classification.is_combined_document,
+            document_role=document_role,
+            supporting_document_type=supporting_type,
         )
 
     return PackageDocumentReview(
@@ -245,6 +298,8 @@ def review_single_package_document(document) -> PackageDocumentReview:
         error="",
         covered_plan_types=classification.covered_plan_types,
         is_combined_document=classification.is_combined_document,
+        document_role=document_role,
+        supporting_document_type=supporting_type,
     )
 
 
@@ -288,6 +343,8 @@ def review_document_package(
         if review.document_type == "unknown"
     ]
 
+    supporting_documents = supporting_document_names(document_reviews)
+
     overall_status = determine_package_status(
         missing_required_plan_types=missing_required_plan_types,
         unknown_documents=unknown_documents,
@@ -300,6 +357,7 @@ def review_document_package(
         missing_expected_plan_types=missing_expected_plan_types,
         duplicate_plan_types=duplicate_plan_types,
         unknown_documents=unknown_documents,
+        supporting_documents=supporting_documents,
     )
 
     return ReviewPackageReport(
@@ -314,4 +372,5 @@ def review_document_package(
         duplicate_plan_types=duplicate_plan_types,
         unknown_documents=unknown_documents,
         document_reviews=document_reviews,
+        supporting_documents=supporting_documents,
     )
