@@ -67,6 +67,213 @@ def format_list(values: list[str]) -> str:
 
     return "\n".join(f"- {value}" for value in values)
 
+def format_plan_type_list(values: list[str]) -> str:
+    """Format plan type values for Markdown."""
+    if not values:
+        return "None."
+
+    return "\n".join(f"- `{value}`" for value in values)
+
+
+def build_markdown_package_report(package_response: dict[str, Any]) -> str:
+    """Build a Markdown report from /review-package response JSON."""
+    report = package_response.get("report", {}) or {}
+
+    package_name = package_response.get(
+        "package_name",
+        report.get("package_name", "uploaded_package"),
+    )
+    overall_status = report.get("overall_status", "unknown")
+    summary = report.get("summary", "")
+    storage_policy = package_response.get("storage_policy", "")
+
+    detected_plan_types = report.get("detected_plan_types", []) or []
+    missing_required_plan_types = (
+        report.get("missing_required_plan_types", []) or []
+    )
+    missing_expected_plan_types = (
+        report.get("missing_expected_plan_types", []) or []
+    )
+    duplicate_plan_types = report.get("duplicate_plan_types", []) or []
+    unknown_documents = report.get("unknown_documents", []) or []
+    expected_plan_types = report.get("expected_plan_types", []) or []
+    required_plan_types = report.get("required_plan_types", []) or []
+    document_reviews = report.get("document_reviews", []) or []
+
+    lines = [
+        "# Class VI Package Review Report",
+        "",
+        "## Package Summary",
+        "",
+        f"- **Package name:** {package_name}",
+        f"- **Overall status:** {status_label(overall_status)}",
+        f"- **Detected document types:** {len(detected_plan_types)}",
+        f"- **Missing required document types:** {len(missing_required_plan_types)}",
+        f"- **Missing expected document types:** {len(missing_expected_plan_types)}",
+        f"- **Duplicate document types:** {len(duplicate_plan_types)}",
+        f"- **Unknown documents:** {len(unknown_documents)}",
+        "",
+        "## Review Summary",
+        "",
+        summary or "No summary returned.",
+        "",
+        "## Detected Document Types",
+        "",
+        format_plan_type_list(detected_plan_types),
+        "",
+        "## Missing Required Document Types",
+        "",
+        format_plan_type_list(missing_required_plan_types),
+        "",
+        "## Missing Expected Document Types",
+        "",
+        format_plan_type_list(missing_expected_plan_types),
+        "",
+        "## Duplicate Document Types",
+        "",
+        format_plan_type_list(duplicate_plan_types),
+        "",
+        "## Unknown Documents",
+        "",
+        format_plan_type_list(unknown_documents),
+        "",
+        "## Required Package Document Types",
+        "",
+        format_plan_type_list(required_plan_types),
+        "",
+        "## Expected Package Document Types",
+        "",
+        format_plan_type_list(expected_plan_types),
+        "",
+    ]
+
+    if storage_policy:
+        lines.extend(
+            [
+                "## Storage Policy",
+                "",
+                storage_policy,
+                "",
+            ]
+        )
+
+    lines.extend(
+        [
+            "## Per-Document Review Summaries",
+            "",
+        ]
+    )
+
+    if not document_reviews:
+        lines.extend(["No document reviews returned.", ""])
+    else:
+        for document_review in document_reviews:
+            document_name = document_review.get("document_name", "Unknown document")
+            document_type = document_review.get("document_type", "unknown")
+            confidence = document_review.get(
+                "classification_confidence",
+                "unknown",
+            )
+            error = document_review.get("error", "")
+            document_report = document_review.get("report") or {}
+            classification = document_review.get("classification", {}) or {}
+
+            lines.extend(
+                [
+                    f"### {document_name}",
+                    "",
+                    f"- **Detected type:** `{document_type}`",
+                    f"- **Classification confidence:** {confidence}",
+                    f"- **Classifier matched terms:** "
+                    f"{', '.join(classification.get('matched_terms', []) or []) or 'None'}",
+                    f"- **Classifier reason:** {classification.get('reason', '')}",
+                    "",
+                ]
+            )
+
+            if error:
+                lines.extend(
+                    [
+                        "**Review error:**",
+                        "",
+                        error,
+                        "",
+                    ]
+                )
+                continue
+
+            if not document_report:
+                lines.extend(["No document report returned.", ""])
+                continue
+
+            findings = document_report.get("findings", []) or []
+            counts = finding_status_counts(findings)
+
+            lines.extend(
+                [
+                    f"- **Document review status:** "
+                    f"{status_label(document_report.get('overall_status', 'unknown'))}",
+                    f"- **Checklist ID:** {document_report.get('checklist_id', '')}",
+                    "",
+                    "**Document review summary:**",
+                    "",
+                    document_report.get("summary", "") or "No summary returned.",
+                    "",
+                    "**Finding counts:**",
+                    "",
+                    f"- Present: {counts['present']}",
+                    f"- Evidence found: {counts['evidence_found']}",
+                    f"- Missing: {counts['missing']}",
+                    f"- Unclear: {counts['unclear']}",
+                    "",
+                ]
+            )
+
+            priority_findings = [
+                finding
+                for finding in sorted(findings, key=finding_sort_key)
+                if finding.get("status") in {"missing", "evidence_found", "unclear"}
+            ]
+
+            if priority_findings:
+                lines.extend(
+                    [
+                        "**Priority findings:**",
+                        "",
+                    ]
+                )
+
+                for finding in priority_findings:
+                    lines.extend(
+                        [
+                            f"- **{status_label(finding.get('status', ''))}: "
+                            f"{finding.get('label', finding.get('item_id', 'Finding'))}**",
+                            f"  - {finding.get('finding', '')}",
+                        ]
+                    )
+
+                    recommended_fix = finding.get("recommended_fix", "")
+                    if recommended_fix:
+                        lines.append(f"  - Recommended fix: {recommended_fix}")
+
+                lines.append("")
+
+    return "\n".join(lines).strip() + "\n"
+
+
+def default_package_report_filename(package_name: str) -> str:
+    """Return a safe default Markdown package report filename."""
+    stem = str(package_name or "uploaded_package")
+    safe = "".join(
+        char if char.isalnum() or char in {"-", "_"} else "_"
+        for char in stem
+    ).strip("_")
+
+    if not safe:
+        safe = "uploaded_package"
+
+    return f"{safe}_package_review_report.md"
+
 
 def build_markdown_review_report(review_response: dict[str, Any]) -> str:
     """Build a Markdown report from /review-document response JSON."""
