@@ -122,6 +122,183 @@ def build_markdown_findings_section(
     lines.append("")
     return lines
 
+def collect_package_priority_findings(
+    document_reviews: list[dict[str, Any]],
+    max_items: int = 12,
+) -> list[dict[str, Any]]:
+    """Collect priority findings across all package document reviews."""
+    priority_items: list[dict[str, Any]] = []
+
+    for document_review in document_reviews:
+        document_name = document_review.get("document_name", "Unknown document")
+        checklist_reports = document_review.get("checklist_reports", {}) or {}
+        primary_report = document_review.get("report") or {}
+
+        reports_to_scan = checklist_reports
+
+        if not reports_to_scan and primary_report:
+            plan_type = primary_report.get(
+                "plan_type",
+                document_review.get("document_type", "unknown"),
+            )
+            reports_to_scan = {plan_type: primary_report}
+
+        for plan_type, checklist_report in reports_to_scan.items():
+            findings = checklist_report.get("findings", []) or []
+
+            for finding in findings:
+                if finding.get("status") not in {
+                    "missing",
+                    "evidence_found",
+                    "unclear",
+                }:
+                    continue
+
+                priority_items.append(
+                    {
+                        "document_name": document_name,
+                        "plan_type": plan_type,
+                        "status": finding.get("status", ""),
+                        "label": finding.get(
+                            "label",
+                            finding.get("item_id", "Finding"),
+                        ),
+                        "finding": finding.get("finding", ""),
+                        "recommended_fix": finding.get("recommended_fix", ""),
+                        "matched_evidence_group_names": finding.get(
+                            "matched_evidence_group_names",
+                            [],
+                        )
+                        or [],
+                        "severity": finding.get("severity", ""),
+                        "requirement_level": finding.get("requirement_level", ""),
+                    }
+                )
+
+    priority_items.sort(key=finding_sort_key)
+
+    return priority_items[:max_items]
+
+
+def build_package_priority_summary_section(
+    report: dict[str, Any],
+    max_items: int = 12,
+) -> list[str]:
+    """Build a concise package-level reviewer priority summary."""
+    document_reviews = report.get("document_reviews", []) or []
+    missing_required = report.get("missing_required_plan_types", []) or []
+    missing_expected = report.get("missing_expected_plan_types", []) or []
+    duplicate_plan_types = report.get("duplicate_plan_types", []) or []
+    unknown_documents = report.get("unknown_documents", []) or []
+    supporting_documents = report.get("supporting_documents", []) or []
+
+    priority_findings = collect_package_priority_findings(
+        document_reviews,
+        max_items=max_items,
+    )
+
+    lines = [
+        "## Reviewer Priority Summary",
+        "",
+    ]
+
+    if missing_required:
+        lines.extend(
+            [
+                "**Missing required document types:**",
+                "",
+                format_plan_type_list(missing_required),
+                "",
+            ]
+        )
+
+    if missing_expected:
+        lines.extend(
+            [
+                "**Missing expected document types:**",
+                "",
+                format_plan_type_list(missing_expected),
+                "",
+            ]
+        )
+
+    if duplicate_plan_types:
+        lines.extend(
+            [
+                "**Duplicate primary document types:**",
+                "",
+                format_plan_type_list(duplicate_plan_types),
+                "",
+            ]
+        )
+
+    if unknown_documents:
+        lines.extend(
+            [
+                "**Unknown documents requiring classification review:**",
+                "",
+                format_document_names(unknown_documents),
+                "",
+            ]
+        )
+
+    if supporting_documents:
+        lines.extend(
+            [
+                "**Supporting documents detected:**",
+                "",
+                format_document_names(supporting_documents),
+                "",
+            ]
+        )
+
+    if priority_findings:
+        lines.extend(
+            [
+                f"**Top {len(priority_findings)} checklist findings requiring review:**",
+                "",
+            ]
+        )
+
+        for item in priority_findings:
+            lines.extend(
+                [
+                    f"- **{status_label(item['status'])}: {item['label']}**",
+                    f"  - Document: `{item['document_name']}`",
+                    f"  - Checklist: `{item['plan_type']}`",
+                    f"  - Finding: {item['finding']}",
+                ]
+            )
+
+            matched_groups = item.get("matched_evidence_group_names", []) or []
+            if matched_groups:
+                lines.append(
+                    "  - Matched evidence groups: "
+                    + ", ".join(f"`{group}`" for group in matched_groups)
+                )
+
+            recommended_fix = item.get("recommended_fix", "")
+            if recommended_fix:
+                lines.append(f"  - Recommended fix: {recommended_fix}")
+
+        lines.append("")
+
+    if (
+        not missing_required
+        and not missing_expected
+        and not duplicate_plan_types
+        and not unknown_documents
+        and not priority_findings
+    ):
+        lines.extend(
+            [
+                "No package-level priority issues were identified in the exported review.",
+                "",
+            ]
+        )
+
+    return lines
+
 def build_markdown_package_report(package_response: dict[str, Any]) -> str:
     """Build a Markdown report from /review-package response JSON."""
     report = package_response.get("report", {}) or {}
@@ -166,39 +343,46 @@ def build_markdown_package_report(package_response: dict[str, Any]) -> str:
         "",
         summary or "No summary returned.",
         "",
-        "## Detected Document Types",
-        "",
-        format_plan_type_list(detected_plan_types),
-        "",
-        "## Missing Required Document Types",
-        "",
-        format_plan_type_list(missing_required_plan_types),
-        "",
-        "## Missing Expected Document Types",
-        "",
-        format_plan_type_list(missing_expected_plan_types),
-        "",
-        "## Duplicate Document Types",
-        "",
-        format_plan_type_list(duplicate_plan_types),
-        "",
-        "## Unknown Documents",
-        "",
-        format_plan_type_list(unknown_documents),
-        "",
-        "## Supporting Documents",
-        "",
-        format_document_names(supporting_documents),
-        "",
-        "## Required Package Document Types",
-        "",
-        format_plan_type_list(required_plan_types),
-        "",
-        "## Expected Package Document Types",
-        "",
-        format_plan_type_list(expected_plan_types),
-        "",
     ]
+
+    lines.extend(build_package_priority_summary_section(report))
+
+    lines.extend(
+        [
+            "## Detected Document Types",
+            "",
+            format_plan_type_list(detected_plan_types),
+            "",
+            "## Missing Required Document Types",
+            "",
+            format_plan_type_list(missing_required_plan_types),
+            "",
+            "## Missing Expected Document Types",
+            "",
+            format_plan_type_list(missing_expected_plan_types),
+            "",
+            "## Duplicate Document Types",
+            "",
+            format_plan_type_list(duplicate_plan_types),
+            "",
+            "## Unknown Documents",
+            "",
+            format_document_names(unknown_documents),
+            "",
+            "## Supporting Documents",
+            "",
+            format_document_names(supporting_documents),
+            "",
+            "## Required Package Document Types",
+            "",
+            format_plan_type_list(required_plan_types),
+            "",
+            "## Expected Package Document Types",
+            "",
+            format_plan_type_list(expected_plan_types),
+            "",
+        ]
+    )
 
     if storage_policy:
         lines.extend(
@@ -323,34 +507,7 @@ def build_markdown_package_report(package_response: dict[str, Any]) -> str:
                 ]
             )
 
-            priority_findings = [
-                finding
-                for finding in sorted(findings, key=finding_sort_key)
-                if finding.get("status") in {"missing", "evidence_found", "unclear"}
-            ]
-
-            if priority_findings:
-                lines.extend(
-                    [
-                        "**Priority findings:**",
-                        "",
-                    ]
-                )
-
-                for finding in priority_findings:
-                    lines.extend(
-                        [
-                            f"- **{status_label(finding.get('status', ''))}: "
-                            f"{finding.get('label', finding.get('item_id', 'Finding'))}**",
-                            f"  - {finding.get('finding', '')}",
-                        ]
-                    )
-
-                    recommended_fix = finding.get("recommended_fix", "")
-                    if recommended_fix:
-                        lines.append(f"  - Recommended fix: {recommended_fix}")
-
-                lines.append("")
+            lines.extend(build_markdown_findings_section(findings))
 
     return "\n".join(lines).strip() + "\n"
 
