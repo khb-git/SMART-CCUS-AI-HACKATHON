@@ -5,7 +5,7 @@ FastAPI backend for the Class VI review assistant.
 from pathlib import Path
 import shutil
 import tempfile
-from typing import Any
+from typing import Annotated, Any
 
 from fastapi import FastAPI, File, Form, HTTPException, UploadFile
 from pydantic import BaseModel, Field
@@ -19,6 +19,7 @@ from review.temp_ingestion import (
     is_supported_review_file,
 )
 
+from review.package_review import review_document_package
 
 app = FastAPI(
     title="SMART CCUS Class VI Review Assistant",
@@ -60,6 +61,13 @@ class ReviewDocumentResponse(BaseModel):
     document_type: str
     classification_confidence: str
     classification: dict[str, Any]
+    report: dict[str, Any]
+    storage_policy: str
+
+class ReviewPackageResponse(BaseModel):
+    """Response body for uploaded package review."""
+
+    package_name: str
     report: dict[str, Any]
     storage_policy: str
 
@@ -167,5 +175,97 @@ def review_document(
         "storage_policy": (
             "Uploaded documents are processed temporarily for this review request "
             "and are not stored in permanent data folders or Chroma collections."
+        ),
+    }
+
+@app.post("/review-package", response_model=ReviewPackageResponse)
+@app.post("/review-package", response_model=ReviewPackageResponse)
+@app.post("/review-package", response_model=ReviewPackageResponse)
+def review_package(
+    files: Annotated[
+        list[UploadFile],
+        File(
+            description="Upload one or more Class VI package documents.",
+            json_schema_extra={
+                "items": {
+                    "type": "string",
+                    "format": "binary",
+                }
+            },
+        ),
+    ],
+    package_name: Annotated[str, Form()] = "uploaded_package",
+    chunk_size: Annotated[int, Form()] = 1000,
+    chunk_overlap: Annotated[int, Form()] = 100,
+):
+    """Temporarily review a multi-document Class VI package."""
+    if not files:
+        raise HTTPException(
+            status_code=400,
+            detail="At least one file must be uploaded.",
+        )
+
+    temporary_documents = []
+
+    with tempfile.TemporaryDirectory() as upload_temp_dir:
+        upload_temp_path = Path(upload_temp_dir)
+
+        for uploaded_file in files:
+            filename = uploaded_file.filename or ""
+
+            if not filename:
+                raise HTTPException(
+                    status_code=400,
+                    detail="Each uploaded file must have a filename.",
+                )
+
+            if not is_supported_review_file(filename):
+                raise HTTPException(
+                    status_code=400,
+                    detail=(
+                        f"Unsupported review file type for {filename}. "
+                        "Supported types are PDF, DOCX, and XLSX."
+                    ),
+                )
+
+            upload_path = upload_temp_path / Path(filename).name
+
+            with upload_path.open("wb") as output_file:
+                shutil.copyfileobj(uploaded_file.file, output_file)
+
+            try:
+                temporary_document = ingest_review_document_temporarily(
+                    upload_path,
+                    chunk_size=chunk_size,
+                    chunk_overlap=chunk_overlap,
+                )
+            except Exception as exc:
+                raise HTTPException(
+                    status_code=500,
+                    detail=(
+                        f"Temporary review ingestion failed for {filename}: "
+                        f"{type(exc).__name__}: {exc}"
+                    ),
+                ) from exc
+
+            temporary_documents.append(temporary_document)
+
+    try:
+        report = review_document_package(
+            temporary_documents,
+            package_name=package_name,
+        )
+    except Exception as exc:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Package review failed: {type(exc).__name__}: {exc}",
+        ) from exc
+
+    return {
+        "package_name": package_name,
+        "report": report.to_dict(),
+        "storage_policy": (
+            "Uploaded package documents are processed temporarily for this review "
+            "request and are not stored in permanent data folders or Chroma collections."
         ),
     }
