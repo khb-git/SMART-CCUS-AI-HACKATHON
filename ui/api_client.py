@@ -101,6 +101,46 @@ def review_document_api(
 
     return response.json()
 
+def review_package_api(
+    files: list[tuple[str, bytes]],
+    package_name: str = "uploaded_package",
+    chunk_size: int = 1000,
+    chunk_overlap: int = 100,
+    api_url: str = DEFAULT_API_URL,
+    timeout: int = 600,
+) -> dict[str, Any]:
+    """Call the backend /review-package endpoint."""
+    endpoint = f"{api_url.rstrip('/')}/review-package"
+
+    upload_files = [
+        (
+            "files",
+            (
+                filename,
+                file_bytes,
+                "application/octet-stream",
+            ),
+        )
+        for filename, file_bytes in files
+    ]
+
+    data = {
+        "package_name": package_name,
+        "chunk_size": str(chunk_size),
+        "chunk_overlap": str(chunk_overlap),
+    }
+
+    response = requests.post(
+        endpoint,
+        files=upload_files,
+        data=data,
+        timeout=timeout,
+    )
+
+    response.raise_for_status()
+
+    return response.json()
+
 def format_similarity_score(value) -> str:
     """Format a retrieval similarity score for display."""
     if value is None or value == "":
