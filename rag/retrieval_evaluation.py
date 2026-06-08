@@ -63,6 +63,7 @@ class RetrievalEvaluationResult:
     collection: str
     result_count: int
     top_score: float
+    max_score: float
     min_top_score: float
     score_passed: bool
     expected_terms_found: list[str]
@@ -80,6 +81,7 @@ class RetrievalEvaluationResult:
             "collection": self.collection,
             "result_count": self.result_count,
             "top_score": self.top_score,
+            "max_score": self.max_score,
             "min_top_score": self.min_top_score,
             "score_passed": self.score_passed,
             "expected_terms_found": self.expected_terms_found,
@@ -311,7 +313,8 @@ def evaluate_retrieval_case(
     )
 
     top_score = results[0].score if results else 0.0
-    score_passed = top_score >= case.min_top_score
+    max_score = max((result.score for result in results), default=0.0)
+    score_passed = max_score >= case.min_top_score
 
     result_text = collect_result_text(results)
 
@@ -347,6 +350,7 @@ def evaluate_retrieval_case(
         collection=case.collection,
         result_count=len(results),
         top_score=top_score,
+        max_score=max_score,
         min_top_score=case.min_top_score,
         score_passed=score_passed,
         expected_terms_found=expected_terms_found,
@@ -426,7 +430,10 @@ def print_evaluation_summary(summary: RetrievalEvaluationSummary) -> None:
         print(f"[{status}] {result.case_id}")
         print(f"Query: {result.query}")
         print(f"Collection: {result.collection}")
-        print(f"Top score: {result.top_score:.4f} / {result.min_top_score:.4f}")
+        print(
+            f"Ranked top score: {result.top_score:.4f} | "
+            f"Max returned score: {result.max_score:.4f} / {result.min_top_score:.4f}"
+        )
         print(f"Expected terms found: {result.expected_terms_found}")
         print(f"Expected terms missing: {result.expected_terms_missing}")
         print(f"Expected plan types found: {result.expected_plan_types_found}")

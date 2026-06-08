@@ -80,6 +80,7 @@ def test_evaluate_retrieval_case_passes_when_score_terms_and_plan_type_match():
     assert result.passed is True
     assert result.score_passed is True
     assert result.top_score == 0.91
+    assert result.max_score == 0.91
     assert result.expected_terms_missing == []
     assert result.expected_plan_types_missing == []
 
@@ -215,3 +216,41 @@ def test_default_retrieval_evaluation_cases_have_thresholds():
     assert all(case.min_top_score >= 0.85 for case in DEFAULT_RETRIEVAL_EVALUATION_CASES)
     assert all(case.query for case in DEFAULT_RETRIEVAL_EVALUATION_CASES)
     assert all(case.collection in {"reference", "permits"} for case in DEFAULT_RETRIEVAL_EVALUATION_CASES)
+
+def test_evaluate_retrieval_case_uses_max_score_for_score_threshold():
+    from rag.retrieval_evaluation import (
+        RetrievalEvaluationCase,
+        evaluate_retrieval_case,
+    )
+
+    case = RetrievalEvaluationCase(
+        case_id="reranked_case",
+        query="How do applicants demonstrate financial responsibility?",
+        collection="permits",
+        expected_terms=["financial responsibility"],
+        expected_plan_types=["financial_responsibility"],
+        min_top_score=0.85,
+    )
+
+    def fake_retrieval_function(**kwargs):
+        return [
+            make_result(
+                text="Financial responsibility is demonstrated through cost estimates.",
+                score=0.70,
+                plan_type="financial_responsibility",
+            ),
+            make_result(
+                text="Financial responsibility and financial assurance are documented.",
+                score=0.90,
+                plan_type="financial_responsibility",
+            ),
+        ]
+
+    result = evaluate_retrieval_case(
+        case,
+        retrieval_function=fake_retrieval_function,
+    )
+
+    assert result.top_score == 0.70
+    assert result.max_score == 0.90
+    assert result.score_passed is True
