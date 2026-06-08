@@ -131,7 +131,7 @@ def status_label(status: str) -> str:
         "incomplete": "Incomplete",
         "needs_revision": "Needs revision",
         "present": "Present",
-        "partial": "Partial",
+        "evidence_found": "Evidence found",
         "missing": "Missing",
         "unclear": "Unclear",
     }
@@ -147,7 +147,7 @@ def status_icon(status: str) -> str:
         "incomplete": "🟠",
         "needs_revision": "🔴",
         "present": "✅",
-        "partial": "🟡",
+        "evidence_found": "🟡",
         "missing": "🔴",
         "unclear": "⚪",
     }

@@ -73,7 +73,7 @@ def test_build_markdown_review_report_counts_statuses():
 
     assert "**Present:** 1" in markdown
     assert "**Missing:** 1" in markdown
-    assert "**Partial:** 0" in markdown
+    assert "**Evidence found:** 0" in markdown
     assert "**Unclear:** 0" in markdown
 
 

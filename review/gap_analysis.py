@@ -19,7 +19,7 @@ class GapStatus(str, Enum):
     """Status for one checklist review item."""
 
     PRESENT = "present"
-    PARTIAL = "partial"
+    PARTIAL = "evidence_found"
     MISSING = "missing"
     UNCLEAR = "unclear"
 
@@ -328,8 +328,9 @@ def build_finding_text(
 
     if status == GapStatus.PARTIAL:
         return (
-            f"The document partially addresses '{item.label}', but only limited "
-            f"supporting terms were found: {', '.join(matched_terms)}."
+            f"Evidence was found for '{item.label}', but reviewer confirmation is "
+            f"recommended because only limited supporting terms were found: "
+            f"{', '.join(matched_terms)}."
         )
 
     if status == GapStatus.MISSING:
@@ -410,7 +411,7 @@ def build_summary(findings: list[ReviewFinding]) -> str:
     """Build a concise report summary."""
     counts = {
         "present": 0,
-        "partial": 0,
+        "evidence_found": 0,
         "missing": 0,
         "unclear": 0,
     }
@@ -421,7 +422,7 @@ def build_summary(findings: list[ReviewFinding]) -> str:
     return (
         "Checklist review complete. "
         f"Present: {counts['present']}; "
-        f"Partial: {counts['partial']}; "
+        f"Evidence found: {counts['evidence_found']}; "
         f"Missing: {counts['missing']}; "
         f"Unclear: {counts['unclear']}."
     )
