@@ -344,10 +344,8 @@ def classify_item_status(
     matched_groups: dict[str, list[str]] | None = None,
 ) -> GapStatus:
     """Classify one checklist item based on matched expected evidence."""
-    matched_groups = matched_groups or {}
-    evidence_group_names = matched_evidence_group_names(matched_groups)
-
-    if item.evidence_groups:
+    if matched_groups is not None and item.evidence_groups:
+        evidence_group_names = matched_evidence_group_names(matched_groups)
         total_groups = len(item.evidence_groups)
         matched_group_count = len(evidence_group_names)
 

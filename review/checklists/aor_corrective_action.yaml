@@ -15,6 +15,15 @@ items:
   - pressure front
   - plume
   - computational model
+  evidence_groups:
+    aor_definition:
+      - area of review
+      - AoR
+    predicted_extent:
+      - pressure front
+      - plume
+    model_basis:
+      - computational model
   reference_queries:
   - What does Class VI require for aor delineation?
   - What does EPA guidance say about aor delineation?
@@ -33,6 +42,15 @@ items:
   - model domain
   - pressure front
   - plume
+  evidence_groups:
+    model:
+      - computational model
+      - simulation
+    domain:
+      - model domain
+    predicted_extent:
+      - pressure front
+      - plume
   reference_queries:
   - What does Class VI require for computational model?
   - What does EPA guidance say about computational model?
@@ -50,6 +68,13 @@ items:
   - legacy wells
   - wells within the AoR
   - well inventory
+  evidence_groups:
+    penetrations:
+      - artificial penetrations
+      - legacy wells
+      - wells within the AoR
+    inventory:
+      - well inventory
   reference_queries:
   - What does Class VI require for artificial penetrations?
   - What does EPA guidance say about artificial penetrations?
@@ -68,6 +93,15 @@ items:
   - remediation
   - deficient wells
   - wellbore
+  evidence_groups:
+    action:
+      - corrective action
+      - remediation
+    method:
+      - plugging
+    target:
+      - deficient wells
+      - wellbore
   reference_queries:
   - What does Class VI require for corrective action plan?
   - What does EPA guidance say about corrective action plan?
@@ -86,6 +120,15 @@ items:
   - model update
   - monitoring data
   - AoR update
+  evidence_groups:
+    reevaluation:
+      - reevaluation
+      - re-evaluation
+    triggers:
+      - monitoring data
+    updates:
+      - model update
+      - AoR update
   reference_queries:
   - What does Class VI require for aor reevaluation?
   - What does EPA guidance say about aor reevaluation?
