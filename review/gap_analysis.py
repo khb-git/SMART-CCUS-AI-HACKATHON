@@ -23,6 +23,52 @@ class GapStatus(str, Enum):
     MISSING = "missing"
     UNCLEAR = "unclear"
 
+ITEM_ANCHOR_TERMS = {
+    "injection_pressure_monitoring": [
+        "injection pressure",
+        "wellhead pressure",
+        "downhole pressure",
+        "pressure transducer",
+        "pressure gauge",
+    ],
+    "injection_rate_monitoring": [
+        "injection rate",
+        "flow rate",
+        "mass flow rate",
+        "mass flowmeter",
+        "coriolis meter",
+        "orifice meter",
+    ],
+    "injection_volume_monitoring": [
+        "injection volume",
+        "injected volume",
+        "cumulative volume",
+        "daily volume",
+    ],
+    "annular_pressure_monitoring": [
+        "annular pressure",
+        "annulus pressure",
+        "annulus fluid",
+    ],
+    "monitoring_frequency": [
+        "continuous",
+        "frequency",
+        "recorded hourly",
+        "monthly",
+        "annual",
+    ],
+    "scada_or_data_recording": [
+        "scada",
+        "continuous recording devices",
+        "electronically submit",
+        "graphs",
+        "daily values",
+        "monitoring results",
+        "records",
+        "tabulation",
+    ],
+}
+
 
 @dataclass
 class ReviewFinding:
@@ -87,6 +133,23 @@ def normalize_text(value: str) -> str:
         .split()
     )
 
+def clean_excerpt_text(value: str, max_length: int = 450) -> str:
+    """Clean and shorten supporting excerpts for reviewer-facing output."""
+    text = " ".join(str(value or "").split())
+
+    # Repeated section-context prefixes are useful for retrieval but noisy in reports.
+    text = text.replace("Section context:", "")
+
+    while "  " in text:
+        text = text.replace("  ", " ")
+
+    text = text.strip()
+
+    if len(text) <= max_length:
+        return text
+
+    shortened = text[:max_length].rsplit(" ", 1)[0].strip()
+    return f"{shortened}..."
 
 def collect_document_text(document) -> str:
     """Collect all temporary review document text."""
@@ -106,6 +169,30 @@ def find_matching_terms(text: str, terms: list[str]) -> list[str]:
 
     return matched
 
+def strong_match_count(matched_terms: list[str], item: ReviewChecklistItem) -> int:
+    """Count stronger matches for a checklist item.
+
+    Multi-word terms are usually more meaningful than broad one-word terms.
+    """
+    strong_terms = []
+
+    for term in matched_terms:
+        normalized = normalize_text(term)
+
+        if " " in normalized:
+            strong_terms.append(term)
+            continue
+
+        if normalized in {
+            "scada",
+            "calibration",
+            "continuous",
+            "coriolis",
+            "orifice",
+        }:
+            strong_terms.append(term)
+
+    return len(strong_terms)
 
 def sentence_like_excerpts(text: str) -> list[str]:
     """Split document text into rough sentence-like excerpts."""
@@ -113,39 +200,85 @@ def sentence_like_excerpts(text: str) -> list[str]:
     if not cleaned:
         return []
 
-    # Simple, dependency-free splitting.
+    # Split on sentence punctuation, but also on repeated section context markers.
+    cleaned = cleaned.replace("Section context:", ". Section context:")
+
     pieces = []
     current = []
 
     for token in cleaned.split():
         current.append(token)
-        if token.endswith((".", "?", "!")):
+
+        if token.endswith((".", "?", "!")) or len(" ".join(current)) > 700:
             pieces.append(" ".join(current).strip())
             current = []
 
     if current:
         pieces.append(" ".join(current).strip())
 
-    return [piece for piece in pieces if len(piece) >= 25]
+    return [clean_excerpt_text(piece) for piece in pieces if len(piece) >= 25]
 
 
 def find_supporting_excerpts(
     text: str,
     matched_terms: list[str],
     max_excerpts: int = 2,
+    item: ReviewChecklistItem | None = None,
 ) -> list[str]:
-    """Find short excerpts that contain matched terms."""
+    """Find short excerpts that contain matched terms, preferring item-specific anchors."""
     if not matched_terms:
         return []
 
-    excerpts = []
     sentences = sentence_like_excerpts(text)
+    scored_excerpts = []
+
+    anchor_terms = []
+    if item is not None:
+        anchor_terms = ITEM_ANCHOR_TERMS.get(item.item_id, [])
 
     for sentence in sentences:
         normalized_sentence = normalize_text(sentence)
 
-        if any(normalize_text(term) in normalized_sentence for term in matched_terms):
-            excerpts.append(sentence)
+        terms_in_sentence = [
+            term
+            for term in matched_terms
+            if normalize_text(term) in normalized_sentence
+        ]
+
+        if not terms_in_sentence:
+            continue
+
+        anchors_in_sentence = [
+            term
+            for term in anchor_terms
+            if normalize_text(term) in normalized_sentence
+        ]
+
+        # If anchors are defined for this item, avoid excerpts that only match
+        # broad terms such as "continuous" without the item-specific concept.
+        if anchor_terms and not anchors_in_sentence:
+            continue
+
+        score = len(terms_in_sentence) + 2 * len(anchors_in_sentence)
+
+        scored_excerpts.append(
+            (
+                score,
+                clean_excerpt_text(sentence),
+            )
+        )
+
+    scored_excerpts.sort(key=lambda item_score: item_score[0], reverse=True)
+
+    excerpts = []
+    seen = set()
+
+    for _, excerpt in scored_excerpts:
+        if excerpt in seen:
+            continue
+
+        excerpts.append(excerpt)
+        seen.add(excerpt)
 
         if len(excerpts) >= max_excerpts:
             break
@@ -168,9 +301,14 @@ def classify_item_status(
     if match_count == 0:
         return GapStatus.MISSING
 
+    strong_count = strong_match_count(matched_terms, item)
     match_fraction = match_count / total_terms
 
-    if match_fraction >= 0.5 or match_count >= 3:
+    # Present should require either several strong matches or broad coverage.
+    if strong_count >= 3:
+        return GapStatus.PRESENT
+
+    if match_fraction >= 0.6 and strong_count >= 2:
         return GapStatus.PRESENT
 
     return GapStatus.PARTIAL
@@ -221,6 +359,7 @@ def analyze_checklist_item(
     supporting_excerpts = find_supporting_excerpts(
         document_text,
         matched_terms,
+        item=item,
     )
 
     return ReviewFinding(

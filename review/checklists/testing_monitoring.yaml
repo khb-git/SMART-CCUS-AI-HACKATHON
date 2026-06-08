@@ -204,6 +204,13 @@ items:
       - data logger
       - analog output
       - operational parameters
+      - electronic submit
+      - electronically submit
+      - graphs
+      - daily values
+      - monitoring results
+      - records
+      - tabulation
     reference_queries:
       - What does Class VI require for recording operational parameters?
     permit_precedent_queries:

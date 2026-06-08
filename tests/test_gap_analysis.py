@@ -142,3 +142,94 @@ def test_gap_analysis_report_to_dict_is_serializable():
         "missing",
         "unclear",
     }
+
+def test_clean_excerpt_text_removes_section_context_and_shortens():
+    from review.gap_analysis import clean_excerpt_text
+
+    text = (
+        "Section context: 9.6 Testing and monitoring plan QASP "
+        + "Injection pressure and flow rate will be reported. " * 30
+    )
+
+    cleaned = clean_excerpt_text(text, max_length=160)
+
+    assert "Section context:" not in cleaned
+    assert len(cleaned) <= 163
+    assert cleaned.endswith("...")
+
+
+def test_supporting_excerpts_are_short_and_clean():
+    from review.gap_analysis import find_supporting_excerpts
+
+    text = (
+        "Section context: 9.6 Testing and monitoring plan QASP "
+        "The injection pressure, injection volume and flow rate, annulus fluid level, "
+        "annulus pressure, and temperature shall be submitted on one or more graphs, "
+        "using contrasting symbols or colors, or in another manner approved by the Director. "
+        "Additional unrelated material follows. " * 10
+    )
+
+    excerpts = find_supporting_excerpts(
+        text=text,
+        matched_terms=["injection pressure", "flow rate"],
+        max_excerpts=1,
+    )
+
+    assert len(excerpts) == 1
+    assert "Section context:" not in excerpts[0]
+    assert len(excerpts[0]) <= 453
+
+
+def test_present_status_requires_stronger_matches():
+    from review.gap_analysis import GapStatus, classify_item_status
+    from review.schema import get_checklist_item, load_default_checklist
+
+    checklist = load_default_checklist("testing_monitoring")
+    item = get_checklist_item(checklist, "monitoring_equipment")
+
+    weak_matches = ["pressure gauge"]
+
+    assert classify_item_status(item, weak_matches) == GapStatus.PARTIAL
+
+
+def test_scada_or_data_recording_can_be_partial_from_reporting_terms():
+    from review.gap_analysis import analyze_checklist_item
+    from review.schema import get_checklist_item, load_default_checklist
+
+    checklist = load_default_checklist("testing_monitoring")
+    item = get_checklist_item(checklist, "scada_or_data_recording")
+
+    text = (
+        "The permittee will electronically submit monitoring results. "
+        "Daily values and graphs of injection pressure and flow rate will be included "
+        "in records submitted to the Director."
+    )
+
+    finding = analyze_checklist_item(text, item)
+
+    assert finding.status.value in {"partial", "present"}
+    assert "monitoring results" in finding.matched_terms
+    assert "daily values" in finding.matched_terms
+
+def test_supporting_excerpts_prefer_item_specific_anchor_terms():
+    from review.gap_analysis import find_supporting_excerpts
+    from review.schema import get_checklist_item, load_default_checklist
+
+    checklist = load_default_checklist("testing_monitoring")
+    item = get_checklist_item(checklist, "injection_pressure_monitoring")
+
+    text = (
+        "Continuous recording of passive seismic data is processed monthly. "
+        "Wellhead pressure and injection pressure will be monitored during operations."
+    )
+
+    excerpts = find_supporting_excerpts(
+        text=text,
+        matched_terms=["continuous recording", "wellhead pressure", "injection pressure"],
+        item=item,
+        max_excerpts=1,
+    )
+
+    assert len(excerpts) == 1
+    assert "Wellhead pressure" in excerpts[0]
+    assert "passive seismic" not in excerpts[0]
