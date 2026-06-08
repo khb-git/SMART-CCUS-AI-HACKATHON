@@ -487,3 +487,52 @@ def test_filename_audit_preserves_explicit_combined_filename_coverage():
     assert "project_narrative" in review.covered_plan_types
     assert "aor_corrective_action" in review.covered_plan_types
     assert "well_construction" in review.covered_plan_types
+
+def test_site_geologic_and_site_operating_are_not_required_standalone_documents():
+    from review.package_review import review_document_package
+
+    documents = [
+        make_document(
+            "Marquis_Narrative.pdf",
+            "Class VI project narrative for CO2 injection and storage.",
+        ),
+        make_document(
+            "Marquis_AoR_and_Corrective_Action_Plan.pdf",
+            "Area of Review and Corrective Action Plan with computational model.",
+        ),
+        make_document(
+            "Marquis_Cost_Estimates.pdf",
+            "Cost estimate and financial assurance coverage.",
+        ),
+        make_document(
+            "Marquis_Well_Construction_Plan.pdf",
+            "Well construction plan with casing, cement, tubing, and packer.",
+        ),
+        make_document(
+            "Marquis_Testing_and_Monitoring_Plan.pdf",
+            "Testing and monitoring plan with pressure, flow, and reporting.",
+        ),
+        make_document(
+            "Marquis_Injection_Well_Plugging_Plan.pdf",
+            "Injection well plugging plan with cement plugs and verification.",
+        ),
+        make_document(
+            "Marquis_PISC_and_Site_Closure_Plan.pdf",
+            "Post-injection site care and site closure plan.",
+        ),
+        make_document(
+            "Marquis_ERRP_0.pdf",
+            "Emergency and remedial response plan.",
+        ),
+    ]
+
+    report = review_document_package(documents, package_name="marquis_package")
+
+    assert "site_geologic_characterization" not in report.required_plan_types
+    assert "site_operating" not in report.required_plan_types
+    assert "site_geologic_characterization" not in report.expected_plan_types
+    assert "site_operating" not in report.expected_plan_types
+    assert "site_geologic_characterization" not in report.missing_required_plan_types
+    assert "site_operating" not in report.missing_required_plan_types
+    assert "site_geologic_characterization" not in report.missing_expected_plan_types
+    assert "site_operating" not in report.missing_expected_plan_types

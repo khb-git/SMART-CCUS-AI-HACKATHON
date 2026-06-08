@@ -21,7 +21,7 @@ from review.gap_analysis import GapAnalysisReport, analyze_document_against_chec
 from review.schema import load_default_checklist
 
 
-EXPECTED_PACKAGE_PLAN_TYPES = [
+REVIEWABLE_INFORMATION_PLAN_TYPES = [
     "project_narrative",
     "site_geologic_characterization",
     "aor_corrective_action",
@@ -36,13 +36,24 @@ EXPECTED_PACKAGE_PLAN_TYPES = [
 ]
 
 
-REQUIRED_PACKAGE_PLAN_TYPES = [
+EXPECTED_PACKAGE_PLAN_TYPES = [
     "project_narrative",
-    "site_geologic_characterization",
     "aor_corrective_action",
     "financial_responsibility",
     "well_construction",
-    "site_operating",
+    "pre_operational_testing",
+    "testing_monitoring",
+    "injection_well_plugging",
+    "pisc_site_closure",
+    "emergency_remedial_response",
+]
+
+
+REQUIRED_PACKAGE_PLAN_TYPES = [
+    "project_narrative",
+    "aor_corrective_action",
+    "financial_responsibility",
+    "well_construction",
     "testing_monitoring",
     "injection_well_plugging",
     "pisc_site_closure",
