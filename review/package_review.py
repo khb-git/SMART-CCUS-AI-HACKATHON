@@ -12,7 +12,11 @@ from dataclasses import dataclass, field
 from typing import Any
 
 from review.document_classifier import classify_review_document
-from review.package_document_audit import audit_package_document_name
+from review.package_document_audit import (
+    MAIN_DOCUMENT_TYPE_ALIASES,
+    audit_package_document_name,
+    find_matching_aliases,
+)
 from review.gap_analysis import GapAnalysisReport, analyze_document_against_checklist
 from review.schema import load_default_checklist
 
@@ -138,6 +142,21 @@ def main_document_type_from_filename(document) -> str:
         return audit_result.document_type
 
     return ""
+
+def filename_has_multiple_main_type_matches(document) -> bool:
+    """Return whether the filename clearly mentions multiple main document types."""
+    matches = find_matching_aliases(
+        document_name(document),
+        MAIN_DOCUMENT_TYPE_ALIASES,
+    )
+
+    matched_types = {
+        document_type
+        for document_type, _matched_aliases in matches
+        if document_type != "unknown"
+    }
+
+    return len(matched_types) > 1
 
 def count_primary_plan_types(
     document_reviews: list[PackageDocumentReview],
@@ -365,8 +384,11 @@ def review_single_package_document(document) -> PackageDocumentReview:
         )
 
     review_plan_types = plan_types_to_review(classification)
+    filename_has_multiple_types = filename_has_multiple_main_type_matches(document)
 
-    if document_type != "unknown" and document_type not in review_plan_types:
+    if filename_document_type and not filename_has_multiple_types:
+        review_plan_types = [document_type]
+    elif document_type != "unknown" and document_type not in review_plan_types:
         review_plan_types.append(document_type)
 
     review_plan_types = sorted(set(review_plan_types))
@@ -387,8 +409,8 @@ def review_single_package_document(document) -> PackageDocumentReview:
         report=primary_report,
         checklist_reports=checklist_reports,
         error="; ".join(errors),
-        covered_plan_types=classification.covered_plan_types,
-        is_combined_document=classification.is_combined_document,
+        covered_plan_types=review_plan_types,
+        is_combined_document=len(review_plan_types) > 1,
         document_role=document_role,
         supporting_document_type=supporting_type,
     )
