@@ -80,6 +80,8 @@ class ReviewFinding:
     severity: str
     requirement_level: str
     matched_terms: list[str] = field(default_factory=list)
+    matched_evidence_groups: dict[str, list[str]] = field(default_factory=dict)
+    matched_evidence_group_names: list[str] = field(default_factory=list)
     supporting_excerpts: list[str] = field(default_factory=list)
     finding: str = ""
     recommended_fix: str = ""
@@ -96,6 +98,8 @@ class ReviewFinding:
             "supporting_excerpts": self.supporting_excerpts,
             "finding": self.finding,
             "recommended_fix": self.recommended_fix,
+            "matched_evidence_groups": self.matched_evidence_groups,
+            "matched_evidence_group_names": self.matched_evidence_group_names,
         }
 
 
@@ -168,6 +172,40 @@ def find_matching_terms(text: str, terms: list[str]) -> list[str]:
             matched.append(term)
 
     return matched
+
+def find_matching_evidence_groups(
+    text: str,
+    evidence_groups: dict[str, list[str]],
+) -> dict[str, list[str]]:
+    """Return matched evidence terms grouped by evidence category."""
+    return {
+        group_name: find_matching_terms(text, terms)
+        for group_name, terms in evidence_groups.items()
+    }
+
+
+def matched_evidence_group_names(
+    matched_groups: dict[str, list[str]],
+) -> list[str]:
+    """Return evidence group names with at least one matched term."""
+    return sorted(
+        group_name
+        for group_name, matched_terms in matched_groups.items()
+        if matched_terms
+    )
+
+
+def flatten_matched_evidence_groups(
+    matched_groups: dict[str, list[str]],
+) -> list[str]:
+    """Flatten matched evidence group terms while preserving readable labels."""
+    flattened = []
+
+    for group_name, matched_terms in matched_groups.items():
+        for term in matched_terms:
+            flattened.append(f"{group_name}: {term}")
+
+    return flattened
 
 def strong_match_count(matched_terms: list[str], item: ReviewChecklistItem) -> int:
     """Count stronger matches for a checklist item.
@@ -289,8 +327,30 @@ def find_supporting_excerpts(
 def classify_item_status(
     item: ReviewChecklistItem,
     matched_terms: list[str],
+    matched_groups: dict[str, list[str]] | None = None,
 ) -> GapStatus:
-    """Classify one checklist item based on matched expected evidence terms."""
+    """Classify one checklist item based on matched expected evidence."""
+    matched_groups = matched_groups or {}
+    evidence_group_names = matched_evidence_group_names(matched_groups)
+
+    if item.evidence_groups:
+        total_groups = len(item.evidence_groups)
+        matched_group_count = len(evidence_group_names)
+
+        if matched_group_count == 0:
+            return GapStatus.MISSING
+
+        # If the item defines structured evidence groups, group coverage is more
+        # meaningful than raw flat term count. This helps reduce unnecessary
+        # "Evidence found" statuses when the right categories are present.
+        if matched_group_count == total_groups:
+            return GapStatus.PRESENT
+
+        if total_groups >= 3 and matched_group_count >= total_groups - 1:
+            return GapStatus.PRESENT
+
+        return GapStatus.PARTIAL
+
     total_terms = len(item.expected_evidence_terms)
 
     if total_terms == 0:
@@ -318,25 +378,39 @@ def build_finding_text(
     item: ReviewChecklistItem,
     status: GapStatus,
     matched_terms: list[str],
+    matched_group_names: list[str] | None = None,
 ) -> str:
     """Create reviewer-facing finding text."""
+    matched_group_names = matched_group_names or []
+
+    if matched_group_names:
+        evidence_summary = (
+            "matched evidence groups: "
+            f"{', '.join(matched_group_names)}"
+        )
+    else:
+        evidence_summary = (
+            "matched terms: "
+            f"{', '.join(matched_terms)}"
+        )
+
     if status == GapStatus.PRESENT:
         return (
-            f"The document appears to address '{item.label}' based on matched terms: "
-            f"{', '.join(matched_terms)}."
+            f"The document appears to address '{item.label}' based on "
+            f"{evidence_summary}."
         )
 
     if status == GapStatus.PARTIAL:
         return (
             f"Evidence was found for '{item.label}', but reviewer confirmation is "
-            f"recommended because only limited supporting terms were found: "
-            f"{', '.join(matched_terms)}."
+            f"recommended because only limited supporting evidence was found: "
+            f"{evidence_summary}."
         )
 
     if status == GapStatus.MISSING:
         return (
             f"The document does not appear to address '{item.label}' based on the "
-            "expected evidence terms in the checklist."
+            "expected evidence terms or evidence groups in the checklist."
         )
 
     return (
@@ -355,11 +429,30 @@ def analyze_checklist_item(
         item.expected_evidence_terms,
     )
 
-    status = classify_item_status(item, matched_terms)
+    matched_groups = find_matching_evidence_groups(
+        document_text,
+        item.evidence_groups,
+    )
+
+    matched_group_names = matched_evidence_group_names(matched_groups)
+
+    grouped_matched_terms = flatten_matched_evidence_groups(matched_groups)
+
+    combined_matched_terms = matched_terms + [
+        term
+        for term in grouped_matched_terms
+        if term not in matched_terms
+    ]
+
+    status = classify_item_status(
+        item,
+        matched_terms,
+        matched_groups=matched_groups,
+    )
 
     supporting_excerpts = find_supporting_excerpts(
         document_text,
-        matched_terms,
+        combined_matched_terms,
         item=item,
     )
 
@@ -370,8 +463,15 @@ def analyze_checklist_item(
         severity=item.severity.value,
         requirement_level=item.requirement_level.value,
         matched_terms=matched_terms,
+        matched_evidence_groups=matched_groups,
+        matched_evidence_group_names=matched_group_names,
         supporting_excerpts=supporting_excerpts,
-        finding=build_finding_text(item, status, matched_terms),
+        finding=build_finding_text(
+            item,
+            status,
+            matched_terms,
+            matched_group_names=matched_group_names,
+        ),
         recommended_fix=item.recommended_fix,
     )
 

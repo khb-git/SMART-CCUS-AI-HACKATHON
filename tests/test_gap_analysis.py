@@ -233,3 +233,103 @@ def test_supporting_excerpts_prefer_item_specific_anchor_terms():
     assert len(excerpts) == 1
     assert "Wellhead pressure" in excerpts[0]
     assert "passive seismic" not in excerpts[0]
+
+def test_evidence_groups_can_mark_item_present_with_group_coverage():
+    from review.gap_analysis import GapStatus, analyze_checklist_item
+    from review.types import ReviewChecklistItem, ReviewRequirementLevel, ReviewSeverity
+
+    item = ReviewChecklistItem(
+        item_id="injection_pressure_monitoring",
+        label="Injection pressure monitoring",
+        description="Document should describe pressure monitoring equipment and frequency.",
+        requirement_level=ReviewRequirementLevel.REQUIRED,
+        severity=ReviewSeverity.CRITICAL,
+        expected_evidence_terms=[
+            "injection pressure",
+            "pressure transducer",
+            "continuous",
+            "SCADA",
+        ],
+        evidence_groups={
+            "parameter": ["injection pressure", "wellhead pressure"],
+            "equipment": ["pressure transducer", "pressure gauge"],
+            "frequency": ["continuous", "hourly"],
+            "recording": ["SCADA", "data logger"],
+        },
+        recommended_fix="Describe pressure monitoring equipment, frequency, and data recording.",
+    )
+
+    document_text = (
+        "The facility will monitor injection pressure using a pressure transducer. "
+        "Measurements will be recorded continuously in SCADA."
+    )
+
+    finding = analyze_checklist_item(document_text, item)
+
+    assert finding.status == GapStatus.PRESENT
+    assert finding.matched_evidence_group_names == [
+        "equipment",
+        "frequency",
+        "parameter",
+        "recording",
+    ]
+    assert finding.matched_evidence_groups["parameter"] == ["injection pressure"]
+    assert finding.matched_evidence_groups["equipment"] == ["pressure transducer"]
+    assert "matched evidence groups" in finding.finding
+
+
+def test_evidence_groups_keep_partial_when_only_some_groups_match():
+    from review.gap_analysis import GapStatus, analyze_checklist_item
+    from review.types import ReviewChecklistItem, ReviewRequirementLevel, ReviewSeverity
+
+    item = ReviewChecklistItem(
+        item_id="annular_pressure_monitoring",
+        label="Annular pressure monitoring",
+        description="Document should describe annular pressure monitoring.",
+        requirement_level=ReviewRequirementLevel.REQUIRED,
+        severity=ReviewSeverity.CRITICAL,
+        expected_evidence_terms=[
+            "annular pressure",
+            "annulus pressure",
+            "continuous",
+            "SCADA",
+        ],
+        evidence_groups={
+            "parameter": ["annular pressure", "annulus pressure"],
+            "frequency": ["continuous", "hourly"],
+            "recording": ["SCADA", "data logger"],
+        },
+        recommended_fix="Describe annular pressure monitoring frequency and recording method.",
+    )
+
+    document_text = "The plan includes annular pressure monitoring."
+
+    finding = analyze_checklist_item(document_text, item)
+
+    assert finding.status == GapStatus.PARTIAL
+    assert finding.matched_evidence_group_names == ["parameter"]
+    assert finding.matched_evidence_groups["parameter"] == ["annular pressure"]
+
+
+def test_checklist_item_to_dict_includes_evidence_groups():
+    from review.types import ReviewChecklistItem, ReviewRequirementLevel, ReviewSeverity
+
+    item = ReviewChecklistItem(
+        item_id="scada_or_data_recording",
+        label="SCADA or data recording",
+        description="Document should describe electronic monitoring data recording.",
+        requirement_level=ReviewRequirementLevel.REQUIRED,
+        severity=ReviewSeverity.MODERATE,
+        expected_evidence_terms=["SCADA", "data logger"],
+        evidence_groups={
+            "system": ["SCADA", "data logger"],
+            "output": ["daily values", "records"],
+        },
+    )
+
+    data = item.to_dict()
+
+    assert data["evidence_groups"] == {
+        "system": ["SCADA", "data logger"],
+        "output": ["daily values", "records"],
+    }

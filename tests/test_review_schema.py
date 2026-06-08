@@ -95,3 +95,26 @@ def test_checklist_to_dict_is_serializable():
         "recommended",
         "optional",
     }
+
+def test_build_checklist_item_loads_evidence_groups():
+    from review.schema import build_checklist_item
+
+    item = build_checklist_item(
+        {
+            "item_id": "injection_pressure_monitoring",
+            "label": "Injection pressure monitoring",
+            "description": "Document should describe pressure monitoring.",
+            "requirement_level": "required",
+            "severity": "critical",
+            "expected_evidence_terms": ["injection pressure", "SCADA"],
+            "evidence_groups": {
+                "parameter": ["injection pressure"],
+                "recording": ["SCADA"],
+            },
+        }
+    )
+
+    assert item.evidence_groups == {
+        "parameter": ["injection pressure"],
+        "recording": ["SCADA"],
+    }
