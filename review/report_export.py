@@ -299,6 +299,64 @@ def build_package_priority_summary_section(
 
     return lines
 
+def build_package_document_overview_section(
+    document_reviews: list[dict[str, Any]],
+) -> list[str]:
+    """Build a compact overview table for package document reviews."""
+    lines = [
+        "## Document Review Overview",
+        "",
+    ]
+
+    if not document_reviews:
+        return lines + ["No document reviews returned.", ""]
+
+    lines.extend(
+        [
+            "| Document | Role | Primary type | Covered plan types | Checklist reports | Status |",
+            "| --- | --- | --- | --- | ---: | --- |",
+        ]
+    )
+
+    for document_review in document_reviews:
+        document_name = document_review.get("document_name", "Unknown document")
+        document_role = document_review.get("document_role", "main")
+        document_type = document_review.get("document_type", "unknown")
+        covered_plan_types = document_review.get("covered_plan_types", []) or []
+        checklist_reports = document_review.get("checklist_reports", {}) or {}
+        report = document_review.get("report") or {}
+        error = document_review.get("error", "")
+
+        if report:
+            status = status_label(report.get("overall_status", "unknown"))
+        elif error:
+            status = "Review note"
+        else:
+            status = "Not reviewed"
+
+        covered_text = ", ".join(f"`{plan_type}`" for plan_type in covered_plan_types)
+        if not covered_text:
+            covered_text = "None"
+
+        lines.append(
+            f"| `{document_name}` | {document_role} | `{document_type}` | "
+            f"{covered_text} | {len(checklist_reports)} | {status} |"
+        )
+
+    lines.extend(
+        [
+            "",
+            (
+                "Detailed checklist findings are provided below. "
+                "Use the overview table to quickly identify supporting documents, "
+                "combined documents, and documents with checklist reports."
+            ),
+            "",
+        ]
+    )
+
+    return lines
+
 def build_markdown_package_report(package_response: dict[str, Any]) -> str:
     """Build a Markdown report from /review-package response JSON."""
     report = package_response.get("report", {}) or {}
@@ -361,7 +419,7 @@ def build_markdown_package_report(package_response: dict[str, Any]) -> str:
             "",
             format_plan_type_list(missing_expected_plan_types),
             "",
-            "## Duplicate Document Types",
+            "## Duplicate Primary Document Types",
             "",
             format_plan_type_list(duplicate_plan_types),
             "",
@@ -394,9 +452,11 @@ def build_markdown_package_report(package_response: dict[str, Any]) -> str:
             ]
         )
 
+    lines.extend(build_package_document_overview_section(document_reviews))
+
     lines.extend(
         [
-            "## Per-Document Review Summaries",
+            "## Detailed Per-Document Review Summaries",
             "",
         ]
     )
