@@ -70,6 +70,7 @@ def build_checklist_item(data: dict[str, Any]) -> ReviewChecklistItem:
         requirement_level=parse_requirement_level(data["requirement_level"]),
         severity=parse_severity(data["severity"]),
         expected_evidence_terms=list(data.get("expected_evidence_terms", [])),
+        evidence_groups=dict(data.get("evidence_groups", {})),
         reference_queries=list(data.get("reference_queries", [])),
         permit_precedent_queries=list(data.get("permit_precedent_queries", [])),
         recommended_fix=str(data.get("recommended_fix", "")),

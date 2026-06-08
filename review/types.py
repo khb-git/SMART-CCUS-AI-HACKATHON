@@ -34,6 +34,7 @@ class ReviewChecklistItem:
     requirement_level: ReviewRequirementLevel
     severity: ReviewSeverity
     expected_evidence_terms: list[str] = field(default_factory=list)
+    evidence_groups: dict[str, list[str]] = field(default_factory=dict)
     reference_queries: list[str] = field(default_factory=list)
     permit_precedent_queries: list[str] = field(default_factory=list)
     recommended_fix: str = ""
@@ -47,6 +48,7 @@ class ReviewChecklistItem:
             "requirement_level": self.requirement_level.value,
             "severity": self.severity.value,
             "expected_evidence_terms": self.expected_evidence_terms,
+            "evidence_groups": self.evidence_groups,
             "reference_queries": self.reference_queries,
             "permit_precedent_queries": self.permit_precedent_queries,
             "recommended_fix": self.recommended_fix,
