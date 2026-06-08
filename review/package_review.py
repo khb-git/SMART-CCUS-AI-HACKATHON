@@ -59,6 +59,7 @@ class PackageDocumentReview:
     document_role: str = "main"
     supporting_document_type: str = ""
     report: dict[str, Any] | None = None
+    checklist_reports: dict[str, dict[str, Any]] = field(default_factory=dict)
     error: str = ""
 
     def to_dict(self) -> dict[str, Any]:
@@ -73,6 +74,7 @@ class PackageDocumentReview:
             "document_role": self.document_role,
             "supporting_document_type": self.supporting_document_type,
             "report": self.report,
+            "checklist_reports": self.checklist_reports,
             "error": self.error,
         }
 
@@ -223,8 +225,9 @@ def build_package_summary(
     unknown_documents: list[str],
     supporting_documents: list[str] | None = None,
 ) -> str:
-    supporting_documents = supporting_documents or []
     """Build a concise package-level summary."""
+    supporting_documents = supporting_documents or []
+
     return (
         "Package review complete. "
         f"Detected document types: {len(detected_plan_types)}; "
@@ -235,6 +238,54 @@ def build_package_summary(
         f"Unknown documents: {len(unknown_documents)}."
     )
 
+def plan_types_to_review(classification) -> list[str]:
+    """Return checklist plan types that should be reviewed for one document."""
+    covered_plan_types = list(classification.covered_plan_types or [])
+
+    if not covered_plan_types and classification.document_type != "unknown":
+        covered_plan_types = [classification.document_type]
+
+    return sorted(
+        {
+            plan_type
+            for plan_type in covered_plan_types
+            if plan_type and plan_type != "unknown"
+        }
+    )
+
+
+def review_document_against_plan_types(
+    document,
+    plan_types: list[str],
+) -> tuple[dict[str, dict[str, Any]], list[str]]:
+    """Review one document against each requested checklist."""
+    checklist_reports: dict[str, dict[str, Any]] = {}
+    errors: list[str] = []
+
+    for plan_type in plan_types:
+        try:
+            checklist = load_default_checklist(plan_type)
+            report = analyze_document_against_checklist(document, checklist)
+            checklist_reports[plan_type] = report.to_dict()
+        except FileNotFoundError as exc:
+            errors.append(f"{plan_type}: {exc}")
+
+    return checklist_reports, errors
+
+
+def primary_report_from_checklist_reports(
+    document_type: str,
+    checklist_reports: dict[str, dict[str, Any]],
+) -> dict[str, Any] | None:
+    """Return the primary report while preserving old single-report compatibility."""
+    if document_type in checklist_reports:
+        return checklist_reports[document_type]
+
+    if checklist_reports:
+        first_plan_type = sorted(checklist_reports)[0]
+        return checklist_reports[first_plan_type]
+
+    return None
 
 def review_single_package_document(document) -> PackageDocumentReview:
     """Classify and review one temporarily ingested package document."""
@@ -272,30 +323,24 @@ def review_single_package_document(document) -> PackageDocumentReview:
             error="Supporting document detected; no standalone checklist review was run.",
         )
 
-    try:
-        checklist = load_default_checklist(document_type)
-        report = analyze_document_against_checklist(document, checklist)
-    except FileNotFoundError as exc:
-        return PackageDocumentReview(
-            document_name=document_name(document),
-            document_type=document_type,
-            classification_confidence=classification.confidence,
-            classification=classification_dict,
-            report=None,
-            error=str(exc),
-            covered_plan_types=classification.covered_plan_types,
-            is_combined_document=classification.is_combined_document,
-            document_role=document_role,
-            supporting_document_type=supporting_type,
-        )
+    review_plan_types = plan_types_to_review(classification)
+    checklist_reports, errors = review_document_against_plan_types(
+        document=document,
+        plan_types=review_plan_types,
+    )
+    primary_report = primary_report_from_checklist_reports(
+        document_type=document_type,
+        checklist_reports=checklist_reports,
+    )
 
     return PackageDocumentReview(
         document_name=document_name(document),
         document_type=document_type,
         classification_confidence=classification.confidence,
         classification=classification_dict,
-        report=report.to_dict(),
-        error="",
+        report=primary_report,
+        checklist_reports=checklist_reports,
+        error="; ".join(errors),
         covered_plan_types=classification.covered_plan_types,
         is_combined_document=classification.is_combined_document,
         document_role=document_role,
