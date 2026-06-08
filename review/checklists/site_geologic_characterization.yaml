@@ -1,0 +1,96 @@
+checklist_id: site_geologic_characterization_v1
+plan_type: site_geologic_characterization
+section_id: '2'
+title: Site Geologic Characterization Checklist
+description: Review checklist for Site Geologic Characterization documents.
+items:
+- item_id: injection_zone
+  label: Injection zone characterization
+  description: The document should characterize the injection zone.
+  requirement_level: required
+  severity: critical
+  expected_evidence_terms:
+  - injection zone
+  - porosity
+  - permeability
+  - thickness
+  - formation
+  reference_queries:
+  - What does Class VI require for injection zone characterization?
+  - What does EPA guidance say about injection zone characterization?
+  permit_precedent_queries:
+  - How do applicants describe injection zone characterization?
+  - What permit precedent exists for injection zone characterization?
+  recommended_fix: Add injection-zone lithology, thickness, porosity, permeability, and pressure data.
+- item_id: confining_zone
+  label: Confining zone characterization
+  description: The document should characterize confining zones.
+  requirement_level: required
+  severity: critical
+  expected_evidence_terms:
+  - confining zone
+  - caprock
+  - seal
+  - shale
+  - confinement
+  reference_queries:
+  - What does Class VI require for confining zone characterization?
+  - What does EPA guidance say about confining zone characterization?
+  permit_precedent_queries:
+  - How do applicants describe confining zone characterization?
+  - What permit precedent exists for confining zone characterization?
+  recommended_fix: Add confining-zone thickness, lithology, integrity, and lateral continuity.
+- item_id: geologic_structure
+  label: Geologic structure
+  description: The document should describe faults, fractures, and structural features.
+  requirement_level: required
+  severity: critical
+  expected_evidence_terms:
+  - fault
+  - fracture
+  - structure
+  - seismic
+  - trap
+  reference_queries:
+  - What does Class VI require for geologic structure?
+  - What does EPA guidance say about geologic structure?
+  permit_precedent_queries:
+  - How do applicants describe geologic structure?
+  - What permit precedent exists for geologic structure?
+  recommended_fix: Add structural interpretation and implications for containment.
+- item_id: hydrogeology
+  label: Hydrogeology
+  description: The document should describe groundwater and USDW context.
+  requirement_level: required
+  severity: critical
+  expected_evidence_terms:
+  - USDW
+  - groundwater
+  - aquifer
+  - hydraulic gradient
+  - water quality
+  reference_queries:
+  - What does Class VI require for hydrogeology?
+  - What does EPA guidance say about hydrogeology?
+  permit_precedent_queries:
+  - How do applicants describe hydrogeology?
+  - What permit precedent exists for hydrogeology?
+  recommended_fix: Add hydrogeologic context, USDWs, groundwater quality, and flow direction.
+- item_id: geochemical_data
+  label: Geochemical data
+  description: The document should include fluid and rock chemistry information.
+  requirement_level: recommended
+  severity: moderate
+  expected_evidence_terms:
+  - geochemical
+  - brine
+  - fluid chemistry
+  - mineralogy
+  - compatibility
+  reference_queries:
+  - What does Class VI require for geochemical data?
+  - What does EPA guidance say about geochemical data?
+  permit_precedent_queries:
+  - How do applicants describe geochemical data?
+  - What permit precedent exists for geochemical data?
+  recommended_fix: Add geochemical data relevant to injectivity, corrosion, and containment.

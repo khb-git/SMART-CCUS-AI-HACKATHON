@@ -131,9 +131,10 @@ DOCUMENT_TYPE_RULES = {
             "surety bond",
         ],
     },
-    "application_narrative": {
-        "label": "Application Narrative",
+    "project_narrative": {
+        "label": "Project Narrative / Application Narrative",
         "high_confidence_terms": [
+            "project narrative",
             "application narrative",
             "class vi permit application",
             "permit application narrative",

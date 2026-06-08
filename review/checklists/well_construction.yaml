@@ -1,0 +1,97 @@
+checklist_id: well_construction_v1
+plan_type: well_construction
+section_id: '5'
+title: Well Construction Plan Checklist
+description: Review checklist for Class VI Well Construction Plans.
+items:
+- item_id: casing_program
+  label: Casing program
+  description: The plan should describe casing strings, depths, sizes, and materials.
+  requirement_level: required
+  severity: critical
+  expected_evidence_terms:
+  - casing
+  - surface casing
+  - long-string casing
+  - depth
+  - diameter
+  - grade
+  reference_queries:
+  - What does Class VI require for casing program?
+  - What does EPA guidance say about casing program?
+  permit_precedent_queries:
+  - How do applicants describe casing program?
+  - What permit precedent exists for casing program?
+  recommended_fix: Add casing design details, depths, sizes, grades, and design basis.
+- item_id: cementing_program
+  label: Cementing program
+  description: The plan should describe cement type, placement, and verification.
+  requirement_level: required
+  severity: critical
+  expected_evidence_terms:
+  - cement
+  - cementing
+  - cement bond log
+  - top of cement
+  - centralizer
+  reference_queries:
+  - What does Class VI require for cementing program?
+  - What does EPA guidance say about cementing program?
+  permit_precedent_queries:
+  - How do applicants describe cementing program?
+  - What permit precedent exists for cementing program?
+  recommended_fix: Add cementing design, placement intervals, verification logs, and acceptance criteria.
+- item_id: tubing_packer
+  label: Tubing and packer
+  description: The plan should describe injection tubing and packer configuration.
+  requirement_level: required
+  severity: critical
+  expected_evidence_terms:
+  - tubing
+  - packer
+  - injection tubing
+  - corrosion
+  - annulus
+  reference_queries:
+  - What does Class VI require for tubing and packer?
+  - What does EPA guidance say about tubing and packer?
+  permit_precedent_queries:
+  - How do applicants describe tubing and packer?
+  - What permit precedent exists for tubing and packer?
+  recommended_fix: Add tubing and packer design, materials, setting depth, and annulus configuration.
+- item_id: well_schematic
+  label: Well schematic
+  description: The plan should include a well schematic.
+  requirement_level: required
+  severity: moderate
+  expected_evidence_terms:
+  - well schematic
+  - diagram
+  - completion
+  - wellbore
+  - construction details
+  reference_queries:
+  - What does Class VI require for well schematic?
+  - What does EPA guidance say about well schematic?
+  permit_precedent_queries:
+  - How do applicants describe well schematic?
+  - What permit precedent exists for well schematic?
+  recommended_fix: Add a clear schematic showing casing, cement, tubing, packer, perforations, and depths.
+- item_id: materials_compatibility
+  label: Materials compatibility
+  description: The plan should address compatibility with CO2 stream and formation fluids.
+  requirement_level: recommended
+  severity: moderate
+  expected_evidence_terms:
+  - corrosion
+  - compatibility
+  - CO2
+  - materials
+  - tubing material
+  reference_queries:
+  - What does Class VI require for materials compatibility?
+  - What does EPA guidance say about materials compatibility?
+  permit_precedent_queries:
+  - How do applicants describe materials compatibility?
+  - What permit precedent exists for materials compatibility?
+  recommended_fix: Add materials compatibility and corrosion-control basis.
