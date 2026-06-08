@@ -149,3 +149,47 @@ def test_load_chunks_from_temporary_output(tmp_path):
     assert chunks[0].text == "Temporary chunk text."
     assert chunks[0].metadata["content_type"] == "text"
     assert chunks[0].metadata["page"] == 3
+
+def test_convert_ingestion_chunks_enriches_table_chunks():
+    from review.temp_ingestion import convert_ingestion_chunks
+
+    class FakeChunk:
+        page_content = "Parameter | Frequency | Recording\nInjection pressure | Continuous | SCADA"
+        metadata = {
+            "content_type": "table",
+            "page": 4,
+            "table_index": 2,
+        }
+
+    chunks = convert_ingestion_chunks([FakeChunk()])
+
+    assert len(chunks) == 1
+    assert chunks[0].metadata["content_type"] == "table"
+    assert chunks[0].metadata["table_aware"] is True
+    assert "Table evidence | page 4 | table 2" in chunks[0].text
+    assert "Table row: Parameter | Frequency | Recording" in chunks[0].text
+    assert "Table row: Injection pressure | Continuous | SCADA" in chunks[0].text
+
+
+def test_load_chunks_from_temporary_output_enriches_table_chunks(tmp_path):
+    from review.temp_ingestion import load_chunks_from_temporary_output
+
+    chunk_dir = tmp_path / "doc" / "0"
+    chunk_dir.mkdir(parents=True)
+
+    (chunk_dir / "content.txt").write_text(
+        "Parameter | Frequency | Recording\nAnnular pressure | Continuous | SCADA",
+        encoding="utf-8",
+    )
+    (chunk_dir / "attribute.json").write_text(
+        '{"content_type": "table", "page": 7, "table_index": 1}',
+        encoding="utf-8",
+    )
+
+    chunks = load_chunks_from_temporary_output(tmp_path)
+
+    assert len(chunks) == 1
+    assert chunks[0].metadata["content_type"] == "table"
+    assert chunks[0].metadata["table_aware"] is True
+    assert "Table evidence | page 7 | table 1" in chunks[0].text
+    assert "Table row: Annular pressure | Continuous | SCADA" in chunks[0].text

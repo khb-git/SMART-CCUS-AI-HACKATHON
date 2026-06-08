@@ -256,6 +256,20 @@ def sentence_like_excerpts(text: str) -> list[str]:
 
     return [clean_excerpt_text(piece) for piece in pieces if len(piece) >= 25]
 
+def table_like_excerpts(text: str) -> list[str]:
+    """Return table-aware excerpts from table row text."""
+    excerpts = []
+
+    for line in str(text or "").splitlines():
+        cleaned = clean_excerpt_text(line)
+
+        if not cleaned:
+            continue
+
+        if cleaned.lower().startswith(("table evidence", "table row:")):
+            excerpts.append(cleaned)
+
+    return excerpts
 
 def find_supporting_excerpts(
     text: str,
@@ -267,7 +281,7 @@ def find_supporting_excerpts(
     if not matched_terms:
         return []
 
-    sentences = sentence_like_excerpts(text)
+    sentences = table_like_excerpts(text) + sentence_like_excerpts(text)
     scored_excerpts = []
 
     anchor_terms = []
