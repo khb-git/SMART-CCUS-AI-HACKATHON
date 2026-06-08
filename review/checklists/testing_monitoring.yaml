@@ -22,6 +22,21 @@ items:
       - pressure transducer
       - pressure gauge
       - continuous recording
+    evidence_groups:
+      parameter:
+        - injection pressure
+        - wellhead pressure
+        - downhole pressure
+      equipment:
+        - pressure transducer
+        - pressure gauge
+      frequency:
+        - continuous recording
+        - continuous
+      location:
+        - wellhead
+        - downhole
+        - annulus
     reference_queries:
       - What does Class VI require for injection pressure monitoring?
       - What does EPA guidance say about continuous pressure monitoring?
@@ -46,6 +61,20 @@ items:
       - Coriolis meter
       - orifice meter
       - flow computer
+    evidence_groups:
+      parameter:
+        - injection rate
+        - flow rate
+        - mass flow rate
+      equipment:
+        - mass flowmeter
+        - Coriolis meter
+        - orifice meter
+        - flow computer
+      recording:
+        - continuous
+        - continuous recording
+        - SCADA
     reference_queries:
       - What does Class VI require for injection rate monitoring?
       - What does EPA guidance say about monitoring flow rate?
@@ -70,6 +99,19 @@ items:
       - calculated volume
       - injection mass
       - computational model
+    evidence_groups:
+      parameter:
+        - injection volume
+        - injected volume
+        - cumulative volume
+        - injection mass
+      calculation:
+        - calculated volume
+        - computational model
+      usage:
+        - operational tracking
+        - modeling
+        - computational model
     reference_queries:
       - What does Class VI require for injection volume monitoring?
     permit_precedent_queries:
@@ -92,6 +134,18 @@ items:
       - annulus fluid
       - casing annulus
       - tubing and long-string casing
+    evidence_groups:
+      parameter:
+        - annular pressure
+        - annulus pressure
+        - annulus fluid
+      location:
+        - casing annulus
+        - tubing and long-string casing
+        - annulus
+      response:
+        - abnormal annular pressure
+        - response actions
     reference_queries:
       - What does Class VI require for annular pressure monitoring?
     permit_precedent_queries:
@@ -114,6 +168,20 @@ items:
       - once per second
       - recording frequency
       - monitoring frequency
+    evidence_groups:
+      frequency:
+        - continuous
+        - frequency
+        - sampling rate
+        - once per second
+        - recording frequency
+        - monitoring frequency
+      parameter_link:
+        - pressure
+        - flow rate
+        - volume
+        - temperature
+        - annular pressure
     reference_queries:
       - What monitoring frequency does Class VI require?
       - What does EPA guidance say about continuous monitoring?
@@ -138,6 +206,17 @@ items:
       - reservoir
       - monitoring location
       - injection line
+    evidence_groups:
+      surface_location:
+        - surface
+        - wellhead
+        - injection line
+      subsurface_location:
+        - downhole
+        - near injection packer
+        - reservoir
+      location_description:
+        - monitoring location
     reference_queries:
       - What does Class VI require for monitoring locations?
     permit_precedent_queries:
@@ -161,6 +240,19 @@ items:
       - flow meter
       - SCADA
       - data logger
+    evidence_groups:
+      pressure_equipment:
+        - pressure transducer
+        - pressure gauge
+      temperature_equipment:
+        - temperature sensor
+      flow_equipment:
+        - Coriolis meter
+        - orifice meter
+        - flow meter
+      recording_system:
+        - SCADA
+        - data logger
     reference_queries:
       - What monitoring equipment is expected in a Class VI Testing and Monitoring Plan?
     permit_precedent_queries:
@@ -182,6 +274,17 @@ items:
       - quality assurance
       - drift stability
       - accuracy
+    evidence_groups:
+      calibration_activity:
+        - calibration
+        - certified calibration
+      frequency:
+        - calibrated annually
+        - manufacturer recommended
+      quality_control:
+        - quality assurance
+        - drift stability
+        - accuracy
     reference_queries:
       - What does EPA guidance say about calibration of monitoring equipment?
     permit_precedent_queries:
@@ -211,6 +314,23 @@ items:
       - monitoring results
       - records
       - tabulation
+    evidence_groups:
+      system:
+        - SCADA
+        - control system
+        - data logger
+      recording:
+        - continuous recording devices
+        - analog output
+        - operational parameters
+      reporting:
+        - electronic submit
+        - electronically submit
+        - graphs
+        - daily values
+        - monitoring results
+        - records
+        - tabulation
     reference_queries:
       - What does Class VI require for recording operational parameters?
     permit_precedent_queries:

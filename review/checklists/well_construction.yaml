@@ -16,6 +16,15 @@ items:
   - depth
   - diameter
   - grade
+  evidence_groups:
+    casing_type:
+      - casing
+      - surface casing
+      - long-string casing
+    design_details:
+      - depth
+      - diameter
+      - grade
   reference_queries:
   - What does Class VI require for casing program?
   - What does EPA guidance say about casing program?
@@ -34,6 +43,15 @@ items:
   - cement bond log
   - top of cement
   - centralizer
+  evidence_groups:
+    cement_design:
+      - cement
+      - cementing
+    placement:
+      - top of cement
+      - centralizer
+    verification:
+      - cement bond log
   reference_queries:
   - What does Class VI require for cementing program?
   - What does EPA guidance say about cementing program?
@@ -52,6 +70,16 @@ items:
   - injection tubing
   - corrosion
   - annulus
+  evidence_groups:
+    tubing:
+      - tubing
+      - injection tubing
+    packer:
+      - packer
+    annulus:
+      - annulus
+    compatibility:
+      - corrosion
   reference_queries:
   - What does Class VI require for tubing and packer?
   - What does EPA guidance say about tubing and packer?
@@ -70,6 +98,14 @@ items:
   - completion
   - wellbore
   - construction details
+  evidence_groups:
+    schematic:
+      - well schematic
+      - diagram
+    construction_context:
+      - completion
+      - wellbore
+      - construction details
   reference_queries:
   - What does Class VI require for well schematic?
   - What does EPA guidance say about well schematic?
@@ -88,6 +124,15 @@ items:
   - CO2
   - materials
   - tubing material
+  evidence_groups:
+    compatibility:
+      - compatibility
+      - materials
+    co2_service:
+      - CO2
+    corrosion_control:
+      - corrosion
+      - tubing material
   reference_queries:
   - What does Class VI require for materials compatibility?
   - What does EPA guidance say about materials compatibility?

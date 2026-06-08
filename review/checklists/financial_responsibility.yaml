@@ -15,6 +15,14 @@ items:
   - closure cost
   - corrective action cost
   - PISC cost
+  evidence_groups:
+    estimate:
+      - cost estimate
+      - estimated cost
+    activity_costs:
+      - closure cost
+      - corrective action cost
+      - PISC cost
   reference_queries:
   - What does Class VI require for cost estimate?
   - What does EPA guidance say about cost estimate?
@@ -34,6 +42,13 @@ items:
   - surety bond
   - trust fund
   - insurance
+  evidence_groups:
+    instrument_type:
+      - financial instrument
+      - letter of credit
+      - surety bond
+      - trust fund
+      - insurance
   reference_queries:
   - What does Class VI require for financial instrument?
   - What does EPA guidance say about financial instrument?
@@ -52,6 +67,14 @@ items:
   - face value
   - cost estimate
   - financial assurance
+  evidence_groups:
+    coverage:
+      - coverage amount
+      - amount
+      - face value
+    cost_basis:
+      - cost estimate
+      - financial assurance
   reference_queries:
   - What does Class VI require for coverage amount?
   - What does EPA guidance say about coverage amount?
@@ -70,6 +93,14 @@ items:
   - annual update
   - cost update
   - recalculation
+  evidence_groups:
+    adjustment:
+      - inflation
+      - adjustment
+    update_frequency:
+      - annual update
+      - cost update
+      - recalculation
   reference_queries:
   - What does Class VI require for inflation adjustment?
   - What does EPA guidance say about inflation adjustment?
@@ -88,6 +119,15 @@ items:
   - issuer
   - beneficiary
   - terms and conditions
+  evidence_groups:
+    dates:
+      - effective date
+      - expiration
+    parties:
+      - issuer
+      - beneficiary
+    enforceability:
+      - terms and conditions
   reference_queries:
   - What does Class VI require for instrument validity?
   - What does EPA guidance say about instrument validity?
