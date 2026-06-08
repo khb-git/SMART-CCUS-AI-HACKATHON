@@ -236,3 +236,84 @@ def test_markdown_package_report_priority_summary_handles_clean_package():
 
     assert "## Reviewer Priority Summary" in markdown
     assert "No package-level priority issues were identified" in markdown
+
+def test_markdown_package_report_includes_document_overview_table():
+    from review.report_export import build_markdown_package_report
+
+    package_response = {
+        "package_name": "overview_package",
+        "report": {
+            "package_name": "overview_package",
+            "overall_status": "mostly_complete",
+            "summary": "Package review complete.",
+            "detected_plan_types": ["testing_monitoring"],
+            "missing_required_plan_types": [],
+            "missing_expected_plan_types": [],
+            "duplicate_plan_types": [],
+            "unknown_documents": [],
+            "supporting_documents": [],
+            "expected_plan_types": ["testing_monitoring"],
+            "required_plan_types": ["testing_monitoring"],
+            "document_reviews": [
+                {
+                    "document_name": "Marquis_Testing_and_Monitoring_Plan.pdf",
+                    "document_type": "testing_monitoring",
+                    "classification_confidence": "high",
+                    "classification": {},
+                    "document_role": "main",
+                    "supporting_document_type": "",
+                    "covered_plan_types": ["testing_monitoring"],
+                    "checklist_reports": {
+                        "testing_monitoring": {
+                            "overall_status": "mostly_complete",
+                            "checklist_id": "testing_monitoring_v1",
+                            "summary": "Testing and monitoring review complete.",
+                            "findings": [],
+                        }
+                    },
+                    "report": {
+                        "overall_status": "mostly_complete",
+                        "checklist_id": "testing_monitoring_v1",
+                        "summary": "Testing and monitoring review complete.",
+                        "findings": [],
+                    },
+                    "error": "",
+                }
+            ],
+        },
+    }
+
+    markdown = build_markdown_package_report(package_response)
+
+    assert "## Document Review Overview" in markdown
+    assert "| Document | Role | Primary type | Covered plan types | Checklist reports | Status |" in markdown
+    assert "`Marquis_Testing_and_Monitoring_Plan.pdf`" in markdown
+    assert "| `Marquis_Testing_and_Monitoring_Plan.pdf` | main | `testing_monitoring` | `testing_monitoring` | 1 | Mostly complete |" in markdown
+    assert "## Detailed Per-Document Review Summaries" in markdown
+
+
+def test_markdown_package_report_renames_duplicate_primary_document_section():
+    from review.report_export import build_markdown_package_report
+
+    package_response = {
+        "package_name": "duplicate_package",
+        "report": {
+            "package_name": "duplicate_package",
+            "overall_status": "needs_review",
+            "summary": "Package review complete.",
+            "detected_plan_types": ["testing_monitoring"],
+            "missing_required_plan_types": [],
+            "missing_expected_plan_types": [],
+            "duplicate_plan_types": ["testing_monitoring"],
+            "unknown_documents": [],
+            "supporting_documents": [],
+            "expected_plan_types": ["testing_monitoring"],
+            "required_plan_types": ["testing_monitoring"],
+            "document_reviews": [],
+        },
+    }
+
+    markdown = build_markdown_package_report(package_response)
+
+    assert "## Duplicate Primary Document Types" in markdown
+    assert "## Duplicate Document Types" not in markdown
