@@ -53,6 +53,8 @@ class PackageDocumentReview:
     document_type: str
     classification_confidence: str
     classification: dict[str, Any]
+    covered_plan_types: list[str] = field(default_factory=list)
+    is_combined_document: bool = False
     report: dict[str, Any] | None = None
     error: str = ""
 
@@ -63,6 +65,8 @@ class PackageDocumentReview:
             "document_type": self.document_type,
             "classification_confidence": self.classification_confidence,
             "classification": self.classification,
+            "covered_plan_types": self.covered_plan_types,
+            "is_combined_document": self.is_combined_document,
             "report": self.report,
             "error": self.error,
         }
@@ -110,16 +114,17 @@ def document_name(document) -> str:
 
 
 def count_plan_types(document_reviews: list[PackageDocumentReview]) -> dict[str, int]:
-    """Count detected known document types."""
+    """Count detected known document types, including combined-document coverage."""
     counts: dict[str, int] = {}
 
     for review in document_reviews:
-        plan_type = review.document_type
+        covered_plan_types = review.covered_plan_types or [review.document_type]
 
-        if not plan_type or plan_type == "unknown":
-            continue
+        for plan_type in covered_plan_types:
+            if not plan_type or plan_type == "unknown":
+                continue
 
-        counts[plan_type] = counts.get(plan_type, 0) + 1
+            counts[plan_type] = counts.get(plan_type, 0) + 1
 
     return counts
 
@@ -134,6 +139,20 @@ def find_duplicate_plan_types(document_reviews: list[PackageDocumentReview]) -> 
         if count > 1
     )
 
+def detected_plan_types_from_reviews(
+    document_reviews: list[PackageDocumentReview],
+) -> list[str]:
+    """Return all detected package plan types, including combined-document coverage."""
+    detected = set()
+
+    for review in document_reviews:
+        covered_plan_types = review.covered_plan_types or [review.document_type]
+
+        for plan_type in covered_plan_types:
+            if plan_type and plan_type != "unknown":
+                detected.add(plan_type)
+
+    return sorted(detected)
 
 def determine_package_status(
     missing_required_plan_types: list[str],
@@ -196,6 +215,8 @@ def review_single_package_document(document) -> PackageDocumentReview:
             document_type="unknown",
             classification_confidence=classification.confidence,
             classification=classification_dict,
+            covered_plan_types=[],
+            is_combined_document=False,
             report=None,
             error="Document type could not be classified.",
         )
@@ -211,6 +232,8 @@ def review_single_package_document(document) -> PackageDocumentReview:
             classification=classification_dict,
             report=None,
             error=str(exc),
+            covered_plan_types=classification.covered_plan_types,
+            is_combined_document=classification.is_combined_document,
         )
 
     return PackageDocumentReview(
@@ -220,6 +243,8 @@ def review_single_package_document(document) -> PackageDocumentReview:
         classification=classification_dict,
         report=report.to_dict(),
         error="",
+        covered_plan_types=classification.covered_plan_types,
+        is_combined_document=classification.is_combined_document,
     )
 
 
@@ -241,13 +266,7 @@ def review_document_package(
         for document in documents
     ]
 
-    detected_plan_types = sorted(
-        {
-            review.document_type
-            for review in document_reviews
-            if review.document_type != "unknown"
-        }
-    )
+    detected_plan_types = detected_plan_types_from_reviews(document_reviews)
 
     missing_required_plan_types = sorted(
         plan_type

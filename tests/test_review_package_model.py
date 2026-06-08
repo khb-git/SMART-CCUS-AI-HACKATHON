@@ -168,3 +168,87 @@ def test_review_single_package_document_returns_report_for_known_type():
     assert review.classification_confidence in {"medium", "high"}
     assert review.report
     assert not review.error
+
+def test_review_package_counts_combined_document_coverage():
+    from review.package_review import review_document_package
+
+    documents = [
+        make_document(
+            "ADM_Narrative_AoR_Corrective_Action_Well_Construction.pdf",
+            (
+                "Class VI Permit Application Narrative. "
+                "Area of Review and Corrective Action Plan. "
+                "The plan evaluates legacy wells and artificial penetrations. "
+                "Well Construction Plan. "
+                "The well construction details include casing, cement, tubing, packer, "
+                "and well schematic information."
+            ),
+        )
+    ]
+
+    report = review_document_package(
+        documents,
+        package_name="adm_combined_package",
+        expected_plan_types=[
+            "project_narrative",
+            "aor_corrective_action",
+            "well_construction",
+        ],
+        required_plan_types=[
+            "project_narrative",
+            "aor_corrective_action",
+            "well_construction",
+        ],
+    )
+
+    assert report.missing_required_plan_types == []
+    assert report.missing_expected_plan_types == []
+    assert "project_narrative" in report.detected_plan_types
+    assert "aor_corrective_action" in report.detected_plan_types
+    assert "well_construction" in report.detected_plan_types
+
+    document_review = report.document_reviews[0]
+
+    assert document_review.is_combined_document is True
+    assert "project_narrative" in document_review.covered_plan_types
+    assert "aor_corrective_action" in document_review.covered_plan_types
+    assert "well_construction" in document_review.covered_plan_types
+
+
+def test_review_package_still_detects_duplicate_plan_types_with_combined_documents():
+    from review.package_review import review_document_package
+
+    documents = [
+        make_document(
+            "ADM_Combined_Narrative_AoR_Well_Construction.pdf",
+            (
+                "Class VI Permit Application Narrative. "
+                "Area of Review and Corrective Action Plan. "
+                "Well Construction Plan with casing, cement, tubing, and packer."
+            ),
+        ),
+        make_document(
+            "Standalone_Well_Construction_Plan.pdf",
+            (
+                "Well Construction Plan. The document describes casing, cementing, "
+                "tubing, packer configuration, and well schematic details."
+            ),
+        ),
+    ]
+
+    report = review_document_package(
+        documents,
+        expected_plan_types=[
+            "project_narrative",
+            "aor_corrective_action",
+            "well_construction",
+        ],
+        required_plan_types=[
+            "project_narrative",
+            "aor_corrective_action",
+            "well_construction",
+        ],
+    )
+
+    assert "well_construction" in report.duplicate_plan_types
+    assert "well_construction" in report.detected_plan_types
