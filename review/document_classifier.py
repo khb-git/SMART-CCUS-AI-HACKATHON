@@ -310,14 +310,31 @@ def classify_document_coverage(text: str) -> list[tuple[str, int, list[str], int
 def meaningful_covered_plan_types(
     coverage_matches: list[tuple[str, int, list[str], int]],
 ) -> list[str]:
-    """Return plan types that are strongly enough represented to count as covered."""
-    covered = []
+    """Return plan types strongly enough represented to count as covered.
 
-    for document_type, score, _terms, high_match_count in coverage_matches:
-        # A plan title/high-confidence term should count.
-        # Multiple supporting terms can also count when a document is combined
-        # but does not repeat every formal plan title.
-        if high_match_count >= 1 or score >= 3:
+    The best-scoring document type is always kept. Secondary covered plan types
+    require stronger evidence so generic cross-references do not trigger noisy
+    full checklist reviews.
+    """
+    if not coverage_matches:
+        return []
+
+    best_type, best_score, _best_terms, _best_high_match_count = coverage_matches[0]
+    covered = [best_type]
+
+    for document_type, score, _terms, high_match_count in coverage_matches[1:]:
+        if document_type == best_type:
+            continue
+
+        strong_title_match = high_match_count >= 1 and score >= 10
+        strong_supporting_match = high_match_count == 0 and score >= 5
+        close_to_primary = best_score > 0 and score >= max(5, int(best_score * 0.5))
+
+        if strong_title_match and close_to_primary:
+            covered.append(document_type)
+            continue
+
+        if strong_supporting_match and close_to_primary:
             covered.append(document_type)
 
     return sorted(set(covered))

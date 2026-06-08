@@ -191,3 +191,67 @@ def test_classifier_returns_unknown_for_unrelated_document():
     assert classification.document_type == "unknown"
     assert classification.confidence == "unknown"
     assert classification.matched_terms == []
+
+def test_narrative_does_not_expand_to_every_cross_referenced_plan_type():
+    from review.document_classifier import classify_review_document
+
+    document = make_document(
+        "Marquis_Narrative.pdf",
+        (
+            "Class VI permit application narrative. "
+            "This project narrative describes the project description, facility "
+            "information, injection project, applicant, site location, and "
+            "application sections. The narrative references the AoR Plan, Testing "
+            "and Monitoring Plan, Well Construction Plan, and PISC Plan as separate "
+            "attachments."
+        ),
+    )
+
+    classification = classify_review_document(document)
+
+    assert classification.document_type == "project_narrative"
+    assert "project_narrative" in classification.covered_plan_types
+    assert len(classification.covered_plan_types) <= 3
+
+
+def test_testing_monitoring_plan_keeps_primary_without_noisy_pisc_takeover():
+    from review.document_classifier import classify_review_document
+
+    document = make_document(
+        "Marquis_Testing_and_Monitoring_Plan.pdf",
+        (
+            "Testing and Monitoring Plan. "
+            "The plan describes injection pressure monitoring, injection rate "
+            "monitoring, annular pressure, groundwater monitoring, SCADA, "
+            "monitoring frequency, reporting, and plume and pressure front tracking. "
+            "Post-injection monitoring is discussed only as a related future phase."
+        ),
+    )
+
+    classification = classify_review_document(document)
+
+    assert classification.document_type == "testing_monitoring"
+    assert "testing_monitoring" in classification.covered_plan_types
+    assert "pisc_site_closure" not in classification.covered_plan_types
+
+
+def test_combined_document_still_keeps_strong_secondary_plan_type():
+    from review.document_classifier import classify_review_document
+
+    document = make_document(
+        "ADM_Combined_Narrative_AoR_Well_Construction.pdf",
+        (
+            "Project Narrative. The class vi permit application includes project "
+            "description, facility information, injection project, and applicant. "
+            "Area of Review and Corrective Action Plan. The area of review is "
+            "delineated using a computational model and pressure front. "
+            "Well Construction Plan. The well construction plan includes casing, "
+            "cement, tubing, packer, and well schematic details."
+        ),
+    )
+
+    classification = classify_review_document(document)
+
+    assert "project_narrative" in classification.covered_plan_types
+    assert "aor_corrective_action" in classification.covered_plan_types
+    assert "well_construction" in classification.covered_plan_types
