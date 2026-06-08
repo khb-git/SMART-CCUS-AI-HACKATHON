@@ -37,6 +37,83 @@ st.caption(
 )
 
 
+def finding_status_counts(findings: list[dict]) -> dict[str, int]:
+    """Count checklist finding statuses for UI display."""
+    counts = {
+        "present": 0,
+        "evidence_found": 0,
+        "missing": 0,
+        "unclear": 0,
+    }
+
+    for finding in findings:
+        status = finding.get("status", "")
+        if status in counts:
+            counts[status] += 1
+
+    return counts
+
+
+def render_finding_summary_metrics(findings: list[dict]) -> None:
+    """Render compact finding-count metrics."""
+    counts = finding_status_counts(findings)
+    metric_cols = st.columns(4)
+
+    with metric_cols[0]:
+        st.metric("Present", counts["present"])
+
+    with metric_cols[1]:
+        st.metric("Evidence found", counts["evidence_found"])
+
+    with metric_cols[2]:
+        st.metric("Missing", counts["missing"])
+
+    with metric_cols[3]:
+        st.metric("Unclear", counts["unclear"])
+
+
+def render_package_findings(
+    findings: list[dict],
+    key_prefix: str,
+    default_show: bool = False,
+) -> None:
+    """Render package checklist findings with reviewer-friendly details."""
+    show_findings = st.checkbox(
+        "Show checklist findings",
+        value=default_show,
+        key=f"show_findings_{key_prefix}",
+    )
+
+    if not show_findings:
+        return
+
+    for finding in findings:
+        status = finding.get("status", "")
+        label = finding.get("label", finding.get("item_id", "Finding"))
+        matched_groups = finding.get("matched_evidence_group_names", []) or []
+        excerpts = finding.get("supporting_excerpts", []) or []
+
+        st.markdown(
+            f"**{status_icon(status)} {status_label(status)} — {label}**"
+        )
+        st.write(finding.get("finding", ""))
+
+        if matched_groups:
+            st.caption(
+                "Matched evidence groups: "
+                + ", ".join(f"`{group}`" for group in matched_groups)
+            )
+
+        if excerpts:
+            with st.expander("Supporting excerpts", expanded=False):
+                for excerpt in excerpts:
+                    st.write(f"- {excerpt}")
+
+        recommended_fix = finding.get("recommended_fix", "")
+        if recommended_fix:
+            st.caption(f"Recommended fix: {recommended_fix}")
+
+
 with st.sidebar:
     st.header("Backend Settings")
 
@@ -360,32 +437,7 @@ with review_tab:
         else:
             st.markdown("### Checklist findings")
 
-            present_count = sum(
-                1 for item in findings if item.get("status") == "present"
-            )
-            evidence_found_count = sum(
-                1 for item in findings if item.get("status") == "evidence_found"
-            )
-            missing_count = sum(
-                1 for item in findings if item.get("status") == "missing"
-            )
-            unclear_count = sum(
-                1 for item in findings if item.get("status") == "unclear"
-            )
-
-            status_cols = st.columns(4)
-
-            with status_cols[0]:
-                st.metric("Present", present_count)
-
-            with status_cols[1]:
-                st.metric("Evidence found", evidence_found_count)
-
-            with status_cols[2]:
-                st.metric("Missing", missing_count)
-
-            with status_cols[3]:
-                st.metric("Unclear", unclear_count)
+            render_finding_summary_metrics(findings)
 
             for finding in findings:
                 status = finding.get("status", "")
@@ -410,6 +462,13 @@ with review_tab:
                         st.markdown("**Matched terms**")
                         st.write(", ".join(matched_terms))
 
+                    matched_groups = (
+                        finding.get("matched_evidence_group_names", []) or []
+                    )
+                    if matched_groups:
+                        st.markdown("**Matched evidence groups**")
+                        st.write(", ".join(f"`{group}`" for group in matched_groups))
+
                     excerpts = finding.get("supporting_excerpts", [])
                     if excerpts:
                         st.markdown("**Supporting excerpts**")
@@ -420,6 +479,7 @@ with review_tab:
                     if recommended_fix:
                         st.markdown("**Recommended fix**")
                         st.write(recommended_fix)
+
 
 with package_tab:
     st.subheader("Review uploaded document package")
@@ -544,7 +604,7 @@ with package_tab:
 
         st.markdown("### Package coverage")
 
-        coverage_cols = st.columns(4)
+        coverage_cols = st.columns(5)
 
         with coverage_cols[0]:
             st.markdown("**Detected document types**")
@@ -584,6 +644,15 @@ with package_tab:
             else:
                 st.write("No unknown documents.")
 
+        with coverage_cols[4]:
+            st.markdown("**Supporting documents**")
+            supporting_documents = package_report.get("supporting_documents", []) or []
+            if supporting_documents:
+                for document_name in supporting_documents:
+                    st.write(f"🧩 `{document_name}`")
+            else:
+                st.write("No supporting documents.")
+
         with st.expander("Expected package document types", expanded=False):
             expected = package_report.get("expected_plan_types", []) or []
             for plan_type in expected:
@@ -603,7 +672,6 @@ with package_tab:
                     "classification_confidence",
                     "unknown",
                 )
-                error = document_review.get("error", "")
                 document_report = document_review.get("report") or {}
 
                 document_status = document_report.get("overall_status", "")
@@ -614,70 +682,97 @@ with package_tab:
                 )
 
                 if document_status:
-                    heading += f" — {status_icon(document_status)} {status_label(document_status)}"
+                    heading += (
+                        f" — {status_icon(document_status)} "
+                        f"{status_label(document_status)}"
+                    )
 
                 with st.expander(heading, expanded=False):
+                    document_role = document_review.get("document_role", "main")
+                    supporting_type = document_review.get(
+                        "supporting_document_type",
+                        "",
+                    )
+                    covered_plan_types = (
+                        document_review.get("covered_plan_types", []) or []
+                    )
+                    checklist_reports = (
+                        document_review.get("checklist_reports", {}) or {}
+                    )
+                    error = document_review.get("error", "")
+
+                    role_cols = st.columns(3)
+
+                    with role_cols[0]:
+                        st.metric("Document role", document_role)
+
+                    with role_cols[1]:
+                        st.metric("Covered plan types", len(covered_plan_types))
+
+                    with role_cols[2]:
+                        st.metric("Checklist reports", len(checklist_reports))
+
+                    if supporting_type:
+                        st.info(f"Supporting document type: `{supporting_type}`")
+
+                    if covered_plan_types:
+                        st.markdown("**Covered plan types**")
+                        st.write(
+                            ", ".join(
+                                f"`{plan_type}`"
+                                for plan_type in covered_plan_types
+                            )
+                        )
+
                     if error:
-                        st.error(error)
+                        if document_role == "supporting":
+                            st.info(error)
+                        else:
+                            st.error(error)
 
                     classification = document_review.get("classification", {})
                     with st.expander("Classification details", expanded=False):
                         st.json(classification)
 
-                    if document_report:
+                    if checklist_reports:
+                        st.markdown("**Checklist reports by covered plan type**")
+
+                        for plan_type, checklist_report in checklist_reports.items():
+                            checklist_status = checklist_report.get(
+                                "overall_status",
+                                "",
+                            )
+                            checklist_findings = (
+                                checklist_report.get("findings", []) or []
+                            )
+
+                            checklist_heading = (
+                                f"{plan_type} — "
+                                f"{status_icon(checklist_status)} "
+                                f"{status_label(checklist_status)}"
+                            )
+
+                            with st.expander(checklist_heading, expanded=False):
+                                st.write(checklist_report.get("summary", ""))
+
+                                render_finding_summary_metrics(checklist_findings)
+
+                                render_package_findings(
+                                    checklist_findings,
+                                    key_prefix=f"{document_name}_{plan_type}",
+                                    default_show=False,
+                                )
+
+                    elif document_report:
                         st.markdown("**Document review summary**")
                         st.write(document_report.get("summary", ""))
 
                         findings = document_report.get("findings", []) or []
 
-                        present_count = sum(
-                            1 for item in findings if item.get("status") == "present"
+                        render_finding_summary_metrics(findings)
+
+                        render_package_findings(
+                            findings,
+                            key_prefix=document_name,
+                            default_show=False,
                         )
-                        evidence_found_count = sum(
-                            1
-                            for item in findings
-                            if item.get("status") == "evidence_found"
-                        )
-                        missing_count = sum(
-                            1 for item in findings if item.get("status") == "missing"
-                        )
-                        unclear_count = sum(
-                            1 for item in findings if item.get("status") == "unclear"
-                        )
-
-                        doc_count_cols = st.columns(4)
-
-                        with doc_count_cols[0]:
-                            st.metric("Present", present_count)
-
-                        with doc_count_cols[1]:
-                            st.metric("Evidence found", evidence_found_count)
-
-                        with doc_count_cols[2]:
-                            st.metric("Missing", missing_count)
-
-                        with doc_count_cols[3]:
-                            st.metric("Unclear", unclear_count)
-
-                        show_findings = st.checkbox(
-                            f"Show findings for {document_name}",
-                            value=False,
-                            key=f"show_findings_{document_name}",
-                        )
-
-                        if show_findings:
-                            for finding in findings:
-                                status = finding.get("status", "")
-                                label = finding.get(
-                                    "label",
-                                    finding.get("item_id", "Finding"),
-                                )
-
-                                st.markdown(
-                                    f"**{status_icon(status)} {status_label(status)} — {label}**"
-                                )
-                                st.write(finding.get("finding", ""))
-
-                                recommended_fix = finding.get("recommended_fix", "")
-                                if recommended_fix:
-                                    st.caption(f"Recommended fix: {recommended_fix}")
