@@ -130,8 +130,39 @@ def supporting_document_audit(document) -> tuple[str, str]:
 
     return "main", ""
 
-def count_plan_types(document_reviews: list[PackageDocumentReview]) -> dict[str, int]:
-    """Count detected known main document types, including combined-document coverage."""
+def main_document_type_from_filename(document) -> str:
+    """Return main document type from filename audit when available."""
+    audit_result = audit_package_document_name(document_name(document))
+
+    if audit_result.document_role == "main" and audit_result.document_type != "unknown":
+        return audit_result.document_type
+
+    return ""
+
+def count_primary_plan_types(
+    document_reviews: list[PackageDocumentReview],
+) -> dict[str, int]:
+    """Count primary known main document types only."""
+    counts: dict[str, int] = {}
+
+    for review in document_reviews:
+        if review.document_role == "supporting":
+            continue
+
+        plan_type = review.document_type
+
+        if not plan_type or plan_type == "unknown":
+            continue
+
+        counts[plan_type] = counts.get(plan_type, 0) + 1
+
+    return counts
+
+
+def count_detected_plan_types(
+    document_reviews: list[PackageDocumentReview],
+) -> dict[str, int]:
+    """Count detected known main document types, including combined coverage."""
     counts: dict[str, int] = {}
 
     for review in document_reviews:
@@ -150,8 +181,8 @@ def count_plan_types(document_reviews: list[PackageDocumentReview]) -> dict[str,
 
 
 def find_duplicate_plan_types(document_reviews: list[PackageDocumentReview]) -> list[str]:
-    """Return plan types represented by more than one uploaded document."""
-    counts = count_plan_types(document_reviews)
+    """Return primary plan types represented by more than one main uploaded document."""
+    counts = count_primary_plan_types(document_reviews)
 
     return sorted(
         plan_type
@@ -294,6 +325,16 @@ def review_single_package_document(document) -> PackageDocumentReview:
 
     document_type = classification.document_type
     classification_dict = classification.to_dict()
+    filename_document_type = main_document_type_from_filename(document)
+
+    if filename_document_type and filename_document_type != document_type:
+        document_type = filename_document_type
+        classification_dict["document_type"] = document_type
+        classification_dict["primary_document_type"] = document_type
+        classification_dict["reason"] = (
+            f"Filename audit identified this document as {document_type}. "
+            f"Original classifier reason: {classification.reason}"
+        )
 
     if document_type == "unknown":
         return PackageDocumentReview(
@@ -324,6 +365,11 @@ def review_single_package_document(document) -> PackageDocumentReview:
         )
 
     review_plan_types = plan_types_to_review(classification)
+
+    if document_type != "unknown" and document_type not in review_plan_types:
+        review_plan_types.append(document_type)
+
+    review_plan_types = sorted(set(review_plan_types))
     checklist_reports, errors = review_document_against_plan_types(
         document=document,
         plan_types=review_plan_types,
