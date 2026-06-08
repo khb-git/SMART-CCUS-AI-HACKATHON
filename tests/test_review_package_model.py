@@ -446,3 +446,44 @@ def test_filename_audit_overrides_testing_monitoring_primary_type():
     assert review.document_type == "testing_monitoring"
     assert review.classification["document_type"] == "testing_monitoring"
     assert "testing_monitoring" in review.checklist_reports
+
+def test_filename_audit_override_limits_review_to_primary_type():
+    from review.package_review import review_single_package_document
+
+    document = make_document(
+        "Marquis_Narrative.pdf",
+        (
+            "Post-injection site care and site closure plan references appear here, "
+            "along with testing and monitoring, well construction, and AoR references. "
+            "This file is the project narrative by filename."
+        ),
+    )
+
+    review = review_single_package_document(document)
+
+    assert review.document_type == "project_narrative"
+    assert review.covered_plan_types == ["project_narrative"]
+    assert list(review.checklist_reports) == ["project_narrative"]
+    assert review.is_combined_document is False
+
+def test_filename_audit_preserves_explicit_combined_filename_coverage():
+    from review.package_review import review_single_package_document
+
+    document = make_document(
+        "ADM_Narrative_AoR_Corrective_Action_Well_Construction.pdf",
+        (
+            "Class VI Permit Application Narrative. "
+            "Area of Review and Corrective Action Plan. "
+            "The plan evaluates legacy wells and artificial penetrations. "
+            "Well Construction Plan. "
+            "The well construction details include casing, cement, tubing, packer, "
+            "and well schematic information."
+        ),
+    )
+
+    review = review_single_package_document(document)
+
+    assert review.is_combined_document is True
+    assert "project_narrative" in review.covered_plan_types
+    assert "aor_corrective_action" in review.covered_plan_types
+    assert "well_construction" in review.covered_plan_types
