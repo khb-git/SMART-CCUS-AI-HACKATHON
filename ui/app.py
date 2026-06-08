@@ -349,8 +349,8 @@ with review_tab:
             present_count = sum(
                 1 for item in findings if item.get("status") == "present"
             )
-            partial_count = sum(
-                1 for item in findings if item.get("status") == "partial"
+            evidence_found_count = sum(
+                1 for item in findings if item.get("status") == "evidence_found"
             )
             missing_count = sum(
                 1 for item in findings if item.get("status") == "missing"
@@ -365,7 +365,7 @@ with review_tab:
                 st.metric("Present", present_count)
 
             with status_cols[1]:
-                st.metric("Partial", partial_count)
+                st.metric("Evidence found", evidence_found_count)
 
             with status_cols[2]:
                 st.metric("Missing", missing_count)
@@ -385,7 +385,7 @@ with review_tab:
                     f"({requirement_level}, {severity})"
                 )
 
-                expanded = status in {"missing", "partial"}
+                expanded = status in {"missing", "evidence_found"}
 
                 with st.expander(heading, expanded=expanded):
                     st.markdown("**Finding**")

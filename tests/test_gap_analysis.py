@@ -109,11 +109,11 @@ def test_analyze_document_against_checklist_flags_missing_items():
 
     assert finding_by_id["injection_pressure_monitoring"].status.value in {
         "present",
-        "partial",
+        "evidence_found",
     }
     assert finding_by_id["injection_rate_monitoring"].status.value in {
         "present",
-        "partial",
+        "evidence_found",
     }
     assert finding_by_id["annular_pressure_monitoring"].status.value == "missing"
 
@@ -138,7 +138,7 @@ def test_gap_analysis_report_to_dict_is_serializable():
     assert data["findings"][0]["item_id"]
     assert data["findings"][0]["status"] in {
         "present",
-        "partial",
+        "evidence_found",
         "missing",
         "unclear",
     }
@@ -207,7 +207,7 @@ def test_scada_or_data_recording_can_be_partial_from_reporting_terms():
 
     finding = analyze_checklist_item(text, item)
 
-    assert finding.status.value in {"partial", "present"}
+    assert finding.status.value in {"evidence_found", "present"}
     assert "monitoring results" in finding.matched_terms
     assert "daily values" in finding.matched_terms
 

@@ -15,7 +15,7 @@ def status_label(status: str) -> str:
         "incomplete": "Incomplete",
         "needs_revision": "Needs revision",
         "present": "Present",
-        "partial": "Partial",
+        "evidence_found": "Evidence found",
         "missing": "Missing",
         "unclear": "Unclear",
     }
@@ -27,7 +27,7 @@ def finding_status_counts(findings: list[dict[str, Any]]) -> dict[str, int]:
     """Count finding statuses."""
     counts = {
         "present": 0,
-        "partial": 0,
+        "evidence_found": 0,
         "missing": 0,
         "unclear": 0,
     }
@@ -44,7 +44,7 @@ def finding_sort_key(finding: dict[str, Any]) -> tuple[int, str]:
     """Sort findings by review importance."""
     status_order = {
         "missing": 0,
-        "partial": 1,
+        "evidence_found": 1,
         "unclear": 2,
         "present": 3,
     }
@@ -103,7 +103,7 @@ def build_markdown_review_report(review_response: dict[str, Any]) -> str:
         "## Finding Counts",
         "",
         f"- **Present:** {counts['present']}",
-        f"- **Partial:** {counts['partial']}",
+        f"- **Evidence found:** {counts['evidence_found']}",
         f"- **Missing:** {counts['missing']}",
         f"- **Unclear:** {counts['unclear']}",
         "",
