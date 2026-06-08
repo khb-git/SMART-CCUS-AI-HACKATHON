@@ -10,6 +10,8 @@ from ui.api_client import (
     DEFAULT_API_URL,
     ask_api,
     build_ask_payload,
+    build_markdown_review_report,
+    default_report_filename,
     format_evidence_heading,
     format_similarity_score,
     review_document_api,
@@ -321,6 +323,18 @@ with review_tab:
         storage_policy = review_response.get("storage_policy", "")
         if storage_policy:
             st.info(storage_policy)
+
+        markdown_report = build_markdown_review_report(review_response)
+        report_filename = default_report_filename(
+            review_response.get("document_name", "document")
+        )
+
+        st.download_button(
+            label="Download Markdown review report",
+            data=markdown_report,
+            file_name=report_filename,
+            mime="text/markdown",
+        )
 
         with st.expander("Classification details", expanded=False):
             st.json(classification)

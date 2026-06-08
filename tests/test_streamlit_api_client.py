@@ -147,3 +147,9 @@ def test_review_document_api_posts_file_to_backend(monkeypatch):
     assert calls["timeout"] == 10
     assert calls["raise_for_status"] is True
     assert response["document_type"] == "testing_monitoring"
+
+def test_report_export_helpers_are_available_from_ui_client():
+    from ui.api_client import build_markdown_review_report, default_report_filename
+
+    assert callable(build_markdown_review_report)
+    assert default_report_filename("test.pdf") == "test_review_report.md"
