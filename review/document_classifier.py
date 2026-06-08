@@ -15,6 +15,9 @@ class DocumentClassification:
     confidence: str
     matched_terms: list[str] = field(default_factory=list)
     reason: str = ""
+    covered_plan_types: list[str] = field(default_factory=list)
+    primary_document_type: str = ""
+    is_combined_document: bool = False
 
     def to_dict(self):
         """Return JSON-serializable classification data."""
@@ -23,6 +26,9 @@ class DocumentClassification:
             "confidence": self.confidence,
             "matched_terms": self.matched_terms,
             "reason": self.reason,
+            "covered_plan_types": self.covered_plan_types,
+            "primary_document_type": self.primary_document_type or self.document_type,
+            "is_combined_document": self.is_combined_document,
         }
 
 
@@ -278,40 +284,96 @@ def confidence_from_score(score: int, matched_terms: list[str]) -> str:
 
     return "unknown"
 
+def classify_document_coverage(text: str) -> list[tuple[str, int, list[str], int]]:
+    """Return all supported document types with meaningful matches.
+
+    Each tuple is:
+    (document_type, score, matched_terms, high_match_count)
+    """
+    matches = []
+
+    for document_type, rule in DOCUMENT_TYPE_RULES.items():
+        score, terms, high_match_count = score_document_type(text, rule)
+
+        if score <= 0 or not terms:
+            continue
+
+        matches.append((document_type, score, terms, high_match_count))
+
+    return sorted(
+        matches,
+        key=lambda item: (item[1], item[3]),
+        reverse=True,
+    )
+
+
+def meaningful_covered_plan_types(
+    coverage_matches: list[tuple[str, int, list[str], int]],
+) -> list[str]:
+    """Return plan types that are strongly enough represented to count as covered."""
+    covered = []
+
+    for document_type, score, _terms, high_match_count in coverage_matches:
+        # A plan title/high-confidence term should count.
+        # Multiple supporting terms can also count when a document is combined
+        # but does not repeat every formal plan title.
+        if high_match_count >= 1 or score >= 3:
+            covered.append(document_type)
+
+    return sorted(set(covered))
 
 def classify_review_document(document) -> DocumentClassification:
     """Classify an uploaded temporary review document."""
     text = collect_document_text(document)
 
-    best_type = "unknown"
-    best_score = 0
-    best_high_match_count = 0
-    best_terms: list[str] = []
+    coverage_matches = classify_document_coverage(text)
 
-    for document_type, rule in DOCUMENT_TYPE_RULES.items():
-        score, terms, high_match_count = score_document_type(text, rule)
-
-        if (score, high_match_count) > (best_score, best_high_match_count):
-            best_type = document_type
-            best_score = score
-            best_high_match_count = high_match_count
-            best_terms = terms
-
-    confidence = confidence_from_score(best_score, best_terms)
-
-    if best_type == "unknown" or confidence == "unknown":
+    if not coverage_matches:
         return DocumentClassification(
             document_type="unknown",
             confidence="unknown",
             matched_terms=[],
             reason="No supported document type rule matched the uploaded document.",
+            covered_plan_types=[],
+            primary_document_type="unknown",
+            is_combined_document=False,
         )
 
+    best_type, best_score, best_terms, _best_high_match_count = coverage_matches[0]
+    confidence = confidence_from_score(best_score, best_terms)
+    covered_plan_types = meaningful_covered_plan_types(coverage_matches)
+
+    if confidence == "unknown":
+        return DocumentClassification(
+            document_type="unknown",
+            confidence="unknown",
+            matched_terms=[],
+            reason="No supported document type rule matched the uploaded document.",
+            covered_plan_types=[],
+            primary_document_type="unknown",
+            is_combined_document=False,
+        )
+
+    if not covered_plan_types:
+        covered_plan_types = [best_type]
+
     label = DOCUMENT_TYPE_RULES[best_type]["label"]
+    is_combined_document = len(covered_plan_types) > 1
+
+    if is_combined_document:
+        reason = (
+            f"Matched uploaded document primarily to {label}; "
+            f"also detected coverage for {len(covered_plan_types) - 1} additional plan type(s)."
+        )
+    else:
+        reason = f"Matched uploaded document to {label} using rule-based terms."
 
     return DocumentClassification(
         document_type=best_type,
         confidence=confidence,
         matched_terms=best_terms,
-        reason=f"Matched uploaded document to {label} using rule-based terms.",
+        reason=reason,
+        covered_plan_types=covered_plan_types,
+        primary_document_type=best_type,
+        is_combined_document=is_combined_document,
     )

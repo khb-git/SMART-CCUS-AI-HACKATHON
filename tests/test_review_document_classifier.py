@@ -107,3 +107,55 @@ def test_classification_to_dict_is_serializable():
     assert data["confidence"] == "high"
     assert data["matched_terms"]
     assert data["reason"]
+
+def test_classify_combined_narrative_aor_well_construction_document():
+    from review.document_classifier import classify_review_document
+
+    document = make_document(
+        filename="ADM_Narrative_AoR_Corrective_Action_Well_Construction.pdf",
+        text=(
+            "Class VI Permit Application Narrative. "
+            "Area of Review and Corrective Action Plan. "
+            "The plan evaluates legacy wells and artificial penetrations. "
+            "Well Construction Plan. "
+            "The well construction details include casing, cement, tubing, packer, "
+            "and well schematic information."
+        ),
+    )
+
+    classification = classify_review_document(document)
+
+    assert classification.document_type in {
+        "project_narrative",
+        "aor_corrective_action",
+        "well_construction",
+    }
+    assert classification.primary_document_type == classification.document_type
+    assert classification.is_combined_document is True
+    assert "project_narrative" in classification.covered_plan_types
+    assert "aor_corrective_action" in classification.covered_plan_types
+    assert "well_construction" in classification.covered_plan_types
+
+    data = classification.to_dict()
+
+    assert data["is_combined_document"] is True
+    assert "covered_plan_types" in data
+    assert "primary_document_type" in data
+
+
+def test_classify_single_plan_document_has_single_coverage_type():
+    from review.document_classifier import classify_review_document
+
+    document = make_document(
+        filename="Testing_and_Monitoring_Plan.pdf",
+        text=(
+            "Testing and Monitoring Plan. Continuous recording devices will monitor "
+            "injection pressure, injection rate, annular pressure, and flow rate."
+        ),
+    )
+
+    classification = classify_review_document(document)
+
+    assert classification.document_type == "testing_monitoring"
+    assert classification.covered_plan_types == ["testing_monitoring"]
+    assert classification.is_combined_document is False
