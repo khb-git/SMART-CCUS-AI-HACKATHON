@@ -15,6 +15,7 @@ from ui.api_client import (
     format_evidence_heading,
     format_similarity_score,
     review_document_api,
+    review_package_api,
     status_icon,
     status_label,
 )
@@ -112,7 +113,9 @@ with st.sidebar:
     )
 
 
-ask_tab, review_tab = st.tabs(["Ask Assistant", "Review Document"])
+ask_tab, review_tab, package_tab = st.tabs(
+    ["Ask Assistant", "Review Document", "Review Package"]
+)
 
 
 with ask_tab:
@@ -415,3 +418,252 @@ with review_tab:
                     if recommended_fix:
                         st.markdown("**Recommended fix**")
                         st.write(recommended_fix)
+
+with package_tab:
+    st.subheader("Review uploaded document package")
+    st.caption(
+        "Upload multiple Class VI documents for temporary package-level review. "
+        "Uploaded files are processed for this request and are not stored permanently."
+    )
+
+    package_files = st.file_uploader(
+        "Upload package documents",
+        type=["pdf", "docx", "xlsx"],
+        accept_multiple_files=True,
+        help="Upload multiple PDF, DOCX, or XLSX files from the same Class VI application package.",
+    )
+
+    package_name = st.text_input(
+        "Package name",
+        value="uploaded_package",
+    )
+
+    pkg_col_a, pkg_col_b = st.columns(2)
+
+    with pkg_col_a:
+        package_chunk_size = st.number_input(
+            "Package review chunk size",
+            min_value=250,
+            max_value=3000,
+            value=1000,
+            step=250,
+        )
+
+    with pkg_col_b:
+        package_chunk_overlap = st.number_input(
+            "Package review chunk overlap",
+            min_value=0,
+            max_value=500,
+            value=100,
+            step=25,
+        )
+
+    run_package_review_clicked = st.button(
+        "Review uploaded package",
+        type="primary",
+    )
+
+    if run_package_review_clicked:
+        if not package_files:
+            st.error("Please upload at least one PDF, DOCX, or XLSX file.")
+            st.stop()
+
+        try:
+            file_payload = [
+                (
+                    uploaded_file.name,
+                    uploaded_file.getvalue(),
+                )
+                for uploaded_file in package_files
+            ]
+
+            with st.spinner(
+                "Temporarily processing package documents and running package review..."
+            ):
+                package_response = review_package_api(
+                    files=file_payload,
+                    package_name=package_name,
+                    chunk_size=int(package_chunk_size),
+                    chunk_overlap=int(package_chunk_overlap),
+                    api_url=api_url,
+                )
+
+        except Exception as exc:
+            st.error("The package review request failed.")
+            st.exception(exc)
+            st.stop()
+
+        package_report = package_response.get("report", {})
+        package_status = package_report.get("overall_status", "")
+
+        st.subheader("Package review result")
+
+        package_metric_cols = st.columns(4)
+
+        with package_metric_cols[0]:
+            st.metric("Package", package_response.get("package_name", "Unknown"))
+
+        with package_metric_cols[1]:
+            st.metric(
+                "Overall status",
+                f"{status_icon(package_status)} {status_label(package_status)}",
+            )
+
+        with package_metric_cols[2]:
+            st.metric(
+                "Detected document types",
+                len(package_report.get("detected_plan_types", []) or []),
+            )
+
+        with package_metric_cols[3]:
+            st.metric(
+                "Missing required",
+                len(package_report.get("missing_required_plan_types", []) or []),
+            )
+
+        st.markdown("### Summary")
+        st.write(package_report.get("summary", ""))
+
+        storage_policy = package_response.get("storage_policy", "")
+        if storage_policy:
+            st.info(storage_policy)
+
+        st.markdown("### Package coverage")
+
+        coverage_cols = st.columns(4)
+
+        with coverage_cols[0]:
+            st.markdown("**Detected document types**")
+            detected = package_report.get("detected_plan_types", []) or []
+            if detected:
+                for plan_type in detected:
+                    st.write(f"✅ `{plan_type}`")
+            else:
+                st.write("None detected.")
+
+        with coverage_cols[1]:
+            st.markdown("**Missing required**")
+            missing_required = (
+                package_report.get("missing_required_plan_types", []) or []
+            )
+            if missing_required:
+                for plan_type in missing_required:
+                    st.write(f"🔴 `{plan_type}`")
+            else:
+                st.write("No required document types missing.")
+
+        with coverage_cols[2]:
+            st.markdown("**Duplicate document types**")
+            duplicates = package_report.get("duplicate_plan_types", []) or []
+            if duplicates:
+                for plan_type in duplicates:
+                    st.write(f"🟠 `{plan_type}`")
+            else:
+                st.write("No duplicates detected.")
+
+        with coverage_cols[3]:
+            st.markdown("**Unknown documents**")
+            unknown_documents = package_report.get("unknown_documents", []) or []
+            if unknown_documents:
+                for document_name in unknown_documents:
+                    st.write(f"⚪ `{document_name}`")
+            else:
+                st.write("No unknown documents.")
+
+        with st.expander("Expected package document types", expanded=False):
+            expected = package_report.get("expected_plan_types", []) or []
+            for plan_type in expected:
+                st.write(f"- `{plan_type}`")
+
+        st.markdown("### Per-document reviews")
+
+        document_reviews = package_report.get("document_reviews", []) or []
+
+        if not document_reviews:
+            st.warning("No document reviews returned.")
+        else:
+            for document_review in document_reviews:
+                document_name = document_review.get("document_name", "Unknown document")
+                document_type = document_review.get("document_type", "unknown")
+                confidence = document_review.get(
+                    "classification_confidence",
+                    "unknown",
+                )
+                error = document_review.get("error", "")
+                document_report = document_review.get("report") or {}
+
+                document_status = document_report.get("overall_status", "")
+
+                heading = (
+                    f"{document_name} — `{document_type}` "
+                    f"({confidence})"
+                )
+
+                if document_status:
+                    heading += f" — {status_icon(document_status)} {status_label(document_status)}"
+
+                with st.expander(heading, expanded=False):
+                    if error:
+                        st.error(error)
+
+                    classification = document_review.get("classification", {})
+                    with st.expander("Classification details", expanded=False):
+                        st.json(classification)
+
+                    if document_report:
+                        st.markdown("**Document review summary**")
+                        st.write(document_report.get("summary", ""))
+
+                        findings = document_report.get("findings", []) or []
+
+                        present_count = sum(
+                            1 for item in findings if item.get("status") == "present"
+                        )
+                        evidence_found_count = sum(
+                            1
+                            for item in findings
+                            if item.get("status") == "evidence_found"
+                        )
+                        missing_count = sum(
+                            1 for item in findings if item.get("status") == "missing"
+                        )
+                        unclear_count = sum(
+                            1 for item in findings if item.get("status") == "unclear"
+                        )
+
+                        doc_count_cols = st.columns(4)
+
+                        with doc_count_cols[0]:
+                            st.metric("Present", present_count)
+
+                        with doc_count_cols[1]:
+                            st.metric("Evidence found", evidence_found_count)
+
+                        with doc_count_cols[2]:
+                            st.metric("Missing", missing_count)
+
+                        with doc_count_cols[3]:
+                            st.metric("Unclear", unclear_count)
+
+                        show_findings = st.checkbox(
+                            f"Show findings for {document_name}",
+                            value=False,
+                            key=f"show_findings_{document_name}",
+                        )
+
+                        if show_findings:
+                            for finding in findings:
+                                status = finding.get("status", "")
+                                label = finding.get(
+                                    "label",
+                                    finding.get("item_id", "Finding"),
+                                )
+
+                                st.markdown(
+                                    f"**{status_icon(status)} {status_label(status)} — {label}**"
+                                )
+                                st.write(finding.get("finding", ""))
+
+                                recommended_fix = finding.get("recommended_fix", "")
+                                if recommended_fix:
+                                    st.caption(f"Recommended fix: {recommended_fix}")

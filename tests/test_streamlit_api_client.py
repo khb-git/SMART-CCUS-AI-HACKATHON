@@ -153,3 +153,62 @@ def test_report_export_helpers_are_available_from_ui_client():
 
     assert callable(build_markdown_review_report)
     assert default_report_filename("test.pdf") == "test_review_report.md"
+
+def test_review_package_api_posts_multiple_files_to_backend(monkeypatch):
+    import ui.api_client as api_client
+
+    calls = {}
+
+    class FakeResponse:
+        def raise_for_status(self):
+            calls["raise_for_status"] = True
+
+        def json(self):
+            return {
+                "package_name": "adm_package",
+                "report": {
+                    "overall_status": "missing_required_documents",
+                    "summary": "Package review complete.",
+                    "detected_plan_types": ["testing_monitoring"],
+                    "missing_required_plan_types": ["well_construction"],
+                    "missing_expected_plan_types": ["well_construction"],
+                    "duplicate_plan_types": [],
+                    "unknown_documents": [],
+                    "document_reviews": [],
+                },
+                "storage_policy": "not stored",
+            }
+
+    def fake_post(url, files=None, data=None, timeout=None, json=None):
+        calls["url"] = url
+        calls["files"] = files
+        calls["data"] = data
+        calls["timeout"] = timeout
+        return FakeResponse()
+
+    monkeypatch.setattr(api_client.requests, "post", fake_post)
+
+    response = api_client.review_package_api(
+        files=[
+            ("testing_monitoring.pdf", b"%PDF fake 1"),
+            ("well_construction.pdf", b"%PDF fake 2"),
+        ],
+        package_name="adm_package",
+        chunk_size=800,
+        chunk_overlap=80,
+        api_url="http://localhost:8000",
+        timeout=20,
+    )
+
+    assert calls["url"] == "http://localhost:8000/review-package"
+    assert len(calls["files"]) == 2
+    assert calls["files"][0][0] == "files"
+    assert calls["files"][0][1][0] == "testing_monitoring.pdf"
+    assert calls["files"][0][1][1] == b"%PDF fake 1"
+    assert calls["files"][1][1][0] == "well_construction.pdf"
+    assert calls["data"]["package_name"] == "adm_package"
+    assert calls["data"]["chunk_size"] == "800"
+    assert calls["data"]["chunk_overlap"] == "80"
+    assert calls["timeout"] == 20
+    assert calls["raise_for_status"] is True
+    assert response["report"]["overall_status"] == "missing_required_documents"
