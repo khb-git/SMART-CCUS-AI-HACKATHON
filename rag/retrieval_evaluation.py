@@ -63,12 +63,15 @@ class RetrievalEvaluationResult:
     collection: str
     result_count: int
     top_score: float
+    max_score: float
     min_top_score: float
     score_passed: bool
     expected_terms_found: list[str]
     expected_terms_missing: list[str]
     expected_plan_types_found: list[str]
     expected_plan_types_missing: list[str]
+    failure_reasons: list[str]
+    score_band: str
     passed: bool
     top_sources: list[dict[str, Any]] = field(default_factory=list)
 
@@ -80,12 +83,15 @@ class RetrievalEvaluationResult:
             "collection": self.collection,
             "result_count": self.result_count,
             "top_score": self.top_score,
+            "max_score": self.max_score,
             "min_top_score": self.min_top_score,
             "score_passed": self.score_passed,
             "expected_terms_found": self.expected_terms_found,
             "expected_terms_missing": self.expected_terms_missing,
             "expected_plan_types_found": self.expected_plan_types_found,
             "expected_plan_types_missing": self.expected_plan_types_missing,
+            "failure_reasons": self.failure_reasons,
+            "score_band": self.score_band,
             "passed": self.passed,
             "top_sources": self.top_sources,
         }
@@ -255,6 +261,42 @@ def find_plan_types_in_results(
 
     return sorted(found)
 
+def classify_score_band(score: float) -> str:
+    """Classify retrieval score into a readable diagnostic band."""
+    if score >= 0.90:
+        return "excellent"
+    if score >= 0.85:
+        return "strong"
+    if score >= 0.70:
+        return "moderate"
+    if score > 0:
+        return "weak"
+
+    return "no_results"
+
+
+def get_failure_reasons(
+    result_count: int,
+    score_passed: bool,
+    expected_terms_missing: list[str],
+    expected_plan_types_missing: list[str],
+) -> list[str]:
+    """Return high-level failure reasons for one retrieval case."""
+    reasons = []
+
+    if result_count == 0:
+        reasons.append("no_results")
+
+    if not score_passed:
+        reasons.append("score_below_threshold")
+
+    if expected_terms_missing:
+        reasons.append("expected_terms_missing")
+
+    if expected_plan_types_missing:
+        reasons.append("expected_plan_types_missing")
+
+    return reasons
 
 def summarize_top_sources(
     results: list[RetrievalResult],
@@ -311,7 +353,9 @@ def evaluate_retrieval_case(
     )
 
     top_score = results[0].score if results else 0.0
-    score_passed = top_score >= case.min_top_score
+    max_score = max((result.score for result in results), default=0.0)
+    score_passed = max_score >= case.min_top_score
+    score_band = classify_score_band(max_score)
 
     result_text = collect_result_text(results)
 
@@ -333,6 +377,13 @@ def evaluate_retrieval_case(
         if plan_type not in expected_plan_types_found
     ]
 
+    failure_reasons = get_failure_reasons(
+        result_count=len(results),
+        score_passed=score_passed,
+        expected_terms_missing=expected_terms_missing,
+        expected_plan_types_missing=expected_plan_types_missing,
+    )
+
     passed = bool(results) and score_passed
 
     if case.expected_terms:
@@ -347,12 +398,15 @@ def evaluate_retrieval_case(
         collection=case.collection,
         result_count=len(results),
         top_score=top_score,
+        max_score=max_score,
         min_top_score=case.min_top_score,
         score_passed=score_passed,
         expected_terms_found=expected_terms_found,
         expected_terms_missing=expected_terms_missing,
         expected_plan_types_found=expected_plan_types_found,
         expected_plan_types_missing=expected_plan_types_missing,
+        failure_reasons=failure_reasons,
+        score_band=score_band,
         passed=passed,
         top_sources=summarize_top_sources(results),
     )
@@ -426,7 +480,12 @@ def print_evaluation_summary(summary: RetrievalEvaluationSummary) -> None:
         print(f"[{status}] {result.case_id}")
         print(f"Query: {result.query}")
         print(f"Collection: {result.collection}")
-        print(f"Top score: {result.top_score:.4f} / {result.min_top_score:.4f}")
+        print(
+            f"Ranked top score: {result.top_score:.4f} | "
+            f"Max returned score: {result.max_score:.4f} / {result.min_top_score:.4f}"
+        )
+        print(f"Score band: {result.score_band}")
+        print(f"Failure reasons: {result.failure_reasons}")
         print(f"Expected terms found: {result.expected_terms_found}")
         print(f"Expected terms missing: {result.expected_terms_missing}")
         print(f"Expected plan types found: {result.expected_plan_types_found}")
