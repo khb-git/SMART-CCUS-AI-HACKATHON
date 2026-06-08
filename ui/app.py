@@ -10,7 +10,9 @@ from ui.api_client import (
     DEFAULT_API_URL,
     ask_api,
     build_ask_payload,
+    build_markdown_package_report,
     build_markdown_review_report,
+    default_package_report_filename,
     default_report_filename,
     format_evidence_heading,
     format_similarity_score,
@@ -527,6 +529,18 @@ with package_tab:
         storage_policy = package_response.get("storage_policy", "")
         if storage_policy:
             st.info(storage_policy)
+
+        package_markdown_report = build_markdown_package_report(package_response)
+        package_report_filename = default_package_report_filename(
+            package_response.get("package_name", "uploaded_package")
+        )
+
+        st.download_button(
+            label="Download Markdown package review report",
+            data=package_markdown_report,
+            file_name=package_report_filename,
+            mime="text/markdown",
+        )
 
         st.markdown("### Package coverage")
 
