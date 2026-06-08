@@ -74,6 +74,53 @@ def format_plan_type_list(values: list[str]) -> str:
 
     return "\n".join(f"- `{value}`" for value in values)
 
+def format_document_names(values: list[str]) -> str:
+    """Format document filenames for Markdown."""
+    if not values:
+        return "None."
+
+    return "\n".join(f"- `{value}`" for value in values)
+
+
+def build_markdown_findings_section(
+    findings: list[dict[str, Any]],
+    heading: str = "Priority findings",
+) -> list[str]:
+    """Build Markdown lines for priority findings."""
+    lines: list[str] = []
+    priority_findings = [
+        finding
+        for finding in sorted(findings, key=finding_sort_key)
+        if finding.get("status") in {"missing", "evidence_found", "unclear"}
+    ]
+
+    if not priority_findings:
+        return ["No priority findings.", ""]
+
+    lines.extend([f"**{heading}:**", ""])
+
+    for finding in priority_findings:
+        lines.extend(
+            [
+                f"- **{status_label(finding.get('status', ''))}: "
+                f"{finding.get('label', finding.get('item_id', 'Finding'))}**",
+                f"  - {finding.get('finding', '')}",
+            ]
+        )
+
+        matched_groups = finding.get("matched_evidence_group_names", []) or []
+        if matched_groups:
+            lines.append(
+                "  - Matched evidence groups: "
+                + ", ".join(f"`{group}`" for group in matched_groups)
+            )
+
+        recommended_fix = finding.get("recommended_fix", "")
+        if recommended_fix:
+            lines.append(f"  - Recommended fix: {recommended_fix}")
+
+    lines.append("")
+    return lines
 
 def build_markdown_package_report(package_response: dict[str, Any]) -> str:
     """Build a Markdown report from /review-package response JSON."""
@@ -96,6 +143,7 @@ def build_markdown_package_report(package_response: dict[str, Any]) -> str:
     )
     duplicate_plan_types = report.get("duplicate_plan_types", []) or []
     unknown_documents = report.get("unknown_documents", []) or []
+    supporting_documents = report.get("supporting_documents", []) or []
     expected_plan_types = report.get("expected_plan_types", []) or []
     required_plan_types = report.get("required_plan_types", []) or []
     document_reviews = report.get("document_reviews", []) or []
@@ -110,6 +158,7 @@ def build_markdown_package_report(package_response: dict[str, Any]) -> str:
         f"- **Detected document types:** {len(detected_plan_types)}",
         f"- **Missing required document types:** {len(missing_required_plan_types)}",
         f"- **Missing expected document types:** {len(missing_expected_plan_types)}",
+        f"- **Supporting documents:** {len(supporting_documents)}",
         f"- **Duplicate document types:** {len(duplicate_plan_types)}",
         f"- **Unknown documents:** {len(unknown_documents)}",
         "",
@@ -136,6 +185,10 @@ def build_markdown_package_report(package_response: dict[str, Any]) -> str:
         "## Unknown Documents",
         "",
         format_plan_type_list(unknown_documents),
+        "",
+        "## Supporting Documents",
+        "",
+        format_document_names(supporting_documents),
         "",
         "## Required Package Document Types",
         "",
@@ -177,6 +230,10 @@ def build_markdown_package_report(package_response: dict[str, Any]) -> str:
             error = document_review.get("error", "")
             document_report = document_review.get("report") or {}
             classification = document_review.get("classification", {}) or {}
+            document_role = document_review.get("document_role", "main")
+            supporting_type = document_review.get("supporting_document_type", "")
+            covered_plan_types = document_review.get("covered_plan_types", []) or []
+            checklist_reports = document_review.get("checklist_reports", {}) or {}
 
             lines.extend(
                 [
@@ -188,8 +245,45 @@ def build_markdown_package_report(package_response: dict[str, Any]) -> str:
                     f"{', '.join(classification.get('matched_terms', []) or []) or 'None'}",
                     f"- **Classifier reason:** {classification.get('reason', '')}",
                     "",
+                    f"- **Document role:** {document_role}",
+                    f"- **Supporting document type:** {supporting_type or 'N/A'}",
+                    f"- **Covered plan types:** {', '.join(f'`{plan_type}`' for plan_type in covered_plan_types) or 'None'}",
+                    f"- **Checklist reports:** {len(checklist_reports)}",
                 ]
             )
+
+            if checklist_reports:
+                lines.extend(
+                    [
+                        "**Checklist reports by covered plan type:**",
+                        "",
+                    ]
+                )
+
+                for plan_type, checklist_report in checklist_reports.items():
+                    findings = checklist_report.get("findings", []) or []
+                    counts = finding_status_counts(findings)
+
+                    lines.extend(
+                        [
+                            f"#### `{plan_type}`",
+                            "",
+                            f"- **Status:** {status_label(checklist_report.get('overall_status', 'unknown'))}",
+                            f"- **Checklist ID:** {checklist_report.get('checklist_id', '')}",
+                            f"- **Present:** {counts['present']}",
+                            f"- **Evidence found:** {counts['evidence_found']}",
+                            f"- **Missing:** {counts['missing']}",
+                            f"- **Unclear:** {counts['unclear']}",
+                            "",
+                            checklist_report.get("summary", "") or "No summary returned.",
+                            "",
+                        ]
+                    )
+
+                    lines.extend(build_markdown_findings_section(findings))
+
+                if not error:
+                    continue
 
             if error:
                 lines.extend(
