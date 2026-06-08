@@ -327,3 +327,122 @@ def test_review_package_report_to_dict_includes_supporting_documents():
     assert data["document_reviews"][0]["supporting_document_type"] == (
         "supporting_pisc_alternative_timeframe"
     )
+
+def test_duplicate_detection_counts_primary_documents_only():
+    from review.package_review import (
+        PackageDocumentReview,
+        find_duplicate_plan_types,
+    )
+
+    reviews = [
+        PackageDocumentReview(
+            document_name="Narrative.pdf",
+            document_type="project_narrative",
+            classification_confidence="high",
+            classification={},
+            covered_plan_types=[
+                "project_narrative",
+                "aor_corrective_action",
+                "testing_monitoring",
+            ],
+            document_role="main",
+        ),
+        PackageDocumentReview(
+            document_name="AoR.pdf",
+            document_type="aor_corrective_action",
+            classification_confidence="high",
+            classification={},
+            covered_plan_types=[
+                "aor_corrective_action",
+                "testing_monitoring",
+            ],
+            document_role="main",
+        ),
+    ]
+
+    assert find_duplicate_plan_types(reviews) == []
+
+
+def test_duplicate_detection_flags_repeated_primary_documents():
+    from review.package_review import (
+        PackageDocumentReview,
+        find_duplicate_plan_types,
+    )
+
+    reviews = [
+        PackageDocumentReview(
+            document_name="Testing_and_Monitoring_1.pdf",
+            document_type="testing_monitoring",
+            classification_confidence="high",
+            classification={},
+            covered_plan_types=["testing_monitoring"],
+            document_role="main",
+        ),
+        PackageDocumentReview(
+            document_name="Testing_and_Monitoring_2.pdf",
+            document_type="testing_monitoring",
+            classification_confidence="high",
+            classification={},
+            covered_plan_types=["testing_monitoring"],
+            document_role="main",
+        ),
+    ]
+
+    assert find_duplicate_plan_types(reviews) == ["testing_monitoring"]
+
+
+def test_filename_audit_overrides_cost_estimates_primary_type():
+    from review.package_review import review_single_package_document
+
+    document = make_document(
+        "Marquis_Cost_Estimates.pdf",
+        (
+            "Post-injection site care cost estimate. "
+            "This document includes cost estimates for plugging, corrective action, "
+            "site closure, emergency response, and financial assurance coverage."
+        ),
+    )
+
+    review = review_single_package_document(document)
+
+    assert review.document_type == "financial_responsibility"
+    assert review.classification["document_type"] == "financial_responsibility"
+    assert "financial_responsibility" in review.checklist_reports
+
+
+def test_filename_audit_overrides_narrative_primary_type():
+    from review.package_review import review_single_package_document
+
+    document = make_document(
+        "Marquis_Narrative.pdf",
+        (
+            "Class VI permit application narrative. "
+            "The application describes the project, facility information, "
+            "injection project, location, and applicant."
+        ),
+    )
+
+    review = review_single_package_document(document)
+
+    assert review.document_type == "project_narrative"
+    assert review.classification["document_type"] == "project_narrative"
+    assert "project_narrative" in review.checklist_reports
+
+
+def test_filename_audit_overrides_testing_monitoring_primary_type():
+    from review.package_review import review_single_package_document
+
+    document = make_document(
+        "Marquis_Testing_and_Monitoring_Plan.pdf",
+        (
+            "Testing and Monitoring Plan. "
+            "The plan describes injection pressure monitoring, flow rate, "
+            "annular pressure, groundwater monitoring, SCADA, and reporting."
+        ),
+    )
+
+    review = review_single_package_document(document)
+
+    assert review.document_type == "testing_monitoring"
+    assert review.classification["document_type"] == "testing_monitoring"
+    assert "testing_monitoring" in review.checklist_reports
