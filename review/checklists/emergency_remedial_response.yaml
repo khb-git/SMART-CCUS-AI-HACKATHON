@@ -1,0 +1,98 @@
+checklist_id: emergency_remedial_response_v1
+plan_type: emergency_remedial_response
+section_id: '11'
+title: Emergency and Remedial Response Plan Checklist
+description: Review checklist for Emergency and Remedial Response Plans.
+items:
+- item_id: emergency_triggers
+  label: Emergency response triggers
+  description: The plan should identify events that trigger emergency or remedial response.
+  requirement_level: required
+  severity: critical
+  expected_evidence_terms:
+  - trigger
+  - emergency
+  - release
+  - excursion
+  - loss of mechanical integrity
+  - USDW
+  reference_queries:
+  - What does Class VI require for emergency response triggers?
+  - What does EPA guidance say about emergency response triggers?
+  permit_precedent_queries:
+  - How do applicants describe emergency response triggers?
+  - What permit precedent exists for emergency response triggers?
+  recommended_fix: Add clear trigger conditions for emergency and remedial response.
+- item_id: notification_procedure
+  label: Notification procedure
+  description: The plan should describe required notifications and reporting timelines.
+  requirement_level: required
+  severity: critical
+  expected_evidence_terms:
+  - notification
+  - 24-hour
+  - Director
+  - EPA
+  - report
+  - emergency contact
+  reference_queries:
+  - What does Class VI require for notification procedure?
+  - What does EPA guidance say about notification procedure?
+  permit_precedent_queries:
+  - How do applicants describe notification procedure?
+  - What permit precedent exists for notification procedure?
+  recommended_fix: Add notification contacts, timelines, and responsible personnel.
+- item_id: shut_in_procedure
+  label: Shut-in procedure
+  description: The plan should describe when and how injection will be shut in.
+  requirement_level: required
+  severity: critical
+  expected_evidence_terms:
+  - shut-in
+  - shut off
+  - cease injection
+  - automatic
+  - manual
+  reference_queries:
+  - What does Class VI require for shut-in procedure?
+  - What does EPA guidance say about shut-in procedure?
+  permit_precedent_queries:
+  - How do applicants describe shut-in procedure?
+  - What permit precedent exists for shut-in procedure?
+  recommended_fix: Add shut-in criteria, responsible personnel, and restart conditions.
+- item_id: remedial_actions
+  label: Remedial actions
+  description: The plan should describe actions to address releases or endangerment.
+  requirement_level: required
+  severity: critical
+  expected_evidence_terms:
+  - remedial action
+  - corrective action
+  - mitigation
+  - containment
+  - response action
+  reference_queries:
+  - What does Class VI require for remedial actions?
+  - What does EPA guidance say about remedial actions?
+  permit_precedent_queries:
+  - How do applicants describe remedial actions?
+  - What permit precedent exists for remedial actions?
+  recommended_fix: Add specific remedial actions for plausible emergency scenarios.
+- item_id: roles_responsibilities
+  label: Roles and responsibilities
+  description: The plan should identify response roles and responsibilities.
+  requirement_level: recommended
+  severity: moderate
+  expected_evidence_terms:
+  - roles
+  - responsibilities
+  - incident commander
+  - operator
+  - contacts
+  reference_queries:
+  - What does Class VI require for roles and responsibilities?
+  - What does EPA guidance say about roles and responsibilities?
+  permit_precedent_queries:
+  - How do applicants describe roles and responsibilities?
+  - What permit precedent exists for roles and responsibilities?
+  recommended_fix: Add roles, responsibilities, and communication chain for response actions.

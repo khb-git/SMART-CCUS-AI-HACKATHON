@@ -1,0 +1,96 @@
+checklist_id: injection_well_plugging_v1
+plan_type: injection_well_plugging
+section_id: '9'
+title: Injection Well Plugging Plan Checklist
+description: Review checklist for Injection Well Plugging Plans.
+items:
+- item_id: plugging_method
+  label: Plugging method
+  description: The plan should describe plugging methods and materials.
+  requirement_level: required
+  severity: critical
+  expected_evidence_terms:
+  - plugging
+  - cement plug
+  - plugging method
+  - abandonment
+  - well plugging
+  reference_queries:
+  - What does Class VI require for plugging method?
+  - What does EPA guidance say about plugging method?
+  permit_precedent_queries:
+  - How do applicants describe plugging method?
+  - What permit precedent exists for plugging method?
+  recommended_fix: Add plugging sequence, materials, placement depths, and verification approach.
+- item_id: plugging_depths
+  label: Plugging depths
+  description: The plan should identify intervals and depths for plugs.
+  requirement_level: required
+  severity: critical
+  expected_evidence_terms:
+  - depth
+  - interval
+  - plug placement
+  - cement plug
+  - perforations
+  reference_queries:
+  - What does Class VI require for plugging depths?
+  - What does EPA guidance say about plugging depths?
+  permit_precedent_queries:
+  - How do applicants describe plugging depths?
+  - What permit precedent exists for plugging depths?
+  recommended_fix: Add plug depths and intervals relative to injection and confining zones.
+- item_id: pre_plugging_conditions
+  label: Pre-plugging conditions
+  description: The plan should describe well condition before plugging.
+  requirement_level: required
+  severity: moderate
+  expected_evidence_terms:
+  - well condition
+  - pre-plugging
+  - mechanical integrity
+  - fluid
+  - pressure
+  reference_queries:
+  - What does Class VI require for pre-plugging conditions?
+  - What does EPA guidance say about pre-plugging conditions?
+  permit_precedent_queries:
+  - How do applicants describe pre-plugging conditions?
+  - What permit precedent exists for pre-plugging conditions?
+  recommended_fix: Add pre-plugging evaluation, pressure/fluid conditions, and well integrity status.
+- item_id: plugging_verification
+  label: Plugging verification
+  description: The plan should describe verification of plugging success.
+  requirement_level: required
+  severity: critical
+  expected_evidence_terms:
+  - verification
+  - tag
+  - pressure test
+  - cement bond
+  - plug integrity
+  reference_queries:
+  - What does Class VI require for plugging verification?
+  - What does EPA guidance say about plugging verification?
+  permit_precedent_queries:
+  - How do applicants describe plugging verification?
+  - What permit precedent exists for plugging verification?
+  recommended_fix: Add verification tests, acceptance criteria, and reporting.
+- item_id: plugging_report
+  label: Plugging report
+  description: The plan should describe final plugging documentation.
+  requirement_level: recommended
+  severity: minor
+  expected_evidence_terms:
+  - plugging report
+  - records
+  - submitted
+  - documentation
+  - as-built
+  reference_queries:
+  - What does Class VI require for plugging report?
+  - What does EPA guidance say about plugging report?
+  permit_precedent_queries:
+  - How do applicants describe plugging report?
+  - What permit precedent exists for plugging report?
+  recommended_fix: Add final reporting requirements and as-built documentation.

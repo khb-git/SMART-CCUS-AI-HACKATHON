@@ -235,11 +235,20 @@ with review_tab:
         options=[
             "auto",
             "testing_monitoring",
+            "pre_operational_testing",
+            "pisc_site_closure",
+            "emergency_remedial_response",
+            "well_construction",
+            "aor_corrective_action",
+            "financial_responsibility",
+            "site_operating",
+            "site_geologic_characterization",
+            "injection_well_plugging",
+            "project_narrative",
         ],
         index=0,
         help=(
-            "Use auto when the document can be classified. "
-            "For now, only the Testing and Monitoring checklist is available."
+            "Use auto when the document can be classified, or manually select a checklist."
         ),
     )
 

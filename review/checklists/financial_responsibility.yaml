@@ -1,0 +1,97 @@
+checklist_id: financial_responsibility_v1
+plan_type: financial_responsibility
+section_id: '4'
+title: Financial Responsibility Checklist
+description: Review checklist for Financial Responsibility demonstrations.
+items:
+- item_id: cost_estimate
+  label: Cost estimate
+  description: The document should provide cost estimates for required Class VI activities.
+  requirement_level: required
+  severity: critical
+  expected_evidence_terms:
+  - cost estimate
+  - estimated cost
+  - closure cost
+  - corrective action cost
+  - PISC cost
+  reference_queries:
+  - What does Class VI require for cost estimate?
+  - What does EPA guidance say about cost estimate?
+  permit_precedent_queries:
+  - How do applicants describe cost estimate?
+  - What permit precedent exists for cost estimate?
+  recommended_fix: Add itemized cost estimates for corrective action, plugging, PISC, closure, and emergency
+    response.
+- item_id: financial_instrument
+  label: Financial instrument
+  description: The document should identify the financial instrument used.
+  requirement_level: required
+  severity: critical
+  expected_evidence_terms:
+  - financial instrument
+  - letter of credit
+  - surety bond
+  - trust fund
+  - insurance
+  reference_queries:
+  - What does Class VI require for financial instrument?
+  - What does EPA guidance say about financial instrument?
+  permit_precedent_queries:
+  - How do applicants describe financial instrument?
+  - What permit precedent exists for financial instrument?
+  recommended_fix: Add the financial instrument type, provider, amount, and coverage period.
+- item_id: coverage_amount
+  label: Coverage amount
+  description: The document should show that financial coverage equals or exceeds estimated costs.
+  requirement_level: required
+  severity: critical
+  expected_evidence_terms:
+  - coverage amount
+  - amount
+  - face value
+  - cost estimate
+  - financial assurance
+  reference_queries:
+  - What does Class VI require for coverage amount?
+  - What does EPA guidance say about coverage amount?
+  permit_precedent_queries:
+  - How do applicants describe coverage amount?
+  - What permit precedent exists for coverage amount?
+  recommended_fix: Add coverage amount and comparison to estimated costs.
+- item_id: inflation_adjustment
+  label: Inflation adjustment
+  description: The document should address cost updates or inflation adjustment.
+  requirement_level: recommended
+  severity: moderate
+  expected_evidence_terms:
+  - inflation
+  - adjustment
+  - annual update
+  - cost update
+  - recalculation
+  reference_queries:
+  - What does Class VI require for inflation adjustment?
+  - What does EPA guidance say about inflation adjustment?
+  permit_precedent_queries:
+  - How do applicants describe inflation adjustment?
+  - What permit precedent exists for inflation adjustment?
+  recommended_fix: Add update frequency and inflation/cost adjustment method.
+- item_id: instrument_validity
+  label: Instrument validity
+  description: The document should show instrument validity and enforceability.
+  requirement_level: recommended
+  severity: moderate
+  expected_evidence_terms:
+  - effective date
+  - expiration
+  - issuer
+  - beneficiary
+  - terms and conditions
+  reference_queries:
+  - What does Class VI require for instrument validity?
+  - What does EPA guidance say about instrument validity?
+  permit_precedent_queries:
+  - How do applicants describe instrument validity?
+  - What permit precedent exists for instrument validity?
+  recommended_fix: Add instrument dates, issuer, beneficiary, and enforceability terms.

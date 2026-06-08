@@ -1,0 +1,95 @@
+checklist_id: site_operating_v1
+plan_type: site_operating
+section_id: '7'
+title: Site Operating Plan Checklist
+description: Review checklist for Class VI Site Operating Plans.
+items:
+- item_id: operating_parameters
+  label: Operating parameters
+  description: The plan should define approved operating parameters.
+  requirement_level: required
+  severity: critical
+  expected_evidence_terms:
+  - operating parameters
+  - maximum injection pressure
+  - injection rate
+  - temperature
+  - annulus pressure
+  reference_queries:
+  - What does Class VI require for operating parameters?
+  - What does EPA guidance say about operating parameters?
+  permit_precedent_queries:
+  - How do applicants describe operating parameters?
+  - What permit precedent exists for operating parameters?
+  recommended_fix: Add operating limits for pressure, rate, temperature, and annular pressure.
+- item_id: injection_pressure_limit
+  label: Injection pressure limit
+  description: The plan should define maximum injection pressure.
+  requirement_level: required
+  severity: critical
+  expected_evidence_terms:
+  - maximum injection pressure
+  - fracture pressure
+  - pressure limit
+  - MAIP
+  reference_queries:
+  - What does Class VI require for injection pressure limit?
+  - What does EPA guidance say about injection pressure limit?
+  permit_precedent_queries:
+  - How do applicants describe injection pressure limit?
+  - What permit precedent exists for injection pressure limit?
+  recommended_fix: Add maximum injection pressure and technical basis.
+- item_id: injection_fluid_characterization
+  label: Injection fluid characterization
+  description: The plan should describe the injected CO2 stream.
+  requirement_level: required
+  severity: moderate
+  expected_evidence_terms:
+  - CO2 stream
+  - carbon dioxide stream
+  - chemical characteristics
+  - composition
+  - impurities
+  reference_queries:
+  - What does Class VI require for injection fluid characterization?
+  - What does EPA guidance say about injection fluid characterization?
+  permit_precedent_queries:
+  - How do applicants describe injection fluid characterization?
+  - What permit precedent exists for injection fluid characterization?
+  recommended_fix: Add CO2 stream composition, expected variation, and monitoring approach.
+- item_id: alarm_shutoff
+  label: Alarm and shutoff systems
+  description: The plan should describe alarms and shutoff controls.
+  requirement_level: required
+  severity: critical
+  expected_evidence_terms:
+  - alarm
+  - shut-off
+  - shutoff
+  - setpoint
+  - automatic
+  reference_queries:
+  - What does Class VI require for alarm and shutoff systems?
+  - What does EPA guidance say about alarm and shutoff systems?
+  permit_precedent_queries:
+  - How do applicants describe alarm and shutoff systems?
+  - What permit precedent exists for alarm and shutoff systems?
+  recommended_fix: Add alarm setpoints, shutoff logic, and response procedure.
+- item_id: operations_recordkeeping
+  label: Operations recordkeeping
+  description: The plan should describe operating records and reporting.
+  requirement_level: recommended
+  severity: minor
+  expected_evidence_terms:
+  - records
+  - reporting
+  - daily
+  - monthly
+  - operating data
+  reference_queries:
+  - What does Class VI require for operations recordkeeping?
+  - What does EPA guidance say about operations recordkeeping?
+  permit_precedent_queries:
+  - How do applicants describe operations recordkeeping?
+  - What permit precedent exists for operations recordkeeping?
+  recommended_fix: Add recordkeeping parameters, frequency, and reporting procedure.

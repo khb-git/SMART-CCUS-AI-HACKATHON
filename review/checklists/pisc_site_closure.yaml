@@ -1,0 +1,96 @@
+checklist_id: pisc_site_closure_v1
+plan_type: pisc_site_closure
+section_id: '10'
+title: PISC and Site Closure Plan Checklist
+description: Review checklist for Post-Injection Site Care and Site Closure Plans.
+items:
+- item_id: pisc_duration
+  label: PISC duration
+  description: The plan should define the post-injection site care period.
+  requirement_level: required
+  severity: critical
+  expected_evidence_terms:
+  - post-injection site care
+  - PISC
+  - site care period
+  - duration
+  - 50 years
+  reference_queries:
+  - What does Class VI require for pisc duration?
+  - What does EPA guidance say about pisc duration?
+  permit_precedent_queries:
+  - How do applicants describe pisc duration?
+  - What permit precedent exists for pisc duration?
+  recommended_fix: Add the proposed PISC duration and technical basis.
+- item_id: plume_pressure_monitoring
+  label: Plume and pressure monitoring
+  description: The plan should describe post-injection plume and pressure-front monitoring.
+  requirement_level: required
+  severity: critical
+  expected_evidence_terms:
+  - plume
+  - pressure front
+  - monitoring
+  - post-injection
+  - modeling
+  reference_queries:
+  - What does Class VI require for plume and pressure monitoring?
+  - What does EPA guidance say about plume and pressure monitoring?
+  permit_precedent_queries:
+  - How do applicants describe plume and pressure monitoring?
+  - What permit precedent exists for plume and pressure monitoring?
+  recommended_fix: Add post-injection plume and pressure-front monitoring methods and frequency.
+- item_id: non_endangerment_demonstration
+  label: Non-endangerment demonstration
+  description: The plan should describe how non-endangerment will be demonstrated.
+  requirement_level: required
+  severity: critical
+  expected_evidence_terms:
+  - non-endangerment
+  - USDW
+  - endangerment
+  - demonstration
+  - stabilization
+  reference_queries:
+  - What does Class VI require for non-endangerment demonstration?
+  - What does EPA guidance say about non-endangerment demonstration?
+  permit_precedent_queries:
+  - How do applicants describe non-endangerment demonstration?
+  - What permit precedent exists for non-endangerment demonstration?
+  recommended_fix: Add criteria and evidence needed to demonstrate non-endangerment.
+- item_id: site_closure_activities
+  label: Site closure activities
+  description: The plan should describe closure activities after PISC.
+  requirement_level: required
+  severity: moderate
+  expected_evidence_terms:
+  - site closure
+  - plugging
+  - closure report
+  - decommission
+  - surface equipment
+  reference_queries:
+  - What does Class VI require for site closure activities?
+  - What does EPA guidance say about site closure activities?
+  permit_precedent_queries:
+  - How do applicants describe site closure activities?
+  - What permit precedent exists for site closure activities?
+  recommended_fix: Add planned site closure actions, timing, and documentation.
+- item_id: record_retention
+  label: Record retention
+  description: The plan should describe long-term recordkeeping after closure.
+  requirement_level: recommended
+  severity: minor
+  expected_evidence_terms:
+  - records
+  - retention
+  - archive
+  - closure report
+  - documentation
+  reference_queries:
+  - What does Class VI require for record retention?
+  - What does EPA guidance say about record retention?
+  permit_precedent_queries:
+  - How do applicants describe record retention?
+  - What permit precedent exists for record retention?
+  recommended_fix: Add record retention responsibilities, duration, and storage location.

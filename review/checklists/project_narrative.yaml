@@ -1,0 +1,97 @@
+checklist_id: project_narrative_v1
+plan_type: project_narrative
+section_id: '1'
+title: Project Narrative Checklist
+description: Review checklist for Class VI Project Narrative/Application Narrative documents.
+items:
+- item_id: project_description
+  label: Project description
+  description: The narrative should describe the project purpose and scope.
+  requirement_level: required
+  severity: moderate
+  expected_evidence_terms:
+  - project description
+  - project purpose
+  - injection project
+  - CO2 storage
+  - facility
+  reference_queries:
+  - What does Class VI require for project description?
+  - What does EPA guidance say about project description?
+  permit_precedent_queries:
+  - How do applicants describe project description?
+  - What permit precedent exists for project description?
+  recommended_fix: Add a clear project overview, purpose, location, and scope.
+- item_id: applicant_information
+  label: Applicant information
+  description: The narrative should identify the applicant/operator.
+  requirement_level: required
+  severity: moderate
+  expected_evidence_terms:
+  - applicant
+  - operator
+  - facility
+  - owner
+  - contact
+  reference_queries:
+  - What does Class VI require for applicant information?
+  - What does EPA guidance say about applicant information?
+  permit_precedent_queries:
+  - How do applicants describe applicant information?
+  - What permit precedent exists for applicant information?
+  recommended_fix: Add applicant/operator identity and contact information.
+- item_id: injection_overview
+  label: Injection overview
+  description: The narrative should summarize injection operations.
+  requirement_level: required
+  severity: critical
+  expected_evidence_terms:
+  - injection
+  - injection wells
+  - injection rate
+  - CO2 stream
+  - storage
+  reference_queries:
+  - What does Class VI require for injection overview?
+  - What does EPA guidance say about injection overview?
+  permit_precedent_queries:
+  - How do applicants describe injection overview?
+  - What permit precedent exists for injection overview?
+  recommended_fix: Add number of wells, injection stream, rate/volume overview, and target formation.
+- item_id: site_location
+  label: Site location
+  description: The narrative should identify the site location and setting.
+  requirement_level: required
+  severity: moderate
+  expected_evidence_terms:
+  - location
+  - site
+  - county
+  - state
+  - coordinates
+  - map
+  reference_queries:
+  - What does Class VI require for site location?
+  - What does EPA guidance say about site location?
+  permit_precedent_queries:
+  - How do applicants describe site location?
+  - What permit precedent exists for site location?
+  recommended_fix: Add site location, coordinates/maps, and surrounding setting.
+- item_id: document_crosswalk
+  label: Application crosswalk
+  description: The narrative should connect the application documents or sections.
+  requirement_level: recommended
+  severity: minor
+  expected_evidence_terms:
+  - application
+  - section
+  - attachment
+  - appendix
+  - plan
+  reference_queries:
+  - What does Class VI require for application crosswalk?
+  - What does EPA guidance say about application crosswalk?
+  permit_precedent_queries:
+  - How do applicants describe application crosswalk?
+  - What permit precedent exists for application crosswalk?
+  recommended_fix: Add a crosswalk to key application sections, attachments, and plans.

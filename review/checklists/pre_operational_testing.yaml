@@ -1,0 +1,99 @@
+checklist_id: pre_operational_testing_v1
+plan_type: pre_operational_testing
+section_id: '6'
+title: Pre-Operational Testing Plan Checklist
+description: Review checklist for Class VI Pre-Operational Testing Plans.
+items:
+- item_id: formation_testing
+  label: Formation testing
+  description: The plan should describe formation testing before injection begins.
+  requirement_level: required
+  severity: critical
+  expected_evidence_terms:
+  - formation testing
+  - injectivity test
+  - step-rate test
+  - pressure falloff
+  - baseline
+  reference_queries:
+  - What does Class VI require for formation testing?
+  - What does EPA guidance say about formation testing?
+  permit_precedent_queries:
+  - How do applicants describe formation testing?
+  - What permit precedent exists for formation testing?
+  recommended_fix: Add formation testing methods, timing, parameters, and acceptance criteria.
+- item_id: mechanical_integrity_testing
+  label: Mechanical integrity testing
+  description: The plan should describe pre-operational mechanical integrity testing.
+  requirement_level: required
+  severity: critical
+  expected_evidence_terms:
+  - mechanical integrity
+  - MIT
+  - pressure test
+  - temperature log
+  - noise log
+  - cement bond log
+  reference_queries:
+  - What does Class VI require for mechanical integrity testing?
+  - What does EPA guidance say about mechanical integrity testing?
+  permit_precedent_queries:
+  - How do applicants describe mechanical integrity testing?
+  - What permit precedent exists for mechanical integrity testing?
+  recommended_fix: Add the planned MIT methods, test frequency, criteria, and response actions.
+- item_id: baseline_monitoring
+  label: Baseline monitoring
+  description: The plan should describe baseline measurements before injection.
+  requirement_level: required
+  severity: critical
+  expected_evidence_terms:
+  - baseline
+  - pre-injection
+  - groundwater
+  - pressure
+  - temperature
+  - geochemical
+  reference_queries:
+  - What does Class VI require for baseline monitoring?
+  - What does EPA guidance say about baseline monitoring?
+  permit_precedent_queries:
+  - How do applicants describe baseline monitoring?
+  - What permit precedent exists for baseline monitoring?
+  recommended_fix: Add baseline monitoring parameters, locations, and timing.
+- item_id: logging_program
+  label: Logging program
+  description: The plan should identify logging tools and objectives.
+  requirement_level: required
+  severity: moderate
+  expected_evidence_terms:
+  - logging
+  - wireline
+  - cement bond
+  - temperature log
+  - caliper
+  - gamma ray
+  reference_queries:
+  - What does Class VI require for logging program?
+  - What does EPA guidance say about logging program?
+  permit_precedent_queries:
+  - How do applicants describe logging program?
+  - What permit precedent exists for logging program?
+  recommended_fix: Add logging tools, intervals, timing, and how results will be used.
+- item_id: test_acceptance_criteria
+  label: Test acceptance criteria
+  description: The plan should state how pre-operational test results will be evaluated.
+  requirement_level: recommended
+  severity: moderate
+  expected_evidence_terms:
+  - acceptance criteria
+  - pass
+  - fail
+  - threshold
+  - operating parameters
+  reference_queries:
+  - What does Class VI require for test acceptance criteria?
+  - What does EPA guidance say about test acceptance criteria?
+  permit_precedent_queries:
+  - How do applicants describe test acceptance criteria?
+  - What permit precedent exists for test acceptance criteria?
+  recommended_fix: Add pass/fail criteria and how failed tests will be resolved before injection.
