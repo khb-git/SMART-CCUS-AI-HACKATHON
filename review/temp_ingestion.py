@@ -53,6 +53,53 @@ def is_supported_review_file(path: str | Path) -> bool:
     """Return True if the uploaded file type is supported for temporary review."""
     return Path(path).suffix.lower() in SUPPORTED_REVIEW_EXTENSIONS
 
+def is_table_chunk(metadata: dict[str, Any]) -> bool:
+    """Return True when chunk metadata indicates table-like content."""
+    content_type = str(metadata.get("content_type", "") or "").lower()
+    return content_type == "table" or bool(metadata.get("table_index", -1) not in {-1, "", None})
+
+
+def normalize_table_text(text: str) -> str:
+    """Normalize table text into row-like lines for review matching."""
+    lines = [
+        " ".join(line.split())
+        for line in str(text or "").splitlines()
+        if line.strip()
+    ]
+
+    if not lines:
+        return ""
+
+    return "\n".join(f"Table row: {line}" for line in lines)
+
+
+def enrich_temporary_chunk_text(text: str, metadata: dict[str, Any]) -> str:
+    """Add lightweight context to table chunks without changing storage behavior."""
+    if not is_table_chunk(metadata):
+        return text
+
+    normalized_table_text = normalize_table_text(text)
+
+    if not normalized_table_text:
+        return text
+
+    table_label_parts = ["Table evidence"]
+
+    page = metadata.get("page") or metadata.get("page_number")
+    if page not in {"", None}:
+        table_label_parts.append(f"page {page}")
+
+    sheet_name = metadata.get("sheet_name")
+    if sheet_name:
+        table_label_parts.append(f"sheet {sheet_name}")
+
+    table_index = metadata.get("table_index")
+    if table_index not in {-1, "", None}:
+        table_label_parts.append(f"table {table_index}")
+
+    table_label = " | ".join(table_label_parts)
+
+    return f"{table_label}\n{normalized_table_text}"
 
 def copy_to_temporary_directory(source_path: str | Path, temp_dir: str | Path) -> Path:
     """Copy an uploaded file into a temporary directory for processing."""
@@ -86,9 +133,13 @@ def load_chunks_from_temporary_output(output_root: str | Path):
         if attr_path.exists():
             metadata = json.loads(attr_path.read_text(encoding="utf-8"))
 
+        if is_table_chunk(metadata):
+            metadata["content_type"] = "table"
+            metadata["table_aware"] = True
+
         chunks.append(
             TemporaryReviewChunk(
-                text=text,
+                text=enrich_temporary_chunk_text(text, metadata),
                 metadata=metadata,
             )
         )
@@ -150,9 +201,13 @@ def convert_ingestion_chunks(chunks) -> list[TemporaryReviewChunk]:
         text = getattr(chunk, "page_content", "") or ""
         metadata = dict(getattr(chunk, "metadata", {}) or {})
 
+        if is_table_chunk(metadata):
+            metadata["content_type"] = "table"
+            metadata["table_aware"] = True
+
         review_chunks.append(
             TemporaryReviewChunk(
-                text=text,
+                text=enrich_temporary_chunk_text(text, metadata),
                 metadata=metadata,
             )
         )

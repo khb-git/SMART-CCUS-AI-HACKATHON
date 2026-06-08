@@ -333,3 +333,64 @@ def test_checklist_item_to_dict_includes_evidence_groups():
         "system": ["SCADA", "data logger"],
         "output": ["daily values", "records"],
     }
+
+def test_find_supporting_excerpts_prioritizes_table_rows():
+    from review.gap_analysis import find_supporting_excerpts
+
+    document_text = (
+        "The following table summarizes monitoring parameters.\n"
+        "Table evidence | page 4 | table 1\n"
+        "Table row: Parameter | Frequency | Recording\n"
+        "Table row: Injection pressure | Continuous | SCADA\n"
+        "The monitoring program is described in the plan."
+    )
+
+    excerpts = find_supporting_excerpts(
+        document_text,
+        matched_terms=["injection pressure", "continuous", "SCADA"],
+    )
+
+    assert excerpts
+    assert excerpts[0] == "Table row: Injection pressure | Continuous | SCADA"
+
+
+def test_table_rows_support_evidence_group_matching():
+    from review.gap_analysis import GapStatus, analyze_checklist_item
+    from review.types import ReviewChecklistItem, ReviewRequirementLevel, ReviewSeverity
+
+    item = ReviewChecklistItem(
+        item_id="injection_pressure_monitoring",
+        label="Injection pressure monitoring",
+        description="Document should describe pressure monitoring.",
+        requirement_level=ReviewRequirementLevel.REQUIRED,
+        severity=ReviewSeverity.CRITICAL,
+        expected_evidence_terms=[
+            "injection pressure",
+            "continuous",
+            "SCADA",
+        ],
+        evidence_groups={
+            "parameter": ["injection pressure"],
+            "frequency": ["continuous"],
+            "recording": ["SCADA"],
+        },
+    )
+
+    document_text = (
+        "Table evidence | page 4 | table 1\n"
+        "Table row: Parameter | Frequency | Recording\n"
+        "Table row: Injection pressure | Continuous | SCADA"
+    )
+
+    finding = analyze_checklist_item(document_text, item)
+
+    assert finding.status == GapStatus.PRESENT
+    assert finding.matched_evidence_group_names == [
+        "frequency",
+        "parameter",
+        "recording",
+    ]
+    assert finding.supporting_excerpts
+    assert finding.supporting_excerpts[0] == (
+        "Table row: Injection pressure | Continuous | SCADA"
+    )
