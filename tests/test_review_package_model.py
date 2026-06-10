@@ -646,3 +646,52 @@ def test_package_coverage_credits_wabash_well_construction_evidence_in_plugging_
     assert review.document_type == "injection_well_plugging"
     assert review.covered_plan_types == ["injection_well_plugging"]
     assert "well_construction" in review.coverage_plan_types
+
+def test_short_pisc_filename_overrides_aor_text_primary_type():
+    from review.package_review import review_document_package
+
+    documents = [
+        make_document(
+            "HGCS_Vervain_AoR_and_Corrective_Action_Plan.pdf",
+            (
+                "Area of Review and Corrective Action Plan. "
+                "The plan describes AoR delineation, corrective action, legacy wells, "
+                "and artificial penetrations."
+            ),
+        ),
+        make_document(
+            "HGCS_Vervain_PISC.pdf",
+            (
+                "Post-Injection Site Care Plan. "
+                "This document references the Area of Review and corrective action process, "
+                "including AoR reevaluation and corrective action updates. "
+                "It describes PISC monitoring and non-endangerment demonstration."
+            ),
+        ),
+    ]
+
+    report = review_document_package(
+        documents,
+        package_name="heartland_vervain_package",
+        expected_plan_types=[
+            "aor_corrective_action",
+            "pisc_site_closure",
+        ],
+        required_plan_types=[
+            "aor_corrective_action",
+            "pisc_site_closure",
+        ],
+    )
+
+    assert report.missing_required_plan_types == []
+    assert report.duplicate_plan_types == []
+
+    pisc_review = [
+        review
+        for review in report.document_reviews
+        if review.document_name == "HGCS_Vervain_PISC.pdf"
+    ][0]
+
+    assert pisc_review.document_type == "pisc_site_closure"
+    assert pisc_review.covered_plan_types == ["pisc_site_closure"]
+    assert "aor_corrective_action" in pisc_review.coverage_plan_types
