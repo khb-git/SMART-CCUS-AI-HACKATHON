@@ -4,7 +4,16 @@ Streamlit chatbot UI for the SMART CCUS Class VI Review Assistant.
 
 from __future__ import annotations
 
+import sys
+from pathlib import Path
+
 import streamlit as st
+
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
+
+from review.coverage_evidence_display import coverage_evidence_rows_for_display
 
 from ui.api_client import (
     DEFAULT_API_URL,
@@ -652,6 +661,25 @@ with package_tab:
                     st.write(f"🧩 `{document_name}`")
             else:
                 st.write("No supporting documents.")
+
+        st.markdown("### Package Coverage Evidence")
+
+        coverage_evidence = package_report.get("coverage_evidence", []) or []
+
+        st.caption(
+            "This table explains why package topics were credited as detected. "
+            "Text evidence should be treated as reviewer-supporting evidence, "
+            "not an automatic final compliance determination."
+        )
+
+        if coverage_evidence:
+            st.dataframe(
+                coverage_evidence_rows_for_display(coverage_evidence),
+                use_container_width=True,
+                hide_index=True,
+            )
+        else:
+            st.info("No package coverage evidence was returned for this review.")
 
         with st.expander("Expected package document types", expanded=False):
             expected = package_report.get("expected_plan_types", []) or []
