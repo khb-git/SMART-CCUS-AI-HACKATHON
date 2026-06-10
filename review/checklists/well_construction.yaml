@@ -140,3 +140,184 @@ items:
   - How do applicants describe materials compatibility?
   - What permit precedent exists for materials compatibility?
   recommended_fix: Add materials compatibility and corrosion-control basis.
+- item_id: mechanical_integrity_design
+  label: Mechanical integrity design
+  description: The plan should describe how the well design prevents fluid movement outside the injection zone and supports demonstration of mechanical integrity.
+  requirement_level: required
+  severity: critical
+  expected_evidence_terms:
+  - mechanical integrity
+  - internal mechanical integrity
+  - external mechanical integrity
+  - fluid movement
+  - injection zone
+  - confining zone
+  - pressure test
+  - annulus pressure
+  - cement bond
+  evidence_groups:
+    mechanical_integrity:
+    - mechanical integrity
+    - internal mechanical integrity
+    - external mechanical integrity
+    containment:
+    - fluid movement
+    - injection zone
+    - confining zone
+    testing:
+    - pressure test
+    - annulus pressure
+    - cement bond
+  reference_queries:
+  - What does Class VI require for mechanical integrity in injection well construction?
+  - What does EPA well construction guidance say about preventing fluid movement outside the injection zone?
+  permit_precedent_queries:
+  - How do Class VI applicants describe mechanical integrity design?
+  - What permit precedent exists for mechanical integrity in well construction plans?
+  recommended_fix: Add well design details showing how casing, cement, tubing, packer, and testing prevent fluid movement outside the injection zone and support mechanical integrity.
+
+- item_id: logging_workover_design
+  label: Logging and workover design
+  description: The plan should describe well design considerations that allow required logging, testing, monitoring, and workover activities.
+  requirement_level: required
+  severity: moderate
+  expected_evidence_terms:
+  - logging
+  - workover
+  - caliper log
+  - cement bond log
+  - casing inspection log
+  - deviation check
+  - monitoring
+  - access
+  - well intervention
+  evidence_groups:
+    logging:
+    - logging
+    - caliper log
+    - cement bond log
+    - casing inspection log
+    design_access:
+    - workover
+    - access
+    - well intervention
+    verification:
+    - deviation check
+    - monitoring
+  reference_queries:
+  - What does EPA well construction guidance say about designing Class VI wells for logging and workovers?
+  - What logging and workover access information is expected in a Class VI well construction plan?
+  permit_precedent_queries:
+  - How do Class VI applicants describe logging workover and well intervention design?
+  - What permit precedent exists for logging and workover access in well construction plans?
+  recommended_fix: Add design information showing that the well can support required logging, monitoring, testing, and workover activities.
+
+- item_id: downhole_stress_design
+  label: Down-hole stress and pressure design
+  description: The plan should evaluate down-hole stresses, injection pressure, formation pressure, fracture pressure, and material strength for the proposed well design.
+  requirement_level: required
+  severity: critical
+  expected_evidence_terms:
+  - down-hole stress
+  - downhole stress
+  - burst pressure
+  - collapse pressure
+  - tensile strength
+  - injection pressure
+  - formation pressure
+  - fracture pressure
+  - pressure rating
+  - safety factor
+  evidence_groups:
+    stress_design:
+    - down-hole stress
+    - downhole stress
+    - burst pressure
+    - collapse pressure
+    - tensile strength
+    pressure_basis:
+    - injection pressure
+    - formation pressure
+    - fracture pressure
+    design_margin:
+    - pressure rating
+    - safety factor
+  reference_queries:
+  - What does EPA well construction guidance say about designing Class VI wells for down-hole stresses?
+  - What pressure and stress design information is expected in a Class VI well construction plan?
+  permit_precedent_queries:
+  - How do Class VI applicants document down-hole stress and pressure design?
+  - What permit precedent exists for pressure ratings and safety factors in Class VI well construction?
+  recommended_fix: Add down-hole stress, pressure rating, fracture pressure, material strength, and safety-factor information supporting the well design.
+
+- item_id: cement_verification_acceptance
+  label: Cement verification and acceptance criteria
+  description: The plan should describe how cement placement and integrity will be verified, including logs, top-of-cement confirmation, and acceptance criteria.
+  requirement_level: required
+  severity: critical
+  expected_evidence_terms:
+  - cement bond log
+  - variable density log
+  - top of cement
+  - cement evaluation
+  - cement integrity
+  - acceptance criteria
+  - remedial cementing
+  - squeeze cement
+  evidence_groups:
+    cement_logs:
+    - cement bond log
+    - variable density log
+    cement_placement:
+    - top of cement
+    - cement evaluation
+    - cement integrity
+    acceptance:
+    - acceptance criteria
+    - remedial cementing
+    - squeeze cement
+  reference_queries:
+  - What does EPA well construction guidance say about cement verification for Class VI wells?
+  - What cement bond and variable density log information is expected for Class VI well construction?
+  permit_precedent_queries:
+  - How do Class VI applicants document cement verification and acceptance criteria?
+  - What permit precedent exists for cement bond logs and cement acceptance criteria?
+  recommended_fix: Add cement verification methods, top-of-cement confirmation, cement bond or variable density logging, acceptance criteria, and remedial cementing procedures if needed.
+
+- item_id: shutoff_safety_systems
+  label: Surface and down-hole shutoff safety systems
+  description: The plan should describe surface and down-hole shutoff devices, alarms, safety systems, and automatic shut-in conditions used to protect USDWs.
+  requirement_level: required
+  severity: critical
+  expected_evidence_terms:
+  - shutoff
+  - shut-off
+  - automatic shut-in
+  - alarm
+  - emergency shutdown
+  - surface safety system
+  - down-hole shut-off
+  - downhole shutoff
+  - fail-safe
+  - USDW
+  evidence_groups:
+    shutoff_devices:
+    - shutoff
+    - shut-off
+    - automatic shut-in
+    - down-hole shut-off
+    - downhole shutoff
+    safety_systems:
+    - alarm
+    - emergency shutdown
+    - surface safety system
+    - fail-safe
+    protection:
+    - USDW
+  reference_queries:
+  - What does EPA well construction guidance say about surface and down-hole shutoff devices for Class VI wells?
+  - What shutoff and alarm systems are expected for Class VI injection well construction?
+  permit_precedent_queries:
+  - How do Class VI applicants document shutoff safety systems?
+  - What permit precedent exists for automatic shut-in and alarm systems in Class VI well construction?
+  recommended_fix: Add surface and down-hole shutoff devices, alarm conditions, automatic shut-in triggers, and fail-safe safety-system descriptions.
