@@ -382,3 +382,259 @@ items:
     recommended_fix: >
       Add reporting frequency, reporting destination, and which monitoring data
       will be included in compliance records.
+      
+  - item_id: co2_stream_analysis
+    label: CO2 stream analysis
+    description: >
+      The plan should describe how the carbon dioxide stream will be sampled,
+      analyzed, and reported, including composition and impurities relevant to
+      corrosion, compatibility, and USDW protection.
+    requirement_level: required
+    severity: critical
+    expected_evidence_terms:
+      - carbon dioxide stream
+      - CO2 stream
+      - stream composition
+      - flue gas analysis
+      - impurities
+      - laboratory analysis
+      - sampling
+      - chemical analysis
+      - corrosion
+      - compatibility
+    evidence_groups:
+      stream_identity:
+        - carbon dioxide stream
+        - CO2 stream
+        - stream composition
+      analytical_method:
+        - flue gas analysis
+        - laboratory analysis
+        - chemical analysis
+        - sampling
+      risk_relevance:
+        - impurities
+        - corrosion
+        - compatibility
+    reference_queries:
+      - What does EPA Testing and Monitoring Guidance say about analysis of the carbon dioxide stream?
+      - What Class VI monitoring information is expected for CO2 stream composition?
+    permit_precedent_queries:
+      - How do Class VI applicants describe CO2 stream analysis?
+      - What permit precedent exists for CO2 stream sampling and reporting?
+    recommended_fix: >
+      Add how the CO2 stream will be sampled and analyzed, including composition,
+      impurities, reporting procedures, and relevance to corrosion and compatibility.
+
+  - item_id: groundwater_geochemical_monitoring
+    label: Groundwater and geochemical monitoring
+    description: >
+      The plan should describe groundwater quality and geochemical monitoring,
+      including monitoring wells, sampling intervals, analytes, methods, and
+      baseline comparison.
+    requirement_level: required
+    severity: critical
+    expected_evidence_terms:
+      - groundwater monitoring
+      - ground water monitoring
+      - geochemical monitoring
+      - monitoring wells
+      - groundwater samples
+      - analytes
+      - water quality
+      - baseline
+      - sampling interval
+      - laboratory analysis
+    evidence_groups:
+      monitoring_network:
+        - groundwater monitoring
+        - ground water monitoring
+        - monitoring wells
+      sampling_program:
+        - groundwater samples
+        - sampling interval
+        - laboratory analysis
+      analytical_scope:
+        - geochemical monitoring
+        - analytes
+        - water quality
+        - baseline
+    reference_queries:
+      - What does EPA Testing and Monitoring Guidance say about groundwater quality and geochemical monitoring?
+      - What groundwater monitoring information is expected in a Class VI Testing and Monitoring Plan?
+    permit_precedent_queries:
+      - How do Class VI applicants describe groundwater and geochemical monitoring?
+      - What permit precedent exists for monitoring well networks and groundwater sampling?
+    recommended_fix: >
+      Add groundwater and geochemical monitoring details, including monitoring well
+      locations, sampling intervals, analytes, methods, and baseline comparison.
+
+  - item_id: plume_pressure_front_tracking
+    label: Plume and pressure-front tracking
+    description: >
+      The plan should describe how the carbon dioxide plume and pressure front
+      will be tracked using direct or indirect monitoring methods and compared
+      against model predictions.
+    requirement_level: required
+    severity: critical
+    expected_evidence_terms:
+      - plume tracking
+      - pressure front tracking
+      - plume and pressure front
+      - pressure-front
+      - time-lapse seismic
+      - geophysical monitoring
+      - pressure monitoring
+      - model predictions
+      - AoR reevaluation
+      - indirect monitoring
+    evidence_groups:
+      tracking_targets:
+        - plume tracking
+        - pressure front tracking
+        - plume and pressure front
+        - pressure-front
+      methods:
+        - time-lapse seismic
+        - geophysical monitoring
+        - pressure monitoring
+        - indirect monitoring
+      model_comparison:
+        - model predictions
+        - AoR reevaluation
+    reference_queries:
+      - What does EPA Testing and Monitoring Guidance say about plume and pressure-front tracking?
+      - How should Class VI applicants track the CO2 plume and associated pressure front?
+    permit_precedent_queries:
+      - How do Class VI applicants describe plume and pressure-front tracking?
+      - What permit precedent exists for seismic geophysical or pressure-front monitoring?
+    recommended_fix: >
+      Add plume and pressure-front tracking methods, monitoring frequency, model
+      comparison approach, and how results will inform AoR reevaluation.
+
+  - item_id: mechanical_integrity_testing
+    label: Mechanical integrity testing
+    description: >
+      The plan should describe internal and external mechanical integrity tests,
+      including test methods, frequency, acceptance criteria, and response to
+      loss of mechanical integrity.
+    requirement_level: required
+    severity: critical
+    expected_evidence_terms:
+      - mechanical integrity test
+      - mechanical integrity testing
+      - MIT
+      - internal MIT
+      - external MIT
+      - annulus pressure test
+      - radioactive tracer survey
+      - temperature log
+      - noise log
+      - oxygen activation log
+      - loss of mechanical integrity
+    evidence_groups:
+      mit_scope:
+        - mechanical integrity test
+        - mechanical integrity testing
+        - MIT
+      internal_mit:
+        - internal MIT
+        - annulus pressure test
+      external_mit:
+        - external MIT
+        - radioactive tracer survey
+        - temperature log
+        - noise log
+        - oxygen activation log
+      response:
+        - loss of mechanical integrity
+    reference_queries:
+      - What does EPA Testing and Monitoring Guidance say about mechanical integrity testing?
+      - What internal and external MITs are expected for Class VI wells?
+    permit_precedent_queries:
+      - How do Class VI applicants describe mechanical integrity testing?
+      - What permit precedent exists for internal and external MITs?
+    recommended_fix: >
+      Add internal and external MIT methods, frequency, acceptance criteria, and
+      response actions for suspected or confirmed loss of mechanical integrity.
+
+  - item_id: corrosion_monitoring
+    label: Corrosion monitoring
+    description: >
+      The plan should describe corrosion monitoring methods used to evaluate
+      well materials and system integrity during operation.
+    requirement_level: required
+    severity: moderate
+    expected_evidence_terms:
+      - corrosion monitoring
+      - corrosion coupon
+      - corrosion coupons
+      - corrosion loop
+      - casing inspection log
+      - CIL
+      - material degradation
+      - corrosion rate
+      - fluid compatibility
+    evidence_groups:
+      corrosion_methods:
+        - corrosion monitoring
+        - corrosion coupon
+        - corrosion coupons
+        - corrosion loop
+        - casing inspection log
+        - CIL
+      evaluation:
+        - material degradation
+        - corrosion rate
+        - fluid compatibility
+    reference_queries:
+      - What does EPA Testing and Monitoring Guidance say about corrosion monitoring?
+      - What corrosion monitoring information is expected for Class VI injection wells?
+    permit_precedent_queries:
+      - How do Class VI applicants describe corrosion monitoring?
+      - What permit precedent exists for corrosion coupons loops or casing inspection logs?
+    recommended_fix: >
+      Add corrosion monitoring methods, monitoring frequency, evaluation criteria,
+      and how corrosion results will be used to protect well integrity.
+
+  - item_id: surface_air_soil_gas_monitoring
+    label: Surface air and soil gas monitoring
+    description: >
+      The plan should describe whether surface air or soil gas monitoring will be
+      performed, or explain why it is not proposed or required for the site.
+    requirement_level: recommended
+    severity: moderate
+    expected_evidence_terms:
+      - surface air monitoring
+      - soil gas monitoring
+      - soil flux
+      - flux chamber
+      - CO2 detector
+      - leakage detection
+      - surface expression
+      - not proposed
+      - not required
+      - site-specific
+    evidence_groups:
+      monitoring_methods:
+        - surface air monitoring
+        - soil gas monitoring
+        - soil flux
+        - flux chamber
+        - CO2 detector
+      objective:
+        - leakage detection
+        - surface expression
+      applicability:
+        - not proposed
+        - not required
+        - site-specific
+    reference_queries:
+      - What does EPA Testing and Monitoring Guidance say about surface air and soil gas monitoring?
+      - When should Class VI applicants include surface air or soil gas monitoring?
+    permit_precedent_queries:
+      - How do Class VI applicants describe surface air and soil gas monitoring?
+      - What permit precedent exists for soil gas or surface air monitoring decisions?
+    recommended_fix: >
+      Add surface air or soil gas monitoring methods, or explain why they are not
+      proposed based on site-specific conditions and monitoring objectives.

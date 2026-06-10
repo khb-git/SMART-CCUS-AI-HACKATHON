@@ -6,7 +6,7 @@ It is intended to support comparison against EPA Class VI completeness review ma
 ## Summary
 
 - Checklist files: 11
-- Checklist items: 84
+- Checklist items: 90
 
 ## Checklist files
 
@@ -21,7 +21,7 @@ It is intended to support comparison against EPA Class VI completeness review ma
 | `project_narrative` | Project Narrative Checklist | 13 | `review\checklists\project_narrative.yaml` |
 | `site_geologic_characterization` | Site Geologic Characterization Checklist | 5 | `review\checklists\site_geologic_characterization.yaml` |
 | `site_operating` | Site Operating Plan Checklist | 5 | `review\checklists\site_operating.yaml` |
-| `testing_monitoring` | Testing and Monitoring Plan Checklist | 11 | `review\checklists\testing_monitoring.yaml` |
+| `testing_monitoring` | Testing and Monitoring Plan Checklist | 17 | `review\checklists\testing_monitoring.yaml` |
 | `well_construction` | Well Construction Plan Checklist | 10 | `review\checklists\well_construction.yaml` |
 
 ## AoR and Corrective Action Plan Checklist
@@ -182,7 +182,7 @@ It is intended to support comparison against EPA Class VI completeness review ma
 - Checklist ID: `testing_monitoring_v1`
 - Plan type: `testing_monitoring`
 - Source file: `review\checklists\testing_monitoring.yaml`
-- Item count: 11
+- Item count: 17
 
 | Item ID | Label | Requirement | Severity |
 |---|---|---|---|
@@ -197,6 +197,12 @@ It is intended to support comparison against EPA Class VI completeness review ma
 | `scada_or_data_recording` | SCADA or data recording system | recommended | moderate |
 | `anomaly_response` | Response to anomalous monitoring results | recommended | moderate |
 | `reporting_procedure` | Reporting procedure | recommended | minor |
+| `co2_stream_analysis` | CO2 stream analysis | required | critical |
+| `groundwater_geochemical_monitoring` | Groundwater and geochemical monitoring | required | critical |
+| `plume_pressure_front_tracking` | Plume and pressure-front tracking | required | critical |
+| `mechanical_integrity_testing` | Mechanical integrity testing | required | critical |
+| `corrosion_monitoring` | Corrosion monitoring | required | moderate |
+| `surface_air_soil_gas_monitoring` | Surface air and soil gas monitoring | recommended | moderate |
 
 ## Well Construction Plan Checklist
 
