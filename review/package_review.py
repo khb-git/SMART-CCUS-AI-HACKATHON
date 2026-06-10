@@ -61,6 +61,64 @@ REQUIRED_PACKAGE_PLAN_TYPES = [
 ]
 
 
+PACKAGE_COVERAGE_EVIDENCE_TERMS = {
+    "financial_responsibility": [
+        "financial responsibility",
+        "financial assurance",
+        "cost estimate",
+        "cost estimates",
+        "letter of credit",
+        "surety bond",
+        "trust fund",
+        "coverage amount",
+        "inflation adjustment",
+        "instrument validity",
+        "closure cost",
+        "plugging cost",
+        "corrective action cost",
+        "pisc cost",
+    ],
+    "well_construction": [
+        "well construction",
+        "well construction plan",
+        "well construction details",
+        "construction details",
+        "casing specifications",
+        "preliminary casing specifications",
+        "surface casing",
+        "long string casing",
+        "casing",
+        "cement",
+        "cementing",
+        "tubing",
+        "packer",
+        "well schematic",
+        "injection well construction",
+        "cement bond log",
+        "cbl",
+        "usit",
+    ],
+    "project_narrative": [
+        "project narrative",
+        "application narrative",
+        "class vi permit application",
+        "permit application narrative",
+        "project description",
+        "facility information",
+        "injection project",
+        "applicant",
+    ],
+    "aor_corrective_action": [
+        "area of review",
+        "corrective action plan",
+        "aor and corrective action",
+        "aor corrective action",
+        "legacy wells",
+        "artificial penetrations",
+        "computational model",
+    ],
+}
+
 @dataclass
 class PackageDocumentReview:
     """Review result for one document inside a package."""
@@ -70,6 +128,7 @@ class PackageDocumentReview:
     classification_confidence: str
     classification: dict[str, Any]
     covered_plan_types: list[str] = field(default_factory=list)
+    coverage_plan_types: list[str] = field(default_factory=list)
     is_combined_document: bool = False
     document_role: str = "main"
     supporting_document_type: str = ""
@@ -85,6 +144,7 @@ class PackageDocumentReview:
             "classification_confidence": self.classification_confidence,
             "classification": self.classification,
             "covered_plan_types": self.covered_plan_types,
+            "coverage_plan_types": self.coverage_plan_types,
             "is_combined_document": self.is_combined_document,
             "document_role": self.document_role,
             "supporting_document_type": self.supporting_document_type,
@@ -169,6 +229,87 @@ def filename_has_multiple_main_type_matches(document) -> bool:
 
     return len(matched_types) > 1
 
+def filename_main_type_matches(document) -> list[str]:
+    """Return main document types clearly named in the filename."""
+    matches = find_matching_aliases(
+        document_name(document),
+        MAIN_DOCUMENT_TYPE_ALIASES,
+    )
+
+    return sorted(
+        {
+            document_type
+            for document_type, _matched_aliases in matches
+            if document_type and document_type != "unknown"
+        }
+    )
+
+
+def collect_package_document_text(document, max_chars: int = 100000) -> str:
+    """Collect document chunk text for package-level evidence checks."""
+    text_parts = [document_name(document)]
+
+    for chunk in getattr(document, "chunks", []) or []:
+        text = getattr(chunk, "text", "") or ""
+
+        if text:
+            text_parts.append(text)
+
+        if sum(len(part) for part in text_parts) >= max_chars:
+            break
+
+    return "\n".join(text_parts)[:max_chars].lower()
+
+
+def evidence_plan_types_from_text(document) -> list[str]:
+    """Return package plan types evidenced somewhere in the document text."""
+    text = collect_package_document_text(document)
+    evidenced_plan_types = set()
+
+    for plan_type, terms in PACKAGE_COVERAGE_EVIDENCE_TERMS.items():
+        matched_terms = [
+            term
+            for term in terms
+            if term.lower() in text
+        ]
+
+        # Require at least two weak evidence terms so generic single words like
+        # "cement" or "casing" do not over-credit a package topic by themselves.
+        if len(matched_terms) >= 2:
+            evidenced_plan_types.add(plan_type)
+
+    return sorted(evidenced_plan_types)
+
+
+def package_coverage_plan_types(
+    document,
+    document_type: str,
+    classification,
+    review_plan_types: list[str],
+) -> list[str]:
+    """Return package completeness topics credited by filename, review, or text evidence."""
+    coverage_plan_types = set()
+
+    if document_type and document_type != "unknown":
+        coverage_plan_types.add(document_type)
+
+    coverage_plan_types.update(
+        plan_type
+        for plan_type in review_plan_types
+        if plan_type and plan_type != "unknown"
+    )
+
+    coverage_plan_types.update(
+        plan_type
+        for plan_type in getattr(classification, "covered_plan_types", []) or []
+        if plan_type and plan_type != "unknown"
+    )
+
+    coverage_plan_types.update(filename_main_type_matches(document))
+    coverage_plan_types.update(evidence_plan_types_from_text(document))
+
+    return sorted(coverage_plan_types)
+
 def count_primary_plan_types(
     document_reviews: list[PackageDocumentReview],
 ) -> dict[str, int]:
@@ -199,9 +340,13 @@ def count_detected_plan_types(
         if review.document_role == "supporting":
             continue
 
-        covered_plan_types = review.covered_plan_types or [review.document_type]
+        coverage_plan_types = (
+                review.coverage_plan_types
+                or review.covered_plan_types
+                or [review.document_type]
+        )
 
-        for plan_type in covered_plan_types:
+        for plan_type in coverage_plan_types:
             if not plan_type or plan_type == "unknown":
                 continue
 
@@ -230,9 +375,13 @@ def detected_plan_types_from_reviews(
         if review.document_role == "supporting":
             continue
 
-        covered_plan_types = review.covered_plan_types or [review.document_type]
+        coverage_plan_types = (
+                review.coverage_plan_types
+                or review.covered_plan_types
+                or [review.document_type]
+        )
 
-        for plan_type in covered_plan_types:
+        for plan_type in coverage_plan_types:
             if plan_type and plan_type != "unknown":
                 detected.add(plan_type)
 
@@ -373,6 +522,7 @@ def review_single_package_document(document) -> PackageDocumentReview:
             classification_confidence=classification.confidence,
             classification=classification_dict,
             covered_plan_types=[],
+            coverage_plan_types=[],
             is_combined_document=False,
             document_role=document_role,
             supporting_document_type=supporting_type,
@@ -387,6 +537,7 @@ def review_single_package_document(document) -> PackageDocumentReview:
             classification_confidence=classification.confidence,
             classification=classification_dict,
             covered_plan_types=[],
+            coverage_plan_types=[],
             is_combined_document=False,
             document_role=document_role,
             supporting_document_type=supporting_type,
@@ -395,6 +546,12 @@ def review_single_package_document(document) -> PackageDocumentReview:
         )
 
     review_plan_types = plan_types_to_review(classification)
+    coverage_plan_types = package_coverage_plan_types(
+        document=document,
+        document_type=document_type,
+        classification=classification,
+        review_plan_types=review_plan_types,
+    )
     filename_has_multiple_types = filename_has_multiple_main_type_matches(document)
 
     if filename_document_type and not filename_has_multiple_types:
@@ -421,6 +578,7 @@ def review_single_package_document(document) -> PackageDocumentReview:
         checklist_reports=checklist_reports,
         error="; ".join(errors),
         covered_plan_types=review_plan_types,
+        coverage_plan_types=coverage_plan_types,
         is_combined_document=len(review_plan_types) > 1,
         document_role=document_role,
         supporting_document_type=supporting_type,

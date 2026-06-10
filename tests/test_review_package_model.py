@@ -536,3 +536,113 @@ def test_site_geologic_and_site_operating_are_not_required_standalone_documents(
     assert "site_operating" not in report.missing_required_plan_types
     assert "site_geologic_characterization" not in report.missing_expected_plan_types
     assert "site_operating" not in report.missing_expected_plan_types
+
+def test_package_coverage_credits_explicit_adm_combined_filename():
+    from review.package_review import review_document_package
+
+    documents = [
+        make_document(
+            "ADM_Narrative+AoR_and_Corrective_Action_Plan+Well_Construction_Plan.pdf",
+            (
+                "Class VI Permit Application Narrative. "
+                "Area of Review and Corrective Action Plan. "
+                "Section 6. Well Construction Details. "
+                "The casing specifications describe surface casing, long string casing, "
+                "cement, tubing, packer, and well schematic information."
+            ),
+        )
+    ]
+
+    report = review_document_package(
+        documents,
+        package_name="adm_combined_package",
+        expected_plan_types=[
+            "project_narrative",
+            "aor_corrective_action",
+            "well_construction",
+        ],
+        required_plan_types=[
+            "project_narrative",
+            "aor_corrective_action",
+            "well_construction",
+        ],
+    )
+
+    assert report.missing_required_plan_types == []
+    assert report.missing_expected_plan_types == []
+    assert "project_narrative" in report.detected_plan_types
+    assert "aor_corrective_action" in report.detected_plan_types
+    assert "well_construction" in report.detected_plan_types
+
+    review = report.document_reviews[0]
+
+    assert "project_narrative" in review.coverage_plan_types
+    assert "aor_corrective_action" in review.coverage_plan_types
+    assert "well_construction" in review.coverage_plan_types
+
+
+def test_package_coverage_credits_financial_responsibility_inside_narrative():
+    from review.package_review import review_document_package
+
+    documents = [
+        make_document(
+            "Heartland_Project_Narrative.pdf",
+            (
+                "Class VI Permit Application Narrative. "
+                "The application includes project description, facility information, "
+                "and applicant details. "
+                "The narrative also includes financial assurance information, "
+                "cost estimates, plugging cost, corrective action cost, and PISC cost."
+            ),
+        )
+    ]
+
+    report = review_document_package(
+        documents,
+        package_name="heartland_package",
+        expected_plan_types=["project_narrative", "financial_responsibility"],
+        required_plan_types=["project_narrative", "financial_responsibility"],
+    )
+
+    assert report.missing_required_plan_types == []
+    assert report.missing_expected_plan_types == []
+    assert "financial_responsibility" in report.detected_plan_types
+
+    review = report.document_reviews[0]
+
+    assert review.document_type == "project_narrative"
+    assert review.covered_plan_types == ["project_narrative"]
+    assert "financial_responsibility" in review.coverage_plan_types
+
+
+def test_package_coverage_credits_wabash_well_construction_evidence_in_plugging_plan():
+    from review.package_review import review_document_package
+
+    documents = [
+        make_document(
+            "Wabash_Injection_Well_Plugging_Plan.pdf",
+            (
+                "Injection Well Plugging Plan. "
+                "The procedure discusses tubing, packer retrieval, casing integrity, "
+                "cement bond log CBL, USIT logs, cement formulation, and cementing operations."
+            ),
+        )
+    ]
+
+    report = review_document_package(
+        documents,
+        package_name="wabash_package",
+        expected_plan_types=["injection_well_plugging", "well_construction"],
+        required_plan_types=["injection_well_plugging", "well_construction"],
+    )
+
+    assert report.missing_required_plan_types == []
+    assert report.missing_expected_plan_types == []
+    assert "injection_well_plugging" in report.detected_plan_types
+    assert "well_construction" in report.detected_plan_types
+
+    review = report.document_reviews[0]
+
+    assert review.document_type == "injection_well_plugging"
+    assert review.covered_plan_types == ["injection_well_plugging"]
+    assert "well_construction" in review.coverage_plan_types
