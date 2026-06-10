@@ -135,3 +135,174 @@ items:
   - How do applicants describe instrument validity?
   - What permit precedent exists for instrument validity?
   recommended_fix: Add instrument dates, issuer, beneficiary, and enforceability terms.
+- item_id: corrective_action_cost_coverage
+  label: Corrective action cost coverage
+  description: The demonstration should include financial coverage for corrective action on wells or artificial penetrations within the Area of Review.
+  requirement_level: required
+  severity: critical
+  expected_evidence_terms:
+  - corrective action cost
+  - corrective action costs
+  - area of review
+  - AoR
+  - artificial penetrations
+  - legacy wells
+  - plugging
+  - remediation
+  evidence_groups:
+    cost_category:
+    - corrective action cost
+    - corrective action costs
+    aor_basis:
+    - area of review
+    - AoR
+    - artificial penetrations
+    - legacy wells
+    corrective_action_methods:
+    - plugging
+    - remediation
+  reference_queries:
+  - What does Class VI require for corrective action cost coverage in financial responsibility demonstrations?
+  - What financial responsibility coverage is required for corrective action under Class VI?
+  permit_precedent_queries:
+  - How do Class VI applicants document corrective action cost coverage?
+  - What permit precedent exists for corrective action cost estimates in financial responsibility demonstrations?
+  recommended_fix: Add a corrective action cost estimate and show that the financial instrument covers corrective action obligations within the AoR.
+
+- item_id: injection_well_plugging_cost_coverage
+  label: Injection well plugging cost coverage
+  description: The demonstration should include financial coverage for injection well plugging activities.
+  requirement_level: required
+  severity: critical
+  expected_evidence_terms:
+  - injection well plugging cost
+  - plugging cost
+  - plugging costs
+  - well plugging
+  - plug and abandon
+  - cement plug
+  - plugging plan
+  evidence_groups:
+    cost_category:
+    - injection well plugging cost
+    - plugging cost
+    - plugging costs
+    plugging_activity:
+    - well plugging
+    - plug and abandon
+    - cement plug
+    - plugging plan
+  reference_queries:
+  - What does Class VI require for injection well plugging cost coverage?
+  - What financial responsibility coverage is required for Class VI injection well plugging?
+  permit_precedent_queries:
+  - How do Class VI applicants document injection well plugging cost coverage?
+  - What permit precedent exists for plugging cost estimates in financial responsibility demonstrations?
+  recommended_fix: Add an injection well plugging cost estimate and show that the financial instrument covers plugging obligations.
+
+- item_id: pisc_site_closure_cost_coverage
+  label: PISC and site closure cost coverage
+  description: The demonstration should include financial coverage for post-injection site care and site closure activities.
+  requirement_level: required
+  severity: critical
+  expected_evidence_terms:
+  - PISC cost
+  - post-injection site care cost
+  - post injection site care cost
+  - site closure cost
+  - site closure costs
+  - non-endangerment
+  - monitoring period
+  - site closure
+  evidence_groups:
+    cost_category:
+    - PISC cost
+    - post-injection site care cost
+    - post injection site care cost
+    - site closure cost
+    - site closure costs
+    pisc_basis:
+    - non-endangerment
+    - monitoring period
+    - site closure
+  reference_queries:
+  - What does Class VI require for PISC and site closure cost coverage?
+  - What financial responsibility coverage is required for post-injection site care and site closure?
+  permit_precedent_queries:
+  - How do Class VI applicants document PISC and site closure cost coverage?
+  - What permit precedent exists for PISC and site closure cost estimates?
+  recommended_fix: Add PISC and site closure cost estimates and show that the financial instrument covers post-injection obligations.
+
+- item_id: emergency_remedial_response_cost_coverage
+  label: Emergency and remedial response cost coverage
+  description: The demonstration should include financial coverage for emergency and remedial response activities.
+  requirement_level: required
+  severity: critical
+  expected_evidence_terms:
+  - emergency response cost
+  - remedial response cost
+  - emergency and remedial response
+  - emergency response
+  - remedial action
+  - remediation cost
+  - release response
+  - endangerment
+  evidence_groups:
+    cost_category:
+    - emergency response cost
+    - remedial response cost
+    - remediation cost
+    emergency_response:
+    - emergency and remedial response
+    - emergency response
+    - remedial action
+    - release response
+    - endangerment
+  reference_queries:
+  - What does Class VI require for emergency and remedial response cost coverage?
+  - What financial responsibility coverage is required for emergency and remedial response?
+  permit_precedent_queries:
+  - How do Class VI applicants document emergency and remedial response cost coverage?
+  - What permit precedent exists for emergency and remedial response cost estimates?
+  recommended_fix: Add emergency and remedial response cost estimates and show that the financial instrument covers emergency response obligations.
+
+- item_id: instrument_update_replacement
+  label: Instrument update and replacement process
+  description: The demonstration should explain how financial instruments will be updated, replaced, or replenished if costs change, coverage is drawn down, or the instrument is cancelled or expires.
+  requirement_level: recommended
+  severity: moderate
+  expected_evidence_terms:
+  - update
+  - replacement
+  - replace
+  - replenish
+  - drawdown
+  - cancellation
+  - cancelled
+  - expiration
+  - renewal
+  - cost increase
+  - annual adjustment
+  evidence_groups:
+    update_process:
+    - update
+    - annual adjustment
+    - cost increase
+    replacement_process:
+    - replacement
+    - replace
+    - renewal
+    drawdown_process:
+    - replenish
+    - drawdown
+    cancellation_expiration:
+    - cancellation
+    - cancelled
+    - expiration
+  reference_queries:
+  - What does Class VI guidance say about updating or replacing financial responsibility instruments?
+  - How should Class VI financial responsibility demonstrations address cancellation expiration or drawdown?
+  permit_precedent_queries:
+  - How do Class VI applicants describe financial instrument updates replacement or replenishment?
+  - What permit precedent exists for financial instrument cancellation or replacement?
+  recommended_fix: Add a process for updating, replacing, or replenishing financial instruments if costs change, coverage is used, or an instrument expires or is cancelled.

@@ -6,7 +6,7 @@ It is intended to support comparison against EPA Class VI completeness review ma
 ## Summary
 
 - Checklist files: 11
-- Checklist items: 74
+- Checklist items: 79
 
 ## Checklist files
 
@@ -14,7 +14,7 @@ It is intended to support comparison against EPA Class VI completeness review ma
 |---|---|---:|---|
 | `aor_corrective_action` | AoR and Corrective Action Plan Checklist | 10 | `review\checklists\aor_corrective_action.yaml` |
 | `emergency_remedial_response` | Emergency and Remedial Response Plan Checklist | 5 | `review\checklists\emergency_remedial_response.yaml` |
-| `financial_responsibility` | Financial Responsibility Checklist | 5 | `review\checklists\financial_responsibility.yaml` |
+| `financial_responsibility` | Financial Responsibility Checklist | 10 | `review\checklists\financial_responsibility.yaml` |
 | `injection_well_plugging` | Injection Well Plugging Plan Checklist | 5 | `review\checklists\injection_well_plugging.yaml` |
 | `pisc_site_closure` | PISC and Site Closure Plan Checklist | 5 | `review\checklists\pisc_site_closure.yaml` |
 | `pre_operational_testing` | Pre-Operational Testing Plan Checklist | 5 | `review\checklists\pre_operational_testing.yaml` |
@@ -64,7 +64,7 @@ It is intended to support comparison against EPA Class VI completeness review ma
 - Checklist ID: `financial_responsibility_v1`
 - Plan type: `financial_responsibility`
 - Source file: `review\checklists\financial_responsibility.yaml`
-- Item count: 5
+- Item count: 10
 
 | Item ID | Label | Requirement | Severity |
 |---|---|---|---|
@@ -73,6 +73,11 @@ It is intended to support comparison against EPA Class VI completeness review ma
 | `coverage_amount` | Coverage amount | required | critical |
 | `inflation_adjustment` | Inflation adjustment | recommended | moderate |
 | `instrument_validity` | Instrument validity | recommended | moderate |
+| `corrective_action_cost_coverage` | Corrective action cost coverage | required | critical |
+| `injection_well_plugging_cost_coverage` | Injection well plugging cost coverage | required | critical |
+| `pisc_site_closure_cost_coverage` | PISC and site closure cost coverage | required | critical |
+| `emergency_remedial_response_cost_coverage` | Emergency and remedial response cost coverage | required | critical |
+| `instrument_update_replacement` | Instrument update and replacement process | recommended | moderate |
 
 ## Injection Well Plugging Plan Checklist
 
