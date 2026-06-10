@@ -96,3 +96,190 @@ items:
   - How do applicants describe roles and responsibilities?
   - What permit precedent exists for roles and responsibilities?
   recommended_fix: Add roles, responsibilities, and communication chain for response actions.
+- item_id: emergency_scenario_planning
+  label: Emergency scenario planning
+  description: The plan should identify plausible emergency scenarios and response pathways, including releases, excursions, pressure anomalies, loss of mechanical integrity, and potential USDW endangerment.
+  requirement_level: required
+  severity: critical
+  expected_evidence_terms:
+  - emergency scenario
+  - release scenario
+  - excursion
+  - pressure anomaly
+  - loss of mechanical integrity
+  - USDW endangerment
+  - leakage
+  - plume migration
+  - response pathway
+  evidence_groups:
+    scenarios:
+    - emergency scenario
+    - release scenario
+    - excursion
+    - pressure anomaly
+    - leakage
+    integrity_event:
+    - loss of mechanical integrity
+    - plume migration
+    protection:
+    - USDW endangerment
+    - response pathway
+  reference_queries:
+  - What emergency scenarios should be addressed in a Class VI Emergency and Remedial Response Plan?
+  - What does Class VI guidance say about response planning for releases excursions and loss of mechanical integrity?
+  permit_precedent_queries:
+  - How do Class VI applicants describe emergency scenarios in ERRPs?
+  - What permit precedent exists for release excursion and pressure anomaly response scenarios?
+  recommended_fix: Add plausible emergency scenarios and response pathways for releases, excursions, pressure anomalies, loss of mechanical integrity, leakage, plume migration, and USDW endangerment.
+
+- item_id: usdws_protection_measures
+  label: USDW protection measures
+  description: The plan should describe immediate and follow-up actions to protect underground sources of drinking water if an emergency or endangerment condition occurs.
+  requirement_level: required
+  severity: critical
+  expected_evidence_terms:
+  - USDW
+  - underground source of drinking water
+  - protect USDWs
+  - endangerment
+  - water supply
+  - groundwater protection
+  - containment
+  - mitigation
+  - sampling
+  - monitoring
+  evidence_groups:
+    protected_resource:
+    - USDW
+    - underground source of drinking water
+    - water supply
+    protection_actions:
+    - protect USDWs
+    - groundwater protection
+    - containment
+    - mitigation
+    investigation:
+    - endangerment
+    - sampling
+    - monitoring
+  reference_queries:
+  - What does Class VI require for protecting USDWs during emergency and remedial response?
+  - What response actions are expected when USDWs may be endangered?
+  permit_precedent_queries:
+  - How do Class VI applicants describe USDW protection measures in ERRPs?
+  - What permit precedent exists for emergency groundwater protection and mitigation measures?
+  recommended_fix: Add immediate and follow-up actions to protect USDWs, including containment, mitigation, sampling, monitoring, and water-supply protection where applicable.
+
+- item_id: post_event_investigation_monitoring
+  label: Post-event investigation and monitoring
+  description: The plan should describe investigation, sampling, monitoring, and evaluation steps after an emergency trigger, anomaly, release, or loss of mechanical integrity event.
+  requirement_level: required
+  severity: critical
+  expected_evidence_terms:
+  - investigation
+  - post-event
+  - follow-up monitoring
+  - sampling
+  - groundwater sampling
+  - pressure monitoring
+  - plume tracking
+  - root cause
+  - evaluation
+  - corrective measures
+  evidence_groups:
+    investigation:
+    - investigation
+    - post-event
+    - root cause
+    monitoring:
+    - follow-up monitoring
+    - sampling
+    - groundwater sampling
+    - pressure monitoring
+    - plume tracking
+    evaluation_response:
+    - evaluation
+    - corrective measures
+  reference_queries:
+  - What post-event investigation and monitoring should follow a Class VI emergency response trigger?
+  - What does Class VI guidance say about evaluating anomalies releases or loss of mechanical integrity?
+  permit_precedent_queries:
+  - How do Class VI applicants describe post-event investigation and monitoring?
+  - What permit precedent exists for follow-up sampling and monitoring after emergency triggers?
+  recommended_fix: Add post-event investigation, sampling, monitoring, root-cause evaluation, and corrective-measure procedures.
+
+- item_id: restart_resumption_criteria
+  label: Restart and resumption criteria
+  description: The plan should describe criteria and approvals required before injection can resume after shut-in, emergency response, remedial action, or investigation.
+  requirement_level: required
+  severity: critical
+  expected_evidence_terms:
+  - restart
+  - resume injection
+  - resumption
+  - return to service
+  - approval
+  - Director approval
+  - UIC Program Director
+  - corrective action complete
+  - mechanical integrity demonstrated
+  - safe operation
+  evidence_groups:
+    resumption:
+    - restart
+    - resume injection
+    - resumption
+    - return to service
+    approval:
+    - approval
+    - Director approval
+    - UIC Program Director
+    readiness:
+    - corrective action complete
+    - mechanical integrity demonstrated
+    - safe operation
+  reference_queries:
+  - What criteria should be met before Class VI injection resumes after emergency shut-in?
+  - What does Class VI guidance say about resuming injection after remedial response?
+  permit_precedent_queries:
+  - How do Class VI applicants describe restart or resumption criteria after shut-in?
+  - What permit precedent exists for injection restart conditions after emergency response?
+  recommended_fix: Add criteria and approval steps for resuming injection, including corrective action completion, mechanical integrity demonstration, and UIC Program Director approval when required.
+
+- item_id: emergency_documentation_reporting
+  label: Emergency documentation and reporting
+  description: The plan should describe incident documentation, regulatory reporting, records, timelines, and follow-up report contents after emergency or remedial response actions.
+  requirement_level: required
+  severity: moderate
+  expected_evidence_terms:
+  - incident report
+  - emergency report
+  - follow-up report
+  - documentation
+  - records
+  - reporting timeline
+  - written report
+  - regulatory reporting
+  - corrective action report
+  - submitted
+  evidence_groups:
+    report_types:
+    - incident report
+    - emergency report
+    - follow-up report
+    - corrective action report
+    documentation:
+    - documentation
+    - records
+    - written report
+    reporting_process:
+    - reporting timeline
+    - regulatory reporting
+    - submitted
+  reference_queries:
+  - What emergency documentation and reporting are expected for Class VI remedial response?
+  - What follow-up reports should be submitted after emergency or remedial response actions?
+  permit_precedent_queries:
+  - How do Class VI applicants describe emergency reporting and documentation?
+  - What permit precedent exists for incident reports and corrective action reports?
+  recommended_fix: Add incident documentation, regulatory reporting timelines, records, and follow-up report contents for emergency and remedial response actions.
