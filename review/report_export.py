@@ -357,6 +357,65 @@ def build_package_document_overview_section(
 
     return lines
 
+def build_package_coverage_evidence_section(
+    coverage_evidence: list[dict[str, Any]],
+) -> list[str]:
+    """Build a Markdown table explaining package coverage evidence routing."""
+    lines = [
+        "## Package Coverage Evidence",
+        "",
+        (
+            "This section explains why package topics were credited as detected. "
+            "Evidence credited from text should be treated as reviewer-supporting "
+            "evidence, not an automatic final compliance determination."
+        ),
+        "",
+    ]
+
+    if not coverage_evidence:
+        return lines + ["No package coverage evidence was returned.", ""]
+
+    lines.extend(
+        [
+            "| Package topic | Document | Primary type | Evidence source | Matched terms | Note |",
+            "| --- | --- | --- | --- | --- | --- |",
+        ]
+    )
+
+    for evidence in sorted(
+        coverage_evidence,
+        key=lambda row: (
+            row.get("plan_type", ""),
+            row.get("document_name", ""),
+            row.get("evidence_source", ""),
+        ),
+    ):
+        plan_type = evidence.get("plan_type", "unknown")
+        document_name = evidence.get("document_name", "Unknown document")
+        document_type = evidence.get("document_type", "unknown")
+        evidence_source = evidence.get("evidence_source", "")
+        matched_terms = evidence.get("matched_terms", []) or []
+        note = evidence.get("note", "")
+
+        matched_terms_text = ", ".join(
+            f"`{term}`"
+            for term in matched_terms[:8]
+        )
+
+        if len(matched_terms) > 8:
+            matched_terms_text += f", +{len(matched_terms) - 8} more"
+
+        if not matched_terms_text:
+            matched_terms_text = "None"
+
+        lines.append(
+            f"| `{plan_type}` | `{document_name}` | `{document_type}` | "
+            f"{evidence_source or 'coverage'} | {matched_terms_text} | {note} |"
+        )
+
+    lines.append("")
+    return lines
+
 def build_markdown_package_report(package_response: dict[str, Any]) -> str:
     """Build a Markdown report from /review-package response JSON."""
     report = package_response.get("report", {}) or {}
@@ -382,6 +441,7 @@ def build_markdown_package_report(package_response: dict[str, Any]) -> str:
     expected_plan_types = report.get("expected_plan_types", []) or []
     required_plan_types = report.get("required_plan_types", []) or []
     document_reviews = report.get("document_reviews", []) or []
+    coverage_evidence = report.get("coverage_evidence", []) or []
 
     lines = [
         "# Class VI Package Review Report",
@@ -453,6 +513,7 @@ def build_markdown_package_report(package_response: dict[str, Any]) -> str:
         )
 
     lines.extend(build_package_document_overview_section(document_reviews))
+    lines.extend(build_package_coverage_evidence_section(coverage_evidence))
 
     lines.extend(
         [
