@@ -153,6 +153,27 @@ class PackageDocumentReview:
             "error": self.error,
         }
 
+@dataclass
+class PackageCoverageEvidence:
+    """Evidence explaining why a package plan type was credited."""
+
+    plan_type: str
+    document_name: str
+    document_type: str
+    evidence_source: str
+    matched_terms: list[str] = field(default_factory=list)
+    note: str = ""
+
+    def to_dict(self) -> dict[str, Any]:
+        """Return JSON-serializable package coverage evidence data."""
+        return {
+            "plan_type": self.plan_type,
+            "document_name": self.document_name,
+            "document_type": self.document_type,
+            "evidence_source": self.evidence_source,
+            "matched_terms": self.matched_terms,
+            "note": self.note,
+        }
 
 @dataclass
 class ReviewPackageReport:
@@ -169,6 +190,7 @@ class ReviewPackageReport:
     duplicate_plan_types: list[str]
     unknown_documents: list[str]
     supporting_documents: list[str]
+    coverage_evidence: list[PackageCoverageEvidence] = field(default_factory=list)
     document_reviews: list[PackageDocumentReview] = field(default_factory=list)
 
     def to_dict(self) -> dict[str, Any]:
@@ -189,6 +211,10 @@ class ReviewPackageReport:
                 for document_review in self.document_reviews
             ],
             "supporting_documents": self.supporting_documents,
+            "coverage_evidence": [
+                evidence.to_dict()
+                for evidence in self.coverage_evidence
+            ],
         }
 
 
@@ -280,6 +306,24 @@ def evidence_plan_types_from_text(document) -> list[str]:
 
     return sorted(evidenced_plan_types)
 
+def matched_evidence_terms_by_plan_type(document) -> dict[str, list[str]]:
+    """Return matched package coverage terms by plan type for one document."""
+    text = collect_package_document_text(document)
+    matches: dict[str, list[str]] = {}
+
+    for plan_type, terms in PACKAGE_COVERAGE_EVIDENCE_TERMS.items():
+        matched_terms = sorted(
+            {
+                term
+                for term in terms
+                if term.lower() in text
+            }
+        )
+
+        if len(matched_terms) >= 2:
+            matches[plan_type] = matched_terms
+
+    return matches
 
 def package_coverage_plan_types(
     document,
@@ -309,6 +353,98 @@ def package_coverage_plan_types(
     coverage_plan_types.update(evidence_plan_types_from_text(document))
 
     return sorted(coverage_plan_types)
+
+def build_document_coverage_evidence(
+    document,
+    review: PackageDocumentReview,
+    classification,
+) -> list[PackageCoverageEvidence]:
+    """Build coverage evidence rows for one reviewed package document."""
+    evidence_rows: list[PackageCoverageEvidence] = []
+
+    filename_matches = set(filename_main_type_matches(document))
+    classifier_matches = {
+        plan_type
+        for plan_type in getattr(classification, "covered_plan_types", []) or []
+        if plan_type and plan_type != "unknown"
+    }
+    text_matches = matched_evidence_terms_by_plan_type(document)
+
+    for plan_type in review.coverage_plan_types:
+        if not plan_type or plan_type == "unknown":
+            continue
+
+        sources = []
+
+        if plan_type == review.document_type:
+            sources.append("primary_document_type")
+
+        if plan_type in review.covered_plan_types:
+            sources.append("checklist_review")
+
+        if plan_type in filename_matches:
+            sources.append("filename")
+
+        if plan_type in classifier_matches:
+            sources.append("classifier")
+
+        if plan_type in text_matches:
+            sources.append("text_evidence")
+
+        evidence_source = ", ".join(sources) if sources else "coverage"
+
+        if "text_evidence" in sources:
+            note = "Relevant text evidence found; reviewer confirmation recommended."
+        elif "filename" in sources:
+            note = "Credited from document filename."
+        elif "primary_document_type" in sources:
+            note = "Credited from the document's primary classification."
+        else:
+            note = "Credited from package coverage logic."
+
+        evidence_rows.append(
+            PackageCoverageEvidence(
+                plan_type=plan_type,
+                document_name=review.document_name,
+                document_type=review.document_type,
+                evidence_source=evidence_source,
+                matched_terms=text_matches.get(plan_type, []),
+                note=note,
+            )
+        )
+
+    return evidence_rows
+
+
+def build_package_coverage_evidence(
+    documents: list,
+    document_reviews: list[PackageDocumentReview],
+    classifications: list,
+) -> list[PackageCoverageEvidence]:
+    """Build package-level coverage evidence rows."""
+    evidence_rows: list[PackageCoverageEvidence] = []
+
+    for document, review, classification in zip(
+        documents,
+        document_reviews,
+        classifications,
+        strict=False,
+    ):
+        if review.document_role == "supporting":
+            continue
+
+        evidence_rows.extend(
+            build_document_coverage_evidence(
+                document=document,
+                review=review,
+                classification=classification,
+            )
+        )
+
+    return sorted(
+        evidence_rows,
+        key=lambda row: (row.plan_type, row.document_name, row.evidence_source),
+    )
 
 def count_primary_plan_types(
     document_reviews: list[PackageDocumentReview],
@@ -598,10 +734,21 @@ def review_document_package(
     if required_plan_types is None:
         required_plan_types = REQUIRED_PACKAGE_PLAN_TYPES
 
+    classifications = [
+        classify_review_document(document)
+        for document in documents
+    ]
+
     document_reviews = [
         review_single_package_document(document)
         for document in documents
     ]
+
+    coverage_evidence = build_package_coverage_evidence(
+        documents=documents,
+        document_reviews=document_reviews,
+        classifications=classifications,
+    )
 
     detected_plan_types = detected_plan_types_from_reviews(document_reviews)
 
@@ -655,4 +802,5 @@ def review_document_package(
         unknown_documents=unknown_documents,
         document_reviews=document_reviews,
         supporting_documents=supporting_documents,
+        coverage_evidence=coverage_evidence,
     )
