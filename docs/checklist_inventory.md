@@ -6,14 +6,14 @@ It is intended to support comparison against EPA Class VI completeness review ma
 ## Summary
 
 - Checklist files: 11
-- Checklist items: 100
+- Checklist items: 105
 
 ## Checklist files
 
 | Plan type | Title | Items | File |
 |---|---|---:|---|
 | `aor_corrective_action` | AoR and Corrective Action Plan Checklist | 10 | `review\checklists\aor_corrective_action.yaml` |
-| `emergency_remedial_response` | Emergency and Remedial Response Plan Checklist | 5 | `review\checklists\emergency_remedial_response.yaml` |
+| `emergency_remedial_response` | Emergency and Remedial Response Plan Checklist | 10 | `review\checklists\emergency_remedial_response.yaml` |
 | `financial_responsibility` | Financial Responsibility Checklist | 10 | `review\checklists\financial_responsibility.yaml` |
 | `injection_well_plugging` | Injection Well Plugging Plan Checklist | 10 | `review\checklists\injection_well_plugging.yaml` |
 | `pisc_site_closure` | PISC and Site Closure Plan Checklist | 10 | `review\checklists\pisc_site_closure.yaml` |
@@ -49,7 +49,7 @@ It is intended to support comparison against EPA Class VI completeness review ma
 - Checklist ID: `emergency_remedial_response_v1`
 - Plan type: `emergency_remedial_response`
 - Source file: `review\checklists\emergency_remedial_response.yaml`
-- Item count: 5
+- Item count: 10
 
 | Item ID | Label | Requirement | Severity |
 |---|---|---|---|
@@ -58,6 +58,11 @@ It is intended to support comparison against EPA Class VI completeness review ma
 | `shut_in_procedure` | Shut-in procedure | required | critical |
 | `remedial_actions` | Remedial actions | required | critical |
 | `roles_responsibilities` | Roles and responsibilities | recommended | moderate |
+| `emergency_scenario_planning` | Emergency scenario planning | required | critical |
+| `usdws_protection_measures` | USDW protection measures | required | critical |
+| `post_event_investigation_monitoring` | Post-event investigation and monitoring | required | critical |
+| `restart_resumption_criteria` | Restart and resumption criteria | required | critical |
+| `emergency_documentation_reporting` | Emergency documentation and reporting | required | moderate |
 
 ## Financial Responsibility Checklist
 
