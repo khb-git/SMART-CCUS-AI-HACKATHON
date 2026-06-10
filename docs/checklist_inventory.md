@@ -6,7 +6,7 @@ It is intended to support comparison against EPA Class VI completeness review ma
 ## Summary
 
 - Checklist files: 11
-- Checklist items: 79
+- Checklist items: 84
 
 ## Checklist files
 
@@ -22,7 +22,7 @@ It is intended to support comparison against EPA Class VI completeness review ma
 | `site_geologic_characterization` | Site Geologic Characterization Checklist | 5 | `review\checklists\site_geologic_characterization.yaml` |
 | `site_operating` | Site Operating Plan Checklist | 5 | `review\checklists\site_operating.yaml` |
 | `testing_monitoring` | Testing and Monitoring Plan Checklist | 11 | `review\checklists\testing_monitoring.yaml` |
-| `well_construction` | Well Construction Plan Checklist | 5 | `review\checklists\well_construction.yaml` |
+| `well_construction` | Well Construction Plan Checklist | 10 | `review\checklists\well_construction.yaml` |
 
 ## AoR and Corrective Action Plan Checklist
 
@@ -203,7 +203,7 @@ It is intended to support comparison against EPA Class VI completeness review ma
 - Checklist ID: `well_construction_v1`
 - Plan type: `well_construction`
 - Source file: `review\checklists\well_construction.yaml`
-- Item count: 5
+- Item count: 10
 
 | Item ID | Label | Requirement | Severity |
 |---|---|---|---|
@@ -212,3 +212,8 @@ It is intended to support comparison against EPA Class VI completeness review ma
 | `tubing_packer` | Tubing and packer | required | critical |
 | `well_schematic` | Well schematic | required | moderate |
 | `materials_compatibility` | Materials compatibility | recommended | moderate |
+| `mechanical_integrity_design` | Mechanical integrity design | required | critical |
+| `logging_workover_design` | Logging and workover design | required | moderate |
+| `downhole_stress_design` | Down-hole stress and pressure design | required | critical |
+| `cement_verification_acceptance` | Cement verification and acceptance criteria | required | critical |
+| `shutoff_safety_systems` | Surface and down-hole shutoff safety systems | required | critical |
