@@ -6,13 +6,13 @@ It is intended to support comparison against EPA Class VI completeness review ma
 ## Summary
 
 - Checklist files: 11
-- Checklist items: 69
+- Checklist items: 74
 
 ## Checklist files
 
 | Plan type | Title | Items | File |
 |---|---|---:|---|
-| `aor_corrective_action` | AoR and Corrective Action Plan Checklist | 5 | `review\checklists\aor_corrective_action.yaml` |
+| `aor_corrective_action` | AoR and Corrective Action Plan Checklist | 10 | `review\checklists\aor_corrective_action.yaml` |
 | `emergency_remedial_response` | Emergency and Remedial Response Plan Checklist | 5 | `review\checklists\emergency_remedial_response.yaml` |
 | `financial_responsibility` | Financial Responsibility Checklist | 5 | `review\checklists\financial_responsibility.yaml` |
 | `injection_well_plugging` | Injection Well Plugging Plan Checklist | 5 | `review\checklists\injection_well_plugging.yaml` |
@@ -29,7 +29,7 @@ It is intended to support comparison against EPA Class VI completeness review ma
 - Checklist ID: `aor_corrective_action_v1`
 - Plan type: `aor_corrective_action`
 - Source file: `review\checklists\aor_corrective_action.yaml`
-- Item count: 5
+- Item count: 10
 
 | Item ID | Label | Requirement | Severity |
 |---|---|---|---|
@@ -38,6 +38,11 @@ It is intended to support comparison against EPA Class VI completeness review ma
 | `penetrating_wells` | Artificial penetrations | required | critical |
 | `corrective_action_plan` | Corrective action plan | required | critical |
 | `aor_reevaluation` | AoR reevaluation | recommended | moderate |
+| `model_input_parameters` | Model input parameters | required | critical |
+| `model_calibration_validation` | Model calibration and validation | required | critical |
+| `uncertainty_sensitivity_analysis` | Uncertainty and sensitivity analysis | required | critical |
+| `artificial_penetration_evaluation` | Artificial penetration evaluation | required | critical |
+| `phased_corrective_action` | Phased corrective action | recommended | moderate |
 
 ## Emergency and Remedial Response Plan Checklist
 

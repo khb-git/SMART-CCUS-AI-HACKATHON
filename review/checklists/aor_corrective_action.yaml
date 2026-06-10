@@ -136,3 +136,195 @@ items:
   - How do applicants describe aor reevaluation?
   - What permit precedent exists for aor reevaluation?
   recommended_fix: Add reevaluation triggers, frequency, and update procedure.
+- item_id: model_input_parameters
+  label: Model input parameters
+  description: The plan should identify the model input parameters used to delineate the AoR, including geologic, hydrogeologic, operational, and fluid-property inputs.
+  requirement_level: required
+  severity: critical
+  expected_evidence_terms:
+  - model parameters
+  - input parameters
+  - intrinsic permeability
+  - porosity
+  - relative permeability
+  - capillary pressure
+  - injection rate
+  - fluid properties
+  - boundary conditions
+  - model grid
+  - model orientation
+  evidence_groups:
+    model_inputs:
+    - model parameters
+    - input parameters
+    geologic_properties:
+    - intrinsic permeability
+    - porosity
+    - relative permeability
+    - capillary pressure
+    operational_inputs:
+    - injection rate
+    - fluid properties
+    model_setup:
+    - boundary conditions
+    - model grid
+    - model orientation
+  reference_queries:
+  - What model input parameters are expected for Class VI AoR delineation?
+  - What does EPA AoR guidance say about model parameters for computational modeling?
+  permit_precedent_queries:
+  - How do Class VI applicants document AoR model input parameters?
+  - What permit precedent exists for AoR model parameters?
+  recommended_fix: Add the model input parameters used for AoR delineation, including geologic properties, operational assumptions, fluid properties, boundary conditions, and grid setup.
+
+- item_id: model_calibration_validation
+  label: Model calibration and validation
+  description: The plan should describe model calibration, validation, or justification using site characterization, monitoring, operational, or analogous field data.
+  requirement_level: required
+  severity: critical
+  expected_evidence_terms:
+  - model calibration
+  - calibration
+  - validation
+  - history matching
+  - site characterization data
+  - operational data
+  - monitoring data
+  - field data
+  - analogous data
+  evidence_groups:
+    calibration:
+    - model calibration
+    - calibration
+    - history matching
+    validation:
+    - validation
+    - field data
+    data_basis:
+    - site characterization data
+    - operational data
+    - monitoring data
+    - analogous data
+  reference_queries:
+  - What does EPA AoR guidance say about model calibration for Class VI computational models?
+  - How should Class VI applicants justify or validate computational models used for AoR delineation?
+  permit_precedent_queries:
+  - How do Class VI applicants document model calibration or validation?
+  - What permit precedent exists for AoR model calibration?
+  recommended_fix: Add model calibration, validation, or justification using available site characterization, monitoring, operational, or analogous field data.
+
+- item_id: uncertainty_sensitivity_analysis
+  label: Uncertainty and sensitivity analysis
+  description: The plan should address model uncertainty and sensitivity analyses for AoR, plume, and pressure-front predictions.
+  requirement_level: required
+  severity: critical
+  expected_evidence_terms:
+  - uncertainty
+  - sensitivity analysis
+  - sensitivity
+  - model uncertainty
+  - parameter uncertainty
+  - scenario
+  - range of values
+  - conservative assumptions
+  - plume uncertainty
+  - pressure front uncertainty
+  evidence_groups:
+    uncertainty:
+    - uncertainty
+    - model uncertainty
+    - parameter uncertainty
+    sensitivity:
+    - sensitivity analysis
+    - sensitivity
+    scenarios:
+    - scenario
+    - range of values
+    - conservative assumptions
+    predicted_extent:
+    - plume uncertainty
+    - pressure front uncertainty
+  reference_queries:
+  - What does EPA AoR guidance say about model uncertainty and sensitivity analysis?
+  - How should Class VI applicants evaluate uncertainty in AoR plume and pressure-front modeling?
+  permit_precedent_queries:
+  - How do Class VI applicants document uncertainty and sensitivity analysis for AoR models?
+  - What permit precedent exists for AoR model uncertainty analysis?
+  recommended_fix: Add uncertainty and sensitivity analysis for key model parameters and explain how uncertainty affects AoR, plume, and pressure-front predictions.
+
+- item_id: artificial_penetration_evaluation
+  label: Artificial penetration evaluation
+  description: The plan should evaluate artificial penetrations within the AoR for potential fluid movement pathways, including casing, cementing, plugging, abandonment, and corrective action needs.
+  requirement_level: required
+  severity: critical
+  expected_evidence_terms:
+  - artificial penetrations
+  - abandoned wells
+  - legacy wells
+  - casing
+  - cementing
+  - plugging records
+  - abandonment records
+  - conduit
+  - fluid movement
+  - corrective action needed
+  evidence_groups:
+    penetrations:
+    - artificial penetrations
+    - abandoned wells
+    - legacy wells
+    integrity_evaluation:
+    - casing
+    - cementing
+    - plugging records
+    - abandonment records
+    risk_pathway:
+    - conduit
+    - fluid movement
+    corrective_action_screening:
+    - corrective action needed
+    - corrective action
+  reference_queries:
+  - What does EPA AoR guidance require for evaluating artificial penetrations within the AoR?
+  - How should Class VI applicants assess wells that penetrate confining layers?
+  permit_precedent_queries:
+  - How do Class VI applicants evaluate artificial penetrations and legacy wells?
+  - What permit precedent exists for artificial penetration evaluation?
+  recommended_fix: Add an evaluation of artificial penetrations within the AoR, including casing, cementing, plugging/abandonment records, and whether corrective action is needed.
+
+- item_id: phased_corrective_action
+  label: Phased corrective action
+  description: The plan should describe whether corrective action will be completed before injection or phased during the project, including schedule, triggers, and Director approval basis when applicable.
+  requirement_level: recommended
+  severity: moderate
+  expected_evidence_terms:
+  - phased corrective action
+  - phased approach
+  - corrective action schedule
+  - prior to injection
+  - during injection
+  - project phase
+  - Director approval
+  - UIC Program Director
+  - corrective action milestones
+  evidence_groups:
+    phased_approach:
+    - phased corrective action
+    - phased approach
+    schedule:
+    - corrective action schedule
+    - corrective action milestones
+    timing:
+    - prior to injection
+    - during injection
+    - project phase
+    approval:
+    - Director approval
+    - UIC Program Director
+  reference_queries:
+  - What does EPA AoR guidance say about phased corrective action for Class VI wells?
+  - When can corrective action be phased during a Class VI project?
+  permit_precedent_queries:
+  - How do Class VI applicants describe phased corrective action?
+  - What permit precedent exists for phased corrective action schedules?
+  recommended_fix: Add whether corrective action is completed before injection or phased, including schedule, milestones, triggers, and UIC Program Director approval basis.
