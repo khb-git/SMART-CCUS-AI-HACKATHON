@@ -115,6 +115,29 @@ def build_markdown_findings_section(
                 + ", ".join(f"`{group}`" for group in matched_groups)
             )
 
+        related_evidence = finding.get("related_package_evidence", []) or []
+        if related_evidence:
+            lines.append("  - Related package evidence found elsewhere:")
+
+            for related in related_evidence:
+                related_terms = related.get("matched_terms", []) or []
+                related_terms_text = ", ".join(
+                    f"`{term}`"
+                    for term in related_terms[:8]
+                ) or "None"
+
+                lines.append(
+                    f"    - `{related.get('document_name', 'Unknown document')}` "
+                    f"(`{related.get('document_type', 'unknown')}`): "
+                    f"{related_terms_text}"
+                )
+
+            lines.append(
+                "  - Reviewer note: Confirm whether this cross-document evidence "
+                "satisfies the checklist item or whether the source document needs "
+                "an explicit cross-reference."
+            )
+
         recommended_fix = finding.get("recommended_fix", "")
         if recommended_fix:
             lines.append(f"  - Recommended fix: {recommended_fix}")
@@ -172,6 +195,11 @@ def collect_package_priority_findings(
                         or [],
                         "severity": finding.get("severity", ""),
                         "requirement_level": finding.get("requirement_level", ""),
+                        "related_package_evidence": finding.get(
+                            "related_package_evidence",
+                            [],
+                        )
+                                                    or [],
                     }
                 )
 
@@ -276,6 +304,23 @@ def build_package_priority_summary_section(
                     "  - Matched evidence groups: "
                     + ", ".join(f"`{group}`" for group in matched_groups)
                 )
+
+            related_evidence = item.get("related_package_evidence", []) or []
+            if related_evidence:
+                lines.append("  - Related package evidence found elsewhere:")
+
+                for related in related_evidence:
+                    related_terms = related.get("matched_terms", []) or []
+                    related_terms_text = ", ".join(
+                        f"`{term}`"
+                        for term in related_terms[:8]
+                    ) or "None"
+
+                    lines.append(
+                        f"    - `{related.get('document_name', 'Unknown document')}` "
+                        f"(`{related.get('document_type', 'unknown')}`): "
+                        f"{related_terms_text}"
+                    )
 
             recommended_fix = item.get("recommended_fix", "")
             if recommended_fix:

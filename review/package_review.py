@@ -119,6 +119,132 @@ PACKAGE_COVERAGE_EVIDENCE_TERMS = {
     ],
 }
 
+GENERIC_CROSS_DOCUMENT_TERMS = {
+    "monitoring",
+    "pressure",
+    "temperature",
+    "fluid",
+    "release",
+    "report",
+    "records",
+    "submitted",
+    "documentation",
+    "compliance",
+    "operator",
+    "approval",
+    "duration",
+    "trigger",
+    "threshold",
+    "pass",
+    "evaluation",
+}
+
+CROSS_DOCUMENT_CONTEXT_TERMS = {
+    "financial_responsibility": [
+        "financial responsibility",
+        "financial assurance",
+        "cost estimate",
+        "cost estimates",
+        "coverage amount",
+        "letter of credit",
+        "surety bond",
+        "trust fund",
+        "plugging cost",
+        "corrective action cost",
+        "pisc cost",
+        "site closure cost",
+        "emergency response cost",
+        "inflation adjustment",
+        "instrument validity",
+    ],
+    "injection_well_plugging": [
+        "plugging",
+        "well plugging",
+        "plugging plan",
+        "cement plug",
+        "plugging materials",
+        "post-plugging",
+        "site condition",
+        "wellhead removal",
+        "surface restoration",
+        "post-injection site care",
+        "site closure",
+        "pisc",
+    ],
+    "pisc_site_closure": [
+        "post-injection site care",
+        "pisc",
+        "site closure",
+        "non-endangerment",
+        "plume stabilization",
+        "pressure front",
+        "financial responsibility",
+        "financial assurance",
+        "cost estimate",
+        "coverage amount",
+        "closure cost",
+    ],
+    "well_construction": [
+        "well construction",
+        "casing",
+        "cement",
+        "cementing",
+        "cement bond log",
+        "variable density log",
+        "top of cement",
+        "acceptance criteria",
+        "remedial cementing",
+        "mechanical integrity",
+    ],
+    "aor_corrective_action": [
+        "area of review",
+        "aor",
+        "corrective action",
+        "computational model",
+        "artificial penetrations",
+        "legacy wells",
+        "uncertainty",
+        "sensitivity",
+        "pressure front",
+        "plume",
+    ],
+    "testing_monitoring": [
+        "testing and monitoring",
+        "monitoring",
+        "injection pressure",
+        "injection rate",
+        "flow rate",
+        "groundwater monitoring",
+        "plume tracking",
+        "pressure-front tracking",
+        "surface air",
+        "soil gas",
+    ],
+    "emergency_remedial_response": [
+        "emergency",
+        "remedial response",
+        "trigger",
+        "release",
+        "excursion",
+        "notification",
+        "shut-in",
+        "restart",
+        "resumption",
+        "post-event",
+        "investigation",
+        "monitoring",
+    ],
+    "project_narrative": [
+        "project narrative",
+        "class vi permit application",
+        "facility information",
+        "applicant",
+        "indian lands",
+        "tribal",
+        "project description",
+    ],
+}
+
 @dataclass
 class PackageDocumentReview:
     """Review result for one document inside a package."""
@@ -720,6 +846,153 @@ def review_single_package_document(document) -> PackageDocumentReview:
         supporting_document_type=supporting_type,
     )
 
+def finding_context_terms(
+    plan_type: str,
+    finding: dict[str, Any],
+    max_terms: int = 16,
+) -> list[str]:
+    """Return terms used to search other package documents for related evidence."""
+    candidate_terms: list[str] = []
+
+    candidate_terms.extend(CROSS_DOCUMENT_CONTEXT_TERMS.get(plan_type, []))
+    candidate_terms.extend(finding.get("matched_terms", []) or [])
+
+    for value in [
+        finding.get("label", ""),
+        finding.get("item_id", "").replace("_", " "),
+    ]:
+        value = str(value or "").strip().lower()
+        if len(value) >= 5:
+            candidate_terms.append(value)
+
+    normalized_terms = []
+    seen = set()
+
+    for term in candidate_terms:
+        normalized = str(term or "").strip().lower()
+        if not normalized or normalized in seen:
+            continue
+
+        seen.add(normalized)
+        normalized_terms.append(normalized)
+
+    return normalized_terms[:max_terms]
+
+
+def matched_cross_document_terms(
+    text: str,
+    terms: list[str],
+) -> list[str]:
+    """Return non-generic terms found in another package document."""
+    text = text.lower()
+
+    return sorted(
+        {
+            term
+            for term in terms
+            if term
+            and term.lower() not in GENERIC_CROSS_DOCUMENT_TERMS
+            and term.lower() in text
+        }
+    )
+
+
+def build_related_package_evidence_for_finding(
+    *,
+    source_document_name: str,
+    plan_type: str,
+    finding: dict[str, Any],
+    package_documents: list,
+    document_reviews: list[PackageDocumentReview],
+    max_documents: int = 3,
+    max_terms_per_document: int = 8,
+) -> list[dict[str, Any]]:
+    """Find related evidence for one finding in other package documents."""
+    terms = finding_context_terms(plan_type, finding)
+
+    if not terms:
+        return []
+
+    finding_status = finding.get("status", "")
+
+    minimum_matches = 2
+
+    if finding_status == "evidence_found":
+        minimum_matches = 3
+
+        has_unconfirmed_groups = bool(
+            finding.get("missing_evidence_group_names", [])
+            or finding.get("unmatched_evidence_group_names", [])
+        )
+
+        is_required_or_critical = (
+            finding.get("requirement_level") == "required"
+            or finding.get("severity") == "critical"
+        )
+
+        if not has_unconfirmed_groups and not is_required_or_critical:
+            return []
+
+    related_rows: list[dict[str, Any]] = []
+
+    for document, review in zip(package_documents, document_reviews, strict=False):
+        other_document_name = document_name(document)
+
+        if other_document_name == source_document_name:
+            continue
+
+        text = collect_package_document_text(document)
+        matched_terms = matched_cross_document_terms(text, terms)
+
+        if len(matched_terms) < minimum_matches:
+            continue
+
+        related_rows.append(
+            {
+                "document_name": other_document_name,
+                "document_type": review.document_type,
+                "evidence_source": "cross_document_text",
+                "matched_terms": matched_terms[:max_terms_per_document],
+                "note": (
+                    "Related package evidence found outside the reviewed document. "
+                    "Reviewer should confirm whether this satisfies the checklist item "
+                    "or whether an explicit cross-reference is needed."
+                ),
+            }
+        )
+
+        if len(related_rows) >= max_documents:
+            break
+
+    return related_rows
+
+
+def add_cross_document_context_to_findings(
+    *,
+    package_documents: list,
+    document_reviews: list[PackageDocumentReview],
+) -> None:
+    """Attach related package evidence to missing/evidence_found findings."""
+    for review in document_reviews:
+        checklist_reports = review.checklist_reports or {}
+
+        for plan_type, checklist_report in checklist_reports.items():
+            findings = checklist_report.get("findings", []) or []
+
+            for finding in findings:
+                if finding.get("status") != "missing":
+                    continue
+
+                related_evidence = build_related_package_evidence_for_finding(
+                    source_document_name=review.document_name,
+                    plan_type=plan_type,
+                    finding=finding,
+                    package_documents=package_documents,
+                    document_reviews=document_reviews,
+                )
+
+                if related_evidence:
+                    finding["related_package_evidence"] = related_evidence
 
 def review_document_package(
     documents: list,
@@ -743,6 +1016,11 @@ def review_document_package(
         review_single_package_document(document)
         for document in documents
     ]
+
+    add_cross_document_context_to_findings(
+        package_documents=documents,
+        document_reviews=document_reviews,
+    )
 
     coverage_evidence = build_package_coverage_evidence(
         documents=documents,

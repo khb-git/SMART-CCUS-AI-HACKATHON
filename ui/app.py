@@ -118,6 +118,22 @@ def render_package_findings(
                 for excerpt in excerpts:
                     st.write(f"- {excerpt}")
 
+        related_evidence = finding.get("related_package_evidence", []) or []
+        if related_evidence:
+            with st.expander("Related package evidence found elsewhere", expanded=False):
+                st.caption(
+                    "This does not change the finding status. It shows related evidence "
+                    "elsewhere in the package that a reviewer may want to cross-check."
+                )
+
+                for related in related_evidence:
+                    matched_terms = related.get("matched_terms", []) or []
+                    st.markdown(
+                        f"- `{related.get('document_name', 'Unknown document')}` "
+                        f"(`{related.get('document_type', 'unknown')}`): "
+                        f"{', '.join(f'`{term}`' for term in matched_terms) or 'No terms listed'}"
+                    )
+
         recommended_fix = finding.get("recommended_fix", "")
         if recommended_fix:
             st.caption(f"Recommended fix: {recommended_fix}")
