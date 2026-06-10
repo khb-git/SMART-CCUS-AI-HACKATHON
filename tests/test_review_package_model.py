@@ -647,6 +647,57 @@ def test_package_coverage_credits_wabash_well_construction_evidence_in_plugging_
     assert review.covered_plan_types == ["injection_well_plugging"]
     assert "well_construction" in review.coverage_plan_types
 
+def test_package_review_adds_cross_document_context_for_missing_findings():
+    from review.package_review import review_document_package
+
+    documents = [
+        make_document(
+            "Demo_PISC_and_Site_Closure_Plan.pdf",
+            (
+                "Post-Injection Site Care and Site Closure Plan. "
+                "The plan describes PISC monitoring and non-endangerment demonstration."
+            ),
+        ),
+        make_document(
+            "Demo_Cost_Estimates.pdf",
+            (
+                "Financial Responsibility cost estimates. "
+                "This document includes financial assurance, cost estimate, "
+                "coverage amount, plugging cost, PISC cost, and site closure cost."
+            ),
+        ),
+    ]
+
+    report = review_document_package(
+        documents,
+        package_name="demo_package",
+        expected_plan_types=["pisc_site_closure", "financial_responsibility"],
+        required_plan_types=["pisc_site_closure", "financial_responsibility"],
+    )
+
+    pisc_review = [
+        review
+        for review in report.document_reviews
+        if review.document_name == "Demo_PISC_and_Site_Closure_Plan.pdf"
+    ][0]
+
+    pisc_report = pisc_review.checklist_reports["pisc_site_closure"]
+    findings = pisc_report["findings"]
+
+    related_findings = [
+        finding
+        for finding in findings
+        if finding.get("related_package_evidence")
+    ]
+
+    assert related_findings
+
+    related_evidence = related_findings[0]["related_package_evidence"]
+
+    assert related_evidence[0]["document_name"] == "Demo_Cost_Estimates.pdf"
+    assert related_evidence[0]["evidence_source"] == "cross_document_text"
+    assert related_evidence[0]["matched_terms"]
+
 def test_short_pisc_filename_overrides_aor_text_primary_type():
     from review.package_review import review_document_package
 
