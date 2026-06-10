@@ -6,7 +6,7 @@ It is intended to support comparison against EPA Class VI completeness review ma
 ## Summary
 
 - Checklist files: 11
-- Checklist items: 61
+- Checklist items: 69
 
 ## Checklist files
 
@@ -18,7 +18,7 @@ It is intended to support comparison against EPA Class VI completeness review ma
 | `injection_well_plugging` | Injection Well Plugging Plan Checklist | 5 | `review\checklists\injection_well_plugging.yaml` |
 | `pisc_site_closure` | PISC and Site Closure Plan Checklist | 5 | `review\checklists\pisc_site_closure.yaml` |
 | `pre_operational_testing` | Pre-Operational Testing Plan Checklist | 5 | `review\checklists\pre_operational_testing.yaml` |
-| `project_narrative` | Project Narrative Checklist | 5 | `review\checklists\project_narrative.yaml` |
+| `project_narrative` | Project Narrative Checklist | 13 | `review\checklists\project_narrative.yaml` |
 | `site_geologic_characterization` | Site Geologic Characterization Checklist | 5 | `review\checklists\site_geologic_characterization.yaml` |
 | `site_operating` | Site Operating Plan Checklist | 5 | `review\checklists\site_operating.yaml` |
 | `testing_monitoring` | Testing and Monitoring Plan Checklist | 11 | `review\checklists\testing_monitoring.yaml` |
@@ -119,7 +119,7 @@ It is intended to support comparison against EPA Class VI completeness review ma
 - Checklist ID: `project_narrative_v1`
 - Plan type: `project_narrative`
 - Source file: `review\checklists\project_narrative.yaml`
-- Item count: 5
+- Item count: 13
 
 | Item ID | Label | Requirement | Severity |
 |---|---|---|---|
@@ -128,6 +128,14 @@ It is intended to support comparison against EPA Class VI completeness review ma
 | `injection_overview` | Injection overview | required | critical |
 | `site_location` | Site location | required | moderate |
 | `document_crosswalk` | Application crosswalk | recommended | minor |
+| `environmental_permit_activities` | Activities requiring environmental permits | required | moderate |
+| `facility_identity` | Facility identity | required | moderate |
+| `sic_codes` | SIC codes | required | minor |
+| `operator_ownership_status` | Operator ownership and status | required | moderate |
+| `indian_lands_status` | Indian lands status | required | moderate |
+| `environmental_permits_and_approvals` | Environmental permits and approvals | required | moderate |
+| `map_of_area` | Map of the area | required | critical |
+| `aor_contacts` | State, Tribal, and Territory contacts in the AoR | required | moderate |
 
 ## Site Geologic Characterization Checklist
 

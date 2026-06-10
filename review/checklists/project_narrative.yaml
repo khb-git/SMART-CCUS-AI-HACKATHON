@@ -95,3 +95,255 @@ items:
   - How do applicants describe application crosswalk?
   - What permit precedent exists for application crosswalk?
   recommended_fix: Add a crosswalk to key application sections, attachments, and plans.
+- item_id: environmental_permit_activities
+  label: Activities requiring environmental permits
+  description: The narrative should list activities conducted by the applicant that require RCRA, UIC, NPDES, PSD, or other environmental permits.
+  requirement_level: required
+  severity: moderate
+  expected_evidence_terms:
+  - RCRA
+  - UIC
+  - NPDES
+  - PSD
+  - environmental permit
+  - permit activities
+  - regulated activities
+  evidence_groups:
+    permit_programs:
+    - RCRA
+    - UIC
+    - NPDES
+    - PSD
+  reference_queries:
+  - What does 40 CFR 144.31(e)(1) require for activities requiring environmental permits?
+  - What does the Class VI completeness checklist require for environmental permit activities?
+  permit_precedent_queries:
+  - How do Class VI applicants list activities requiring environmental permits?
+  - What permit precedent exists for RCRA UIC NPDES PSD activity listings?
+  recommended_fix: Add a list of facility activities requiring RCRA, UIC, NPDES, PSD, or other relevant environmental permits.
+
+- item_id: facility_identity
+  label: Facility identity
+  description: The narrative should provide the facility name, mailing address, physical location, and identifying facility information.
+  requirement_level: required
+  severity: moderate
+  expected_evidence_terms:
+  - facility name
+  - mailing address
+  - facility location
+  - physical location
+  - address
+  - county
+  - state
+  evidence_groups:
+    facility_identity:
+    - facility name
+    - facility
+    location:
+    - mailing address
+    - facility location
+    - physical location
+    - address
+  reference_queries:
+  - What does 40 CFR 144.31(e)(2) require for facility name address and location?
+  - What facility identity information is expected in a Class VI application?
+  permit_precedent_queries:
+  - How do Class VI applications identify facility name address and location?
+  - What permit precedent exists for facility identity information?
+  recommended_fix: Add the facility name, mailing address, and physical location, including county and state.
+
+- item_id: sic_codes
+  label: SIC codes
+  description: The narrative should identify up to four Standard Industrial Classification codes for the facility when applicable.
+  requirement_level: required
+  severity: minor
+  expected_evidence_terms:
+  - SIC
+  - SIC code
+  - Standard Industrial Classification
+  - industrial classification
+  evidence_groups:
+    sic_code:
+    - SIC
+    - SIC code
+    - Standard Industrial Classification
+  reference_queries:
+  - What does 40 CFR 144.31(e)(3) require for SIC codes?
+  - What SIC code information is expected in a Class VI application?
+  permit_precedent_queries:
+  - How do Class VI applications report SIC codes?
+  - What permit precedent exists for SIC codes in Class VI applications?
+  recommended_fix: Add up to four applicable SIC codes or state why SIC codes are not applicable.
+
+- item_id: operator_ownership_status
+  label: Operator ownership and status
+  description: The narrative should identify the operator name, address, telephone number, ownership status, and whether the operator is a federal, state, private, public, or other entity.
+  requirement_level: required
+  severity: moderate
+  expected_evidence_terms:
+  - operator name
+  - operator address
+  - telephone
+  - phone
+  - ownership status
+  - private entity
+  - public entity
+  - federal
+  - state
+  evidence_groups:
+    operator_identity:
+    - operator name
+    - operator
+    contact:
+    - telephone
+    - phone
+    - address
+    ownership:
+    - ownership status
+    - private
+    - public
+    - federal
+    - state
+  reference_queries:
+  - What does 40 CFR 144.31(e)(4) require for operator name address telephone and ownership status?
+  - What operator information is expected in a Class VI permit application?
+  permit_precedent_queries:
+  - How do Class VI applicants describe operator ownership and status?
+  - What permit precedent exists for operator identity and ownership status?
+  recommended_fix: Add operator name, address, phone number, ownership status, and entity type.
+
+- item_id: indian_lands_status
+  label: Indian lands status
+  description: The narrative should state whether the facility is located on Indian lands.
+  requirement_level: required
+  severity: moderate
+  expected_evidence_terms:
+  - Indian lands
+  - tribal lands
+  - tribal
+  - reservation
+  - not located on Indian lands
+  evidence_groups:
+    indian_lands_status:
+    - Indian lands
+    - tribal lands
+    - reservation
+  reference_queries:
+  - What does 40 CFR 144.31(e)(5) require for Indian lands status?
+  - What Indian lands information is expected in a Class VI application?
+  permit_precedent_queries:
+  - How do Class VI applicants state whether a facility is located on Indian lands?
+  - What permit precedent exists for Indian lands status?
+  recommended_fix: State whether the facility is located on Indian lands and identify any relevant tribal jurisdiction.
+
+- item_id: environmental_permits_and_approvals
+  label: Environmental permits and approvals
+  description: The narrative should list permits or construction approvals received or applied for under RCRA, UIC, NPDES, PSD, CAA, NESHAPS, MPRSA, Section 404, and other relevant environmental programs.
+  requirement_level: required
+  severity: moderate
+  expected_evidence_terms:
+  - permits
+  - approvals
+  - construction approvals
+  - RCRA
+  - UIC
+  - NPDES
+  - PSD
+  - CAA
+  - NESHAPS
+  - MPRSA
+  - Section 404
+  - dredge and fill
+  - environmental permits
+  evidence_groups:
+    permit_programs:
+    - RCRA
+    - UIC
+    - NPDES
+    - PSD
+    - CAA
+    - NESHAPS
+    - MPRSA
+    - Section 404
+  reference_queries:
+  - What does 40 CFR 144.31(e)(6) require for environmental permits and construction approvals?
+  - What permits and approvals must be listed in a Class VI application?
+  permit_precedent_queries:
+  - How do Class VI applicants list environmental permits and construction approvals?
+  - What permit precedent exists for environmental permit approval listings?
+  recommended_fix: Add a list of all relevant environmental permits and construction approvals received or applied for.
+
+- item_id: map_of_area
+  label: Map of the area
+  description: The application should include a map showing the injection well, AoR, wells, water bodies, mines, quarries, water wells, boundaries, roads, and other pertinent surface features.
+  requirement_level: required
+  severity: critical
+  expected_evidence_terms:
+  - map
+  - area of review
+  - AoR
+  - injection well
+  - producing wells
+  - abandoned wells
+  - plugged wells
+  - dry holes
+  - stratigraphic boreholes
+  - surface bodies of water
+  - springs
+  - mines
+  - quarries
+  - water wells
+  - boundaries
+  - roads
+  evidence_groups:
+    map:
+    - map
+    - figure
+    - plate
+    required_features:
+    - injection well
+    - area of review
+    - AoR
+    - wells
+    - water bodies
+    - roads
+  reference_queries:
+  - What does 40 CFR 146.82(a)(2) require for the Class VI map of the area?
+  - What features must be shown on the Class VI map of the area?
+  permit_precedent_queries:
+  - How do Class VI applications present the map of the area?
+  - What permit precedent exists for Class VI area maps?
+  recommended_fix: Add or reference a map showing the injection well, AoR, wells, water bodies, boundaries, roads, and other required features.
+
+- item_id: aor_contacts
+  label: State, Tribal, and Territory contacts in the AoR
+  description: The application should provide a list of contacts for States, Tribes, and Territories within the Area of Review.
+  requirement_level: required
+  severity: moderate
+  expected_evidence_terms:
+  - contacts
+  - state contacts
+  - tribal contacts
+  - territory contacts
+  - Area of Review contacts
+  - AoR contacts
+  - States
+  - Tribes
+  - Territories
+  evidence_groups:
+    contacts:
+    - contacts
+    - contact list
+    jurisdictions:
+    - States
+    - Tribes
+    - Territories
+    - state
+    - tribal
+  reference_queries:
+  - What does 40 CFR 146.82(a)(20) require for State Tribal and Territory contacts within the AoR?
+  - What contact information is expected for jurisdictions within the Area of Review?
+  permit_precedent_queries:
+  - How do Class VI applicants list State Tribal and Territory contacts within the AoR?
+  - What permit precedent exists for AoR jurisdiction contact lists?
+  recommended_fix: Add a list of contacts for States, Tribes, and Territories within the AoR.
