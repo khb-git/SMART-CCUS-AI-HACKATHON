@@ -94,3 +94,179 @@ items:
   - How do applicants describe record retention?
   - What permit precedent exists for record retention?
   recommended_fix: Add record retention responsibilities, duration, and storage location.
+- item_id: pisc_monitoring_program
+  label: PISC monitoring program
+  description: The plan should describe the post-injection monitoring program, including monitoring parameters, locations, frequency, duration, and how results will be evaluated.
+  requirement_level: required
+  severity: critical
+  expected_evidence_terms:
+  - PISC monitoring
+  - post-injection monitoring
+  - monitoring parameters
+  - monitoring locations
+  - monitoring frequency
+  - groundwater monitoring
+  - pressure monitoring
+  - plume monitoring
+  - geochemical monitoring
+  evidence_groups:
+    monitoring_scope:
+    - PISC monitoring
+    - post-injection monitoring
+    - monitoring parameters
+    monitoring_design:
+    - monitoring locations
+    - monitoring frequency
+    monitoring_types:
+    - groundwater monitoring
+    - pressure monitoring
+    - plume monitoring
+    - geochemical monitoring
+  reference_queries:
+  - What does Class VI require for post-injection site care monitoring?
+  - What monitoring program information is expected in a PISC and Site Closure Plan?
+  permit_precedent_queries:
+  - How do Class VI applicants describe PISC monitoring programs?
+  - What permit precedent exists for post-injection monitoring parameters and frequency?
+  recommended_fix: Add post-injection monitoring parameters, locations, frequency, duration, and evaluation procedures.
+
+- item_id: alternative_pisc_timeframe
+  label: Alternative PISC timeframe
+  description: The plan should justify any alternative post-injection site care timeframe using site-specific monitoring, modeling, plume stabilization, pressure decline, and non-endangerment evidence.
+  requirement_level: recommended
+  severity: moderate
+  expected_evidence_terms:
+  - alternative PISC timeframe
+  - alternative post-injection site care
+  - reduced PISC
+  - site-specific timeframe
+  - plume stabilization
+  - pressure decline
+  - monitoring data
+  - modeling results
+  - non-endangerment
+  evidence_groups:
+    alternative_timeframe:
+    - alternative PISC timeframe
+    - alternative post-injection site care
+    - reduced PISC
+    - site-specific timeframe
+    technical_basis:
+    - plume stabilization
+    - pressure decline
+    - monitoring data
+    - modeling results
+    protection_basis:
+    - non-endangerment
+  reference_queries:
+  - What does Class VI require for an alternative PISC timeframe?
+  - What evidence supports reducing the default post-injection site care period?
+  permit_precedent_queries:
+  - How do Class VI applicants justify alternative PISC timeframes?
+  - What permit precedent exists for alternative post-injection site care timelines?
+  recommended_fix: Add the proposed alternative PISC timeframe and technical justification based on monitoring, modeling, plume stabilization, pressure decline, and non-endangerment.
+
+- item_id: site_closure_report_contents
+  label: Site closure report contents
+  description: The plan should describe the contents of the site closure report, including documentation of plugging, monitoring, non-endangerment, surface restoration, and final status.
+  requirement_level: required
+  severity: moderate
+  expected_evidence_terms:
+  - site closure report
+  - closure report
+  - final status
+  - plugging documentation
+  - monitoring results
+  - non-endangerment
+  - surface restoration
+  - decommissioning
+  evidence_groups:
+    report:
+    - site closure report
+    - closure report
+    - final status
+    supporting_documentation:
+    - plugging documentation
+    - monitoring results
+    - non-endangerment
+    closure_activities:
+    - surface restoration
+    - decommissioning
+  reference_queries:
+  - What information should be included in a Class VI site closure report?
+  - What does EPA guidance say about site closure reporting after PISC?
+  permit_precedent_queries:
+  - How do Class VI applicants describe site closure report contents?
+  - What permit precedent exists for site closure reporting?
+  recommended_fix: Add site closure report contents, including plugging documentation, monitoring results, non-endangerment evidence, surface restoration, and final site status.
+
+- item_id: pisc_financial_responsibility_linkage
+  label: PISC financial responsibility linkage
+  description: The plan should connect PISC and site closure activities to financial responsibility cost estimates and coverage.
+  requirement_level: recommended
+  severity: moderate
+  expected_evidence_terms:
+  - PISC cost
+  - site closure cost
+  - financial responsibility
+  - financial assurance
+  - cost estimate
+  - monitoring cost
+  - closure cost
+  - post-injection cost
+  evidence_groups:
+    cost_items:
+    - PISC cost
+    - site closure cost
+    - monitoring cost
+    - closure cost
+    - post-injection cost
+    financial_linkage:
+    - financial responsibility
+    - financial assurance
+    - cost estimate
+  reference_queries:
+  - How should PISC and site closure costs connect to Class VI financial responsibility?
+  - What financial responsibility coverage is expected for PISC and site closure?
+  permit_precedent_queries:
+  - How do Class VI applicants connect PISC plans to financial responsibility cost estimates?
+  - What permit precedent exists for PISC and site closure cost coverage?
+  recommended_fix: Add a cross-reference between PISC/site closure activities and financial responsibility cost estimates and coverage.
+
+- item_id: post_closure_notice_records
+  label: Post-closure notice and records
+  description: The plan should describe post-closure notifications, records, and documentation needed to preserve long-term information about the injection project and closed site.
+  requirement_level: recommended
+  severity: moderate
+  expected_evidence_terms:
+  - post-closure
+  - notice
+  - notification
+  - records
+  - deed
+  - property records
+  - archive
+  - long-term records
+  - documentation
+  - permitting authority
+  evidence_groups:
+    post_closure_notice:
+    - post-closure
+    - notice
+    - notification
+    record_system:
+    - records
+    - deed
+    - property records
+    - archive
+    - long-term records
+    authority:
+    - documentation
+    - permitting authority
+  reference_queries:
+  - What post-closure records and notices are expected for Class VI site closure?
+  - What long-term records should be retained after Class VI site closure?
+  permit_precedent_queries:
+  - How do Class VI applicants describe post-closure records and notifications?
+  - What permit precedent exists for long-term records after site closure?
+  recommended_fix: Add post-closure notification procedures, recordkeeping responsibilities, and long-term document storage or property-record notice requirements.

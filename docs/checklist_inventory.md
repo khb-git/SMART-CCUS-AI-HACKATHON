@@ -6,7 +6,7 @@ It is intended to support comparison against EPA Class VI completeness review ma
 ## Summary
 
 - Checklist files: 11
-- Checklist items: 95
+- Checklist items: 100
 
 ## Checklist files
 
@@ -16,7 +16,7 @@ It is intended to support comparison against EPA Class VI completeness review ma
 | `emergency_remedial_response` | Emergency and Remedial Response Plan Checklist | 5 | `review\checklists\emergency_remedial_response.yaml` |
 | `financial_responsibility` | Financial Responsibility Checklist | 10 | `review\checklists\financial_responsibility.yaml` |
 | `injection_well_plugging` | Injection Well Plugging Plan Checklist | 10 | `review\checklists\injection_well_plugging.yaml` |
-| `pisc_site_closure` | PISC and Site Closure Plan Checklist | 5 | `review\checklists\pisc_site_closure.yaml` |
+| `pisc_site_closure` | PISC and Site Closure Plan Checklist | 10 | `review\checklists\pisc_site_closure.yaml` |
 | `pre_operational_testing` | Pre-Operational Testing Plan Checklist | 5 | `review\checklists\pre_operational_testing.yaml` |
 | `project_narrative` | Project Narrative Checklist | 13 | `review\checklists\project_narrative.yaml` |
 | `site_geologic_characterization` | Site Geologic Characterization Checklist | 5 | `review\checklists\site_geologic_characterization.yaml` |
@@ -104,7 +104,7 @@ It is intended to support comparison against EPA Class VI completeness review ma
 - Checklist ID: `pisc_site_closure_v1`
 - Plan type: `pisc_site_closure`
 - Source file: `review\checklists\pisc_site_closure.yaml`
-- Item count: 5
+- Item count: 10
 
 | Item ID | Label | Requirement | Severity |
 |---|---|---|---|
@@ -113,6 +113,11 @@ It is intended to support comparison against EPA Class VI completeness review ma
 | `non_endangerment_demonstration` | Non-endangerment demonstration | required | critical |
 | `site_closure_activities` | Site closure activities | required | moderate |
 | `record_retention` | Record retention | recommended | minor |
+| `pisc_monitoring_program` | PISC monitoring program | required | critical |
+| `alternative_pisc_timeframe` | Alternative PISC timeframe | recommended | moderate |
+| `site_closure_report_contents` | Site closure report contents | required | moderate |
+| `pisc_financial_responsibility_linkage` | PISC financial responsibility linkage | recommended | moderate |
+| `post_closure_notice_records` | Post-closure notice and records | recommended | moderate |
 
 ## Pre-Operational Testing Plan Checklist
 
