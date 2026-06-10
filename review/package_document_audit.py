@@ -41,8 +41,11 @@ MAIN_DOCUMENT_TYPE_ALIASES = {
         "well plugging plan",
         "plugging plan",
     ],
-    "pisc_site_closure": [
+        "pisc_site_closure": [
+        "pisc",
         "pisc and site closure plan",
+        "post injection site care",
+        "post-injection site care",
         "post injection site care and site closure",
         "post-injection site care and site closure",
         "site closure plan",
