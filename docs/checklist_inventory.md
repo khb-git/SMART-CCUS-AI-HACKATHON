@@ -6,7 +6,7 @@ It is intended to support comparison against EPA Class VI completeness review ma
 ## Summary
 
 - Checklist files: 11
-- Checklist items: 90
+- Checklist items: 95
 
 ## Checklist files
 
@@ -15,7 +15,7 @@ It is intended to support comparison against EPA Class VI completeness review ma
 | `aor_corrective_action` | AoR and Corrective Action Plan Checklist | 10 | `review\checklists\aor_corrective_action.yaml` |
 | `emergency_remedial_response` | Emergency and Remedial Response Plan Checklist | 5 | `review\checklists\emergency_remedial_response.yaml` |
 | `financial_responsibility` | Financial Responsibility Checklist | 10 | `review\checklists\financial_responsibility.yaml` |
-| `injection_well_plugging` | Injection Well Plugging Plan Checklist | 5 | `review\checklists\injection_well_plugging.yaml` |
+| `injection_well_plugging` | Injection Well Plugging Plan Checklist | 10 | `review\checklists\injection_well_plugging.yaml` |
 | `pisc_site_closure` | PISC and Site Closure Plan Checklist | 5 | `review\checklists\pisc_site_closure.yaml` |
 | `pre_operational_testing` | Pre-Operational Testing Plan Checklist | 5 | `review\checklists\pre_operational_testing.yaml` |
 | `project_narrative` | Project Narrative Checklist | 13 | `review\checklists\project_narrative.yaml` |
@@ -84,7 +84,7 @@ It is intended to support comparison against EPA Class VI completeness review ma
 - Checklist ID: `injection_well_plugging_v1`
 - Plan type: `injection_well_plugging`
 - Source file: `review\checklists\injection_well_plugging.yaml`
-- Item count: 5
+- Item count: 10
 
 | Item ID | Label | Requirement | Severity |
 |---|---|---|---|
@@ -93,6 +93,11 @@ It is intended to support comparison against EPA Class VI completeness review ma
 | `pre_plugging_conditions` | Pre-plugging conditions | required | moderate |
 | `plugging_verification` | Plugging verification | required | critical |
 | `plugging_report` | Plugging report | recommended | minor |
+| `plugging_materials_design` | Plugging materials and design basis | required | critical |
+| `co2_compatibility_for_plugging` | CO2 compatibility for plugging materials | required | critical |
+| `plugging_schedule_notification` | Plugging schedule and notification | required | moderate |
+| `post_plugging_site_condition` | Post-plugging site condition | recommended | moderate |
+| `plugging_records_retention` | Plugging records retention | recommended | moderate |
 
 ## PISC and Site Closure Plan Checklist
 

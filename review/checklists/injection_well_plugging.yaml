@@ -94,3 +94,184 @@ items:
   - How do applicants describe plugging report?
   - What permit precedent exists for plugging report?
   recommended_fix: Add final reporting requirements and as-built documentation.
+- item_id: plugging_materials_design
+  label: Plugging materials and design basis
+  description: The plan should identify plugging materials, cement formulations, additives, design basis, and how materials are selected for site-specific well and formation conditions.
+  requirement_level: required
+  severity: critical
+  expected_evidence_terms:
+  - plugging materials
+  - cement formulation
+  - cement slurry
+  - additives
+  - cement additives
+  - plug design
+  - design basis
+  - compressive strength
+  - thickening time
+  - formation conditions
+  evidence_groups:
+    materials:
+    - plugging materials
+    - cement formulation
+    - cement slurry
+    - additives
+    - cement additives
+    design_basis:
+    - plug design
+    - design basis
+    - formation conditions
+    performance:
+    - compressive strength
+    - thickening time
+  reference_queries:
+  - What does Class VI require for injection well plugging materials and design basis?
+  - What does EPA guidance say about cement formulations and materials for Class VI well plugging?
+  permit_precedent_queries:
+  - How do Class VI applicants describe plugging materials and cement formulations?
+  - What permit precedent exists for plugging material design basis?
+  recommended_fix: Add plugging materials, cement formulation, additives, design basis, and performance criteria for site-specific well and formation conditions.
+
+- item_id: co2_compatibility_for_plugging
+  label: CO2 compatibility for plugging materials
+  description: The plan should address compatibility of plugging materials with the carbon dioxide stream, formation fluids, pressure, temperature, and geochemical conditions.
+  requirement_level: required
+  severity: critical
+  expected_evidence_terms:
+  - CO2 compatibility
+  - carbon dioxide stream
+  - formation fluids
+  - geochemical conditions
+  - corrosion
+  - degradation
+  - pressure
+  - temperature
+  - cement compatibility
+  evidence_groups:
+    compatibility:
+    - CO2 compatibility
+    - cement compatibility
+    - carbon dioxide stream
+    fluids_conditions:
+    - formation fluids
+    - geochemical conditions
+    - pressure
+    - temperature
+    degradation_risk:
+    - corrosion
+    - degradation
+  reference_queries:
+  - What does Class VI require for plugging material compatibility with CO2 and formation fluids?
+  - What does EPA guidance say about cement compatibility for Class VI wells?
+  permit_precedent_queries:
+  - How do Class VI applicants discuss CO2 compatibility for plugging materials?
+  - What permit precedent exists for cement compatibility in plugging plans?
+  recommended_fix: Add compatibility discussion for plugging materials with CO2, formation fluids, pressure, temperature, corrosion, and geochemical conditions.
+
+- item_id: plugging_schedule_notification
+  label: Plugging schedule and notification
+  description: The plan should describe the anticipated plugging schedule, notification procedures, and regulatory coordination before plugging activities begin.
+  requirement_level: required
+  severity: moderate
+  expected_evidence_terms:
+  - plugging schedule
+  - schedule
+  - notification
+  - notify
+  - prior notice
+  - regulatory approval
+  - UIC Program Director
+  - plugging activities
+  - abandonment schedule
+  evidence_groups:
+    schedule:
+    - plugging schedule
+    - schedule
+    - abandonment schedule
+    notification:
+    - notification
+    - notify
+    - prior notice
+    regulatory_coordination:
+    - regulatory approval
+    - UIC Program Director
+    - plugging activities
+  reference_queries:
+  - What does Class VI require for notification before injection well plugging?
+  - What plugging schedule information is expected in a Class VI plugging plan?
+  permit_precedent_queries:
+  - How do Class VI applicants describe plugging schedule and notification procedures?
+  - What permit precedent exists for regulatory notification before plugging?
+  recommended_fix: Add anticipated plugging schedule, notification timing, regulatory coordination, and required approvals before plugging activities begin.
+
+- item_id: post_plugging_site_condition
+  label: Post-plugging site condition
+  description: The plan should describe expected post-plugging site condition, wellhead removal or surface restoration, and transition to post-injection site care or site closure.
+  requirement_level: recommended
+  severity: moderate
+  expected_evidence_terms:
+  - post-plugging
+  - post plugging
+  - site condition
+  - wellhead removal
+  - surface restoration
+  - site restoration
+  - site closure
+  - post-injection site care
+  - PISC
+  evidence_groups:
+    post_plugging_condition:
+    - post-plugging
+    - post plugging
+    - site condition
+    restoration:
+    - wellhead removal
+    - surface restoration
+    - site restoration
+    closure_transition:
+    - site closure
+    - post-injection site care
+    - PISC
+  reference_queries:
+  - What post-plugging site condition information is expected for Class VI injection wells?
+  - How does injection well plugging connect to PISC and site closure?
+  permit_precedent_queries:
+  - How do Class VI applicants describe post-plugging site condition?
+  - What permit precedent exists for wellhead removal and site restoration after plugging?
+  recommended_fix: Add expected post-plugging site condition, wellhead removal or surface restoration steps, and transition to PISC/site closure.
+
+- item_id: plugging_records_retention
+  label: Plugging records retention
+  description: The plan should describe records retained after plugging, including as-built plugging documentation, test records, materials records, and submission to the permitting authority.
+  requirement_level: recommended
+  severity: moderate
+  expected_evidence_terms:
+  - records retention
+  - retain records
+  - as-built
+  - plugging documentation
+  - test records
+  - cement records
+  - material records
+  - submitted
+  - permitting authority
+  evidence_groups:
+    retention:
+    - records retention
+    - retain records
+    documentation:
+    - as-built
+    - plugging documentation
+    - test records
+    - cement records
+    - material records
+    submission:
+    - submitted
+    - permitting authority
+  reference_queries:
+  - What plugging records should be retained for Class VI injection well plugging?
+  - What final plugging documentation should be submitted to the UIC Program Director?
+  permit_precedent_queries:
+  - How do Class VI applicants describe plugging records retention?
+  - What permit precedent exists for as-built plugging documentation?
+  recommended_fix: Add records retention requirements for as-built plugging documentation, test records, cement/material records, and permitting authority submission.
