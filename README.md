@@ -10,7 +10,9 @@ The system can:
 Ask questions over indexed EPA reference and permit precedent documents
 Review one uploaded document against a document-specific checklist
 Review a package of uploaded documents for completeness
+Explain why package topics were credited as detected
 Export single-document and package-level Markdown review reports
+Display reviewer-facing package coverage evidence in Streamlit
 ```
 
 ---
@@ -85,14 +87,103 @@ uploaded package files
 This workflow identifies:
 
 ```text
-detected document types
-missing required document types
-missing expected document types
-duplicate document types
+detected package topics
+missing required package topics
+missing expected package topics
+duplicate primary document types
 unknown documents
+supporting documents
 per-document review summaries
 priority findings
+package coverage evidence
 ```
+
+Package review now distinguishes between:
+
+```text
+document_type          primary identity of the uploaded document
+covered_plan_types     checklist reports actually run for that document
+coverage_plan_types    package completeness topics credited from filename, classification, checklist review, or text evidence
+coverage_evidence      reviewer-facing explanation of why each package topic was credited
+```
+
+This distinction is important for combined documents. For example, a project narrative may also contain financial responsibility evidence. The package review can credit the financial responsibility topic while still showing the reviewer which file supplied the evidence and why the topic was credited.
+```
+---
+
+## Checklist Inventory
+
+The review system currently includes:
+
+```text
+11 checklist files
+105 checklist review items
+```
+
+The checklist inventory is generated from the YAML checklist files and stored in:
+
+```text
+docs/checklist_inventory.md
+```
+
+Current checklist coverage includes:
+
+| Plan type | Item count |
+| --- | ---: |
+| `project_narrative` | 13 |
+| `aor_corrective_action` | 10 |
+| `financial_responsibility` | 10 |
+| `well_construction` | 10 |
+| `pre_operational_testing` | 5 |
+| `testing_monitoring` | 17 |
+| `injection_well_plugging` | 10 |
+| `pisc_site_closure` | 10 |
+| `emergency_remedial_response` | 10 |
+| `site_geologic_characterization` | 5 |
+| `site_operating` | 5 |
+
+To regenerate the inventory after checklist changes:
+
+```powershell
+python scripts/export_checklist_inventory.py
+```
+
+---
+
+## Package Coverage Evidence
+
+Package review includes a reviewer-facing coverage evidence layer.
+
+For each credited package topic, the system can show:
+
+```text
+package topic
+document name
+primary document type
+evidence source
+matched evidence terms
+reviewer note
+```
+
+Evidence sources may include:
+
+```text
+primary_document_type
+checklist_review
+filename
+classifier
+text_evidence
+```
+
+The evidence table is available in:
+
+```text
+/review-package JSON response
+Markdown package review export
+Streamlit Review Package tab
+```
+
+Text evidence is intended to support reviewer triage. It is not treated as an automatic final compliance determination.
 
 ---
 
@@ -190,6 +281,8 @@ multiple uploaded PDF/DOCX/XLSX files
 → checklist review for each known document
 → package-level completeness check
 → missing/duplicate/unknown document detection
+→ package coverage evidence routing
+→ Streamlit package coverage evidence display
 → package Markdown report export
 ```
 
@@ -225,6 +318,7 @@ rag/
 
 review/
   checklists/                     YAML review checklists by document type
+  coverage_evidence_display.py    UI formatting for package coverage evidence
   document_classifier.py          Rule-based document type classifier
   gap_analysis.py                 Checklist gap analysis engine
   package_review.py               Multi-document package review model
@@ -239,6 +333,10 @@ ui/
                                   Review Document
                                   Review Package
   api_client.py                   Streamlit API client helpers
+
+docs/
+  checklist_inventory.md          Generated checklist inventory
+  project_status.md               Current project status summary
 
 tests/
   test_*.py                       Unit/integration tests
@@ -579,9 +677,11 @@ missing_required_plan_types
 missing_expected_plan_types
 duplicate_plan_types
 unknown_documents
+supporting_documents
 document_reviews
+coverage_evidence
 ```
-
+`coverage_evidence` explains why package topics were credited as detected. It includes the credited topic, source document, primary document type, evidence source, matched terms, and reviewer note.
 ---
 
 ## Run the Streamlit UI
@@ -701,10 +801,12 @@ Expected UI sections:
 ```text
 Package name
 Overall package status
-Detected document types
-Missing required document types
-Duplicate document types
+Detected package topics
+Missing required package topics
+Duplicate primary document types
 Unknown documents
+Supporting documents
+Package Coverage Evidence table
 Expected package document types
 Per-document review summaries
 Optional per-document findings
@@ -847,15 +949,19 @@ The package report includes:
 
 ```text
 Package Summary
+Reviewer Priority Summary
 Detected Document Types
 Missing Required Document Types
 Missing Expected Document Types
-Duplicate Document Types
+Duplicate Primary Document Types
 Unknown Documents
+Supporting Documents
 Required Package Document Types
 Expected Package Document Types
 Storage Policy
-Per-Document Review Summaries
+Document Review Overview
+Package Coverage Evidence
+Detailed Per-Document Review Summaries
 Priority Findings
 ```
 
@@ -1163,6 +1269,10 @@ temporary upload handling
 multiple review checklists
 automatic document classification
 package-level completeness review
+105 checklist review items
+package coverage evidence routing
+package coverage evidence Markdown export
+package coverage evidence Streamlit display
 passing tests
 ```
 
@@ -1197,13 +1307,14 @@ Relevant evidence was detected, but a reviewer should confirm whether the docume
 Likely next development areas:
 
 ```text
-1. Improve checklist-specific evidence logic
-2. Improve table serialization and table-aware review
-3. Add package-level report polish
-4. Add LLM review-polish layer
-5. Add LLM follow-up chat over uploaded document/package results
-6. Add deployment configuration
-7. Add broader regression test suites using real EPA documents
+1. Create final demo walkthrough and sample package report
+2. Improve checklist-specific evidence logic
+3. Improve table serialization and table-aware review
+4. Add package-level report polish
+5. Add LLM review-polish layer
+6. Add LLM follow-up chat over uploaded document/package results
+7. Add deployment configuration
+8. Add broader regression test suites using real EPA documents
 ```
 
 The LLM should be added after the deterministic backend remains stable. The recommended design is:
