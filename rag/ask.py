@@ -105,10 +105,25 @@ def ask_question(
 
     evidence_items = reference_evidence + permit_evidence
 
-    return build_template_answer(
+    # Detect sections from retrieved evidence
+    detected_sections = sorted(
+        {
+            str(item.get("schema_section_id"))
+            for item in evidence_items
+            if item.get("schema_section_id")
+        }
+    )
+
+    answer = build_template_answer(
         question=question,
         evidence_items=evidence_items,
     )
+
+    # Attach detected sections
+    answer.detected_sections = detected_sections
+
+    return answer
+
 
 
 def parse_args():

@@ -53,6 +53,7 @@ class AskResponse(BaseModel):
     reviewer_interpretation: str
     potential_follow_up: str
     evidence_items: list[dict[str, Any]]
+    detected_sections: list[str] = []
 
 class ReviewDocumentResponse(BaseModel):
     """Response body for uploaded document review."""

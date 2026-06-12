@@ -35,6 +35,7 @@ class ReviewAnswer:
             "reviewer_interpretation": self.reviewer_interpretation,
             "potential_follow_up": self.potential_follow_up,
             "evidence_items": [item.to_dict() for item in self.evidence_items],
+            "detected_sections": getattr(self, "detected_sections", [])
         }
 
 
