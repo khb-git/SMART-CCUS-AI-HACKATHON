@@ -14,6 +14,7 @@ if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
 from review.coverage_evidence_display import coverage_evidence_rows_for_display
+from review.report_export import collect_completeness_checklist_rows
 
 from ui.api_client import (
     DEFAULT_API_URL,
@@ -80,6 +81,68 @@ def render_finding_summary_metrics(findings: list[dict]) -> None:
     with metric_cols[3]:
         st.metric("Unclear", counts["unclear"])
 
+def completeness_checklist_rows_for_display(
+    package_report: dict,
+) -> list[dict[str, str]]:
+    """Return completeness checklist rows formatted for Streamlit display."""
+    rows = collect_completeness_checklist_rows(package_report)
+
+    return [
+        {
+            "Status": f"{status_icon(row['status'])} {status_label(row['status'])}",
+            "Required Item": row["required_item"],
+            "GSDT Module/Folder": row["module_folder"],
+            "File Name": row["file_name"],
+            "Page Number": row["page_number"],
+            "Notes": row["notes"],
+        }
+        for row in rows
+    ]
+
+
+def render_completeness_checklist_view(package_report: dict) -> None:
+    """Render EPA-style completeness checklist rows in the package review UI."""
+    st.markdown("### Completeness Checklist Review")
+    st.caption(
+        "This table reformats the package review into a completeness-checklist "
+        "view. Page numbers are taken from evidence locations when available. "
+        "Missing items show `Not found` unless related evidence is noted elsewhere."
+    )
+
+    rows = completeness_checklist_rows_for_display(package_report)
+
+    if not rows:
+        st.info("No completeness checklist rows were returned for this package.")
+        return
+
+    status_filter = st.multiselect(
+        "Filter checklist statuses",
+        options=[
+            "Missing",
+            "Evidence found",
+            "Unclear",
+            "Present",
+        ],
+        default=[
+            "Missing",
+            "Evidence found",
+            "Unclear",
+        ],
+        key="completeness_checklist_status_filter",
+    )
+
+    if status_filter:
+        rows = [
+            row
+            for row in rows
+            if any(status in row["Status"] for status in status_filter)
+        ]
+
+    st.dataframe(
+        rows,
+        use_container_width=True,
+        hide_index=True,
+    )
 
 def render_package_findings(
     findings: list[dict],
@@ -677,6 +740,8 @@ with package_tab:
                     st.write(f"🧩 `{document_name}`")
             else:
                 st.write("No supporting documents.")
+
+        render_completeness_checklist_view(package_report)
 
         st.markdown("### Package Coverage Evidence")
 
