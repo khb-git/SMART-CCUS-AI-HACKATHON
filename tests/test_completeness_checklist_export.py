@@ -1,6 +1,7 @@
 from review.report_export import build_markdown_package_report
 from review.report_export import gsdt_module_folder_label
 from review.report_export import package_review_metrics
+from review.report_export import collect_reviewer_action_items, package_review_metrics
 
 def test_package_report_includes_completeness_checklist_section():
     package_response = {
@@ -93,6 +94,8 @@ def test_package_report_includes_completeness_checklist_section():
     assert "| Total checklist rows |" in markdown
     assert "| Page-located evidence percent |" in markdown
     assert "| Resolved percent |" in markdown
+    assert "## Reviewer Action Items" in markdown
+    assert "1." in markdown
 
 def test_gsdt_module_folder_label_formats_known_plan_types():
     assert gsdt_module_folder_label("financial_responsibility") == "Financial Responsibility"
@@ -175,3 +178,75 @@ def test_package_review_metrics_count_status_confidence_and_page_locations():
     assert metrics["page_located_percent"] == "67%"
     assert metrics["resolved_rows"] == 2
     assert metrics["resolved_percent"] == "67%"
+
+def test_collect_reviewer_action_items_prioritizes_missing_and_cross_document_rows():
+    report = {
+        "document_reviews": [
+            {
+                "document_name": "ADM_Cost_Estimates.pdf",
+                "document_type": "financial_responsibility",
+                "checklist_reports": {
+                    "financial_responsibility": {
+                        "findings": [
+                            {
+                                "item_id": "coverage_amount",
+                                "label": "Coverage amount",
+                                "status": "evidence_found",
+                                "severity": "critical",
+                                "requirement_level": "required",
+                                "confidence": "Medium",
+                                "finding": "Coverage amount evidence found.",
+                                "recommended_fix": "Confirm amount covers all phases.",
+                                "evidence_locations": [
+                                    {
+                                        "file_name": "ADM_Cost_Estimates.pdf",
+                                        "page_number": 4,
+                                    }
+                                ],
+                            },
+                            {
+                                "item_id": "financial_instrument",
+                                "label": "Financial instrument",
+                                "status": "missing",
+                                "severity": "critical",
+                                "requirement_level": "required",
+                                "confidence": "High",
+                                "finding": "Financial instrument was not found.",
+                                "recommended_fix": "Add the financial instrument.",
+                                "evidence_locations": [],
+                                "related_package_evidence": [
+                                    {
+                                        "document_name": "ADM_Project_Narrative.pdf",
+                                        "page_number": 7,
+                                        "matched_terms": ["financial assurance"],
+                                        "excerpt": "Financial assurance is referenced.",
+                                    }
+                                ],
+                            },
+                            {
+                                "item_id": "inflation_adjustment",
+                                "label": "Inflation adjustment",
+                                "status": "unclear",
+                                "severity": "moderate",
+                                "requirement_level": "recommended",
+                                "confidence": "Low",
+                                "finding": "Inflation adjustment is unclear.",
+                                "recommended_fix": "Clarify inflation adjustment.",
+                                "evidence_locations": [],
+                            },
+                        ]
+                    }
+                },
+            }
+        ]
+    }
+
+    action_items = collect_reviewer_action_items(report)
+
+    assert action_items
+    assert any("critical missing" in item for item in action_items)
+    assert any("required missing" in item for item in action_items)
+    assert any("evidence-found" in item for item in action_items)
+    assert any("low-confidence" in item for item in action_items)
+    assert any("without page-located evidence" in item for item in action_items)
+    assert any("cross-document related evidence" in item for item in action_items)
