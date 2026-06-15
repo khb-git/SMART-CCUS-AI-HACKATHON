@@ -81,6 +81,208 @@ def format_document_names(values: list[str]) -> str:
 
     return "\n".join(f"- `{value}`" for value in values)
 
+def markdown_table_escape(value: Any) -> str:
+    """Escape basic Markdown table characters."""
+    text = str(value or "").replace("\n", " ").strip()
+    text = text.replace("|", "\\|")
+
+    return text or "None"
+
+
+def format_page_numbers(locations: list[dict[str, Any]]) -> str:
+    """Format page numbers from finding evidence locations."""
+    page_numbers = []
+
+    for location in locations:
+        page_number = location.get("page_number")
+
+        if page_number in {"", None}:
+            continue
+
+        try:
+            page_numbers.append(int(page_number))
+        except (TypeError, ValueError):
+            continue
+
+    unique_pages = sorted(set(page_numbers))
+
+    if not unique_pages:
+        return "Not found"
+
+    return ", ".join(str(page) for page in unique_pages)
+
+
+def format_location_file_names(
+    finding: dict[str, Any],
+    fallback_document_name: str,
+) -> str:
+    """Format file names from evidence locations or fallback document."""
+    locations = finding.get("evidence_locations", []) or []
+
+    file_names = sorted(
+        {
+            str(location.get("file_name") or "").strip()
+            for location in locations
+            if str(location.get("file_name") or "").strip()
+        }
+    )
+
+    if file_names:
+        return "; ".join(file_names)
+
+    return fallback_document_name
+
+
+def format_related_package_evidence_note(finding: dict[str, Any]) -> str:
+    """Format related package evidence for checklist notes."""
+    related_evidence = finding.get("related_package_evidence", []) or []
+
+    if not related_evidence:
+        return ""
+
+    related_parts = []
+
+    for related in related_evidence:
+        document_name = related.get("document_name", "Unknown document")
+        matched_terms = related.get("matched_terms", []) or []
+        matched_terms_text = ", ".join(str(term) for term in matched_terms[:5])
+
+        if matched_terms_text:
+            related_parts.append(f"{document_name}: {matched_terms_text}")
+        else:
+            related_parts.append(str(document_name))
+
+    if not related_parts:
+        return ""
+
+    return " Related evidence elsewhere in package: " + "; ".join(related_parts) + "."
+
+
+def format_completeness_notes(finding: dict[str, Any]) -> str:
+    """Build notes for a completeness-checklist row."""
+    notes = []
+
+    finding_text = finding.get("finding", "")
+    if finding_text:
+        notes.append(finding_text)
+
+    recommended_fix = finding.get("recommended_fix", "")
+    if recommended_fix:
+        notes.append(f"Recommended fix: {recommended_fix}")
+
+    related_note = format_related_package_evidence_note(finding)
+    if related_note:
+        notes.append(related_note.strip())
+
+    return " ".join(notes).strip() or "No notes returned."
+
+
+def collect_completeness_checklist_rows(
+    report: dict[str, Any],
+) -> list[dict[str, Any]]:
+    """Collect EPA-style completeness checklist rows from package review findings."""
+    rows: list[dict[str, Any]] = []
+
+    for document_review in report.get("document_reviews", []) or []:
+        document_name = document_review.get("document_name", "Unknown document")
+        checklist_reports = document_review.get("checklist_reports", {}) or {}
+
+        if not checklist_reports and document_review.get("report"):
+            primary_report = document_review.get("report") or {}
+            plan_type = primary_report.get(
+                "plan_type",
+                document_review.get("document_type", "unknown"),
+            )
+            checklist_reports = {plan_type: primary_report}
+
+        for plan_type, checklist_report in checklist_reports.items():
+            findings = checklist_report.get("findings", []) or []
+
+            for finding in findings:
+                status = finding.get("status", "")
+
+                if status not in {"present", "evidence_found", "missing", "unclear"}:
+                    continue
+
+                evidence_locations = finding.get("evidence_locations", []) or []
+
+                rows.append(
+                    {
+                        "status": status,
+                        "required_item": finding.get(
+                            "label",
+                            finding.get("item_id", "Checklist item"),
+                        ),
+                        "module_folder": plan_type,
+                        "file_name": format_location_file_names(
+                            finding,
+                            document_name,
+                        ),
+                        "page_number": format_page_numbers(evidence_locations),
+                        "notes": format_completeness_notes(finding),
+                        "severity": finding.get("severity", ""),
+                        "requirement_level": finding.get("requirement_level", ""),
+                    }
+                )
+
+    return sorted(
+        rows,
+        key=lambda row: (
+            {
+                "missing": 0,
+                "evidence_found": 1,
+                "unclear": 2,
+                "present": 3,
+            }.get(row["status"], 99),
+            row["module_folder"],
+            row["required_item"],
+        ),
+    )
+
+
+def build_completeness_checklist_section(report: dict[str, Any]) -> list[str]:
+    """Build an EPA-style completeness checklist Markdown table."""
+    rows = collect_completeness_checklist_rows(report)
+
+    lines = [
+        "## Completeness Checklist Review",
+        "",
+        (
+            "This section reformats the package review into a completeness-checklist "
+            "view. Page numbers are taken from evidence locations when available. "
+            "Missing items show `Not found` unless related evidence is noted elsewhere."
+        ),
+        "",
+    ]
+
+    if not rows:
+        return lines + ["No checklist rows were returned.", ""]
+
+    lines.extend(
+        [
+            "| Status | Required Item | GSDT Module/Folder | File Name | Page Number | Notes |",
+            "| --- | --- | --- | --- | --- | --- |",
+        ]
+    )
+
+    for row in rows:
+        lines.append(
+            "| "
+            + " | ".join(
+                [
+                    markdown_table_escape(status_label(row["status"])),
+                    markdown_table_escape(row["required_item"]),
+                    markdown_table_escape(row["module_folder"]),
+                    markdown_table_escape(row["file_name"]),
+                    markdown_table_escape(row["page_number"]),
+                    markdown_table_escape(row["notes"]),
+                ]
+            )
+            + " |"
+        )
+
+    lines.append("")
+    return lines
 
 def build_markdown_findings_section(
     findings: list[dict[str, Any]],
@@ -558,6 +760,7 @@ def build_markdown_package_report(package_response: dict[str, Any]) -> str:
         )
 
     lines.extend(build_package_document_overview_section(document_reviews))
+    lines.extend(build_completeness_checklist_section(report))
     lines.extend(build_package_coverage_evidence_section(coverage_evidence))
 
     lines.extend(
