@@ -6,7 +6,6 @@ __pycache__/
 venv/
 
 # Generated scraper / ingestion outputs
-data/manifest.json
 data/raw_docs/
 data/chunked/
 

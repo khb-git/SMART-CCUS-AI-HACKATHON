@@ -1,5 +1,0 @@
-# Scraper dependencies. Append to your existing requirements.txt
-# (or your teammate's, since she's the scraping owner).
-
-requests>=2.31
-beautifulsoup4>=4.12

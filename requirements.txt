@@ -11,18 +11,27 @@ pydantic>=2.13.4
 pandas
 pypdf>=6.11.0
 
-sentence-transformers
-chromadb
+# Embeddings (local)
+sentence-transformers>=2.5
 
-requests
-beautifulsoup4
+# Vector store
+chromadb>=0.5
+
+# LLM serving (local)
+llama-cpp-python>=0.2
+
+# Scraper dependencies
+requests>=2.31
+beautifulsoup4>=4.12
 duckduckgo-search>=8.1.1
 wikipedia>=1.4.0
 
-pytest
+# Testing
+pytest>=8.0
 
-python-docx
-pdfplumber
+# Document parsing
+pdfplumber>=0.10
+python-docx>=1.1
 
 openpyxl
 
