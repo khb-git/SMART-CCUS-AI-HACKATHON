@@ -136,6 +136,11 @@ def completeness_checklist_rows_for_display(
 
     return [
         {
+            "Review Key": (
+                f"{row.get('module_folder', '')}::"
+                f"{row.get('required_item', '')}::"
+                f"{row.get('file_name', '')}"
+            ),
             "Status": f"{status_icon(row['status'])} {status_label(row['status'])}",
             "Required Item": row["required_item"],
             "GSDT Module/Folder": row["module_folder"],
@@ -146,6 +151,42 @@ def completeness_checklist_rows_for_display(
         for row in rows
     ]
 
+REVIEWER_CONFIRMATION_OPTIONS = [
+    "Pending review",
+    "Confirmed",
+    "Needs follow-up",
+    "Not applicable",
+    "Resolved after cross-reference",
+]
+
+
+def reviewer_confirmation_state_key(row: dict[str, str]) -> str:
+    """Return stable Streamlit state key for one reviewer confirmation row."""
+    review_key = row.get("Review Key", "")
+
+    safe_key = "".join(
+        char if char.isalnum() else "_"
+        for char in review_key
+    )
+
+    return f"reviewer_confirmation_{safe_key}"
+
+
+def apply_reviewer_confirmations(
+    rows: list[dict[str, str]],
+) -> list[dict[str, str]]:
+    """Attach reviewer confirmation state to checklist display rows."""
+    confirmed_rows = []
+
+    for row in rows:
+        state_key = reviewer_confirmation_state_key(row)
+        confirmation = st.session_state.get(state_key, "Pending review")
+
+        confirmed_row = dict(row)
+        confirmed_row["Reviewer Confirmation"] = confirmation
+        confirmed_rows.append(confirmed_row)
+
+    return confirmed_rows
 
 def render_completeness_checklist_view(package_report: dict) -> None:
     """Render EPA-style completeness checklist rows in the package review UI."""
@@ -185,10 +226,41 @@ def render_completeness_checklist_view(package_report: dict) -> None:
             if any(status in row["Status"] for status in status_filter)
         ]
 
+    with st.expander("Reviewer confirmations", expanded=False):
+        st.caption(
+            "Use these controls to mark the reviewer disposition for each visible "
+            "checklist row. These selections are held in the current Streamlit "
+            "session only."
+        )
+
+        for index, row in enumerate(rows, start=1):
+            label = (
+                f"{index}. {row['Required Item']} "
+                f"({row['GSDT Module/Folder']})"
+            )
+
+            st.selectbox(
+                label,
+                options=REVIEWER_CONFIRMATION_OPTIONS,
+                index=0,
+                key=reviewer_confirmation_state_key(row),
+            )
+
+    display_rows = apply_reviewer_confirmations(rows)
+
     st.dataframe(
-        rows,
+        display_rows,
         use_container_width=True,
         hide_index=True,
+        column_order=[
+            "Reviewer Confirmation",
+            "Status",
+            "Required Item",
+            "GSDT Module/Folder",
+            "File Name",
+            "Page Number",
+            "Notes",
+        ],
     )
 
 def render_package_findings(
