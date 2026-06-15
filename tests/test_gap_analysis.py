@@ -472,3 +472,55 @@ def test_build_summary_includes_next_step():
 
     assert "Next step:" in report.summary
     assert "Review missing items first" in report.summary
+
+def test_gap_analysis_includes_page_aware_evidence_locations():
+    from review.gap_analysis import analyze_document_against_checklist
+    from review.schema import load_default_checklist
+    from review.temp_ingestion import TemporaryReviewChunk, TemporaryReviewDocument
+
+    document = TemporaryReviewDocument(
+        original_filename="ADM_PISC_and_Site_Closure_Plan.pdf",
+        file_extension=".pdf",
+        chunks=[
+            TemporaryReviewChunk(
+                text="General background with no relevant evidence.",
+                metadata={
+                    "page": 1,
+                    "chunk_index": 0,
+                    "content_type": "text",
+                },
+            ),
+            TemporaryReviewChunk(
+                text=(
+                    "The post-injection site care plan proposes a PISC duration "
+                    "of 50 years and includes a non-endangerment demonstration."
+                ),
+                metadata={
+                    "page": 12,
+                    "chunk_index": 1,
+                    "content_type": "text",
+                    "section_heading": "PISC Duration",
+                },
+            ),
+        ],
+    )
+
+    checklist = load_default_checklist("pisc_site_closure")
+    report = analyze_document_against_checklist(document, checklist)
+    data = report.to_dict()
+
+    location_findings = [
+        finding
+        for finding in data["findings"]
+        if finding["evidence_locations"]
+    ]
+
+    assert location_findings
+
+    first_location = location_findings[0]["evidence_locations"][0]
+
+    assert first_location["file_name"] == "ADM_PISC_and_Site_Closure_Plan.pdf"
+    assert first_location["page_number"] == 12
+    assert first_location["chunk_index"] == 1
+    assert first_location["excerpt"]
+    assert first_location["matched_terms"]
