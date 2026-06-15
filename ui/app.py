@@ -220,12 +220,12 @@ with st.sidebar:
         "Similarity scores reflect retrieval similarity, not correctness probability."
     )
 
-
+# Set up the main application layout
 ask_tab, review_tab, package_tab = st.tabs(
     ["Ask Assistant", "Review Document", "Review Package"]
 )
 
-
+# Ask tab content
 with ask_tab:
     default_question = "How do applicants monitor injection pressure and flow rate?"
 
@@ -235,6 +235,7 @@ with ask_tab:
         height=100,
     )
 
+    # Submit button
     ask_clicked = st.button("Ask review assistant", type="primary")
 
     if ask_clicked:
@@ -336,7 +337,7 @@ with ask_tab:
     else:
         st.info("Enter a question and click **Ask review assistant**.")
 
-
+# Review tab
 with review_tab:
     st.subheader("Review uploaded document")
     st.caption(
@@ -517,7 +518,7 @@ with review_tab:
                         st.markdown("**Recommended fix**")
                         st.write(recommended_fix)
 
-
+# Package tab
 with package_tab:
     st.subheader("Review uploaded document package")
     st.caption(
