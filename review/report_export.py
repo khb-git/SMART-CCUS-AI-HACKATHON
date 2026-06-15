@@ -362,6 +362,93 @@ def package_review_metrics(report: dict[str, Any]) -> dict[str, Any]:
         "resolved_percent": percent_value(resolved_rows, total_rows),
     }
 
+def collect_reviewer_action_items(report: dict[str, Any]) -> list[str]:
+    """Return deterministic reviewer action items for a package review."""
+    metrics = package_review_metrics(report)
+    rows = collect_completeness_checklist_rows(report)
+    action_items: list[str] = []
+
+    if metrics["critical_missing_rows"]:
+        action_items.append(
+            f"Resolve {metrics['critical_missing_rows']} critical missing checklist row(s)."
+        )
+
+    if metrics["required_missing_rows"]:
+        action_items.append(
+            f"Resolve {metrics['required_missing_rows']} required missing checklist row(s)."
+        )
+
+    evidence_found_rows = [
+        row
+        for row in rows
+        if row.get("status") == "evidence_found"
+    ]
+
+    if evidence_found_rows:
+        action_items.append(
+            f"Review {len(evidence_found_rows)} evidence-found row(s) to confirm whether the cited evidence fully satisfies the checklist item."
+        )
+
+    low_confidence_rows = [
+        row
+        for row in rows
+        if row.get("confidence") == "Low"
+    ]
+
+    if low_confidence_rows:
+        action_items.append(
+            f"Review {len(low_confidence_rows)} low-confidence row(s) for weak or unclear evidence support."
+        )
+
+    rows_without_pages = [
+        row
+        for row in rows
+        if not row_has_page_location(row)
+    ]
+
+    if rows_without_pages:
+        action_items.append(
+            f"Add or verify page references for {len(rows_without_pages)} checklist row(s) without page-located evidence."
+        )
+
+    rows_with_related_evidence = [
+        row
+        for row in rows
+        if "Related evidence elsewhere in package" in str(row.get("notes", ""))
+    ]
+
+    if rows_with_related_evidence:
+        action_items.append(
+            f"Confirm {len(rows_with_related_evidence)} row(s) with cross-document related evidence and add explicit cross-references if needed."
+        )
+
+    if not action_items and rows:
+        action_items.append(
+            "Confirm the cited evidence and proceed with reviewer sign-off."
+        )
+
+    if not rows:
+        action_items.append(
+            "Run package review with checklist findings before assigning reviewer action items."
+        )
+
+    return action_items
+
+
+def build_reviewer_action_items_section(report: dict[str, Any]) -> list[str]:
+    """Build Markdown reviewer action items section."""
+    action_items = collect_reviewer_action_items(report)
+
+    lines = [
+        "## Reviewer Action Items",
+        "",
+    ]
+
+    for index, action_item in enumerate(action_items, start=1):
+        lines.append(f"{index}. {action_item}")
+
+    lines.append("")
+    return lines
 
 def build_package_review_metrics_section(report: dict[str, Any]) -> list[str]:
     """Build a Markdown package metrics section."""
@@ -862,6 +949,7 @@ def build_markdown_package_report(package_response: dict[str, Any]) -> str:
 
     lines.extend(build_package_priority_summary_section(report))
     lines.extend(build_package_review_metrics_section(report))
+    lines.extend(build_reviewer_action_items_section(report))
 
     lines.extend(
         [

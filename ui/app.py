@@ -16,6 +16,7 @@ if str(PROJECT_ROOT) not in sys.path:
 from review.coverage_evidence_display import coverage_evidence_rows_for_display
 from review.report_export import (
     collect_completeness_checklist_rows,
+    collect_reviewer_action_items,
     package_review_metrics,
 )
 
@@ -117,6 +118,15 @@ def render_package_review_metrics(package_report: dict) -> None:
 
     with metric_cols_2[3]:
         st.metric("Low confidence", metrics["low_confidence_rows"])
+
+def render_reviewer_action_items(package_report: dict) -> None:
+    """Render deterministic reviewer action items."""
+    action_items = collect_reviewer_action_items(package_report)
+
+    st.markdown("### Reviewer Action Items")
+
+    for index, action_item in enumerate(action_items, start=1):
+        st.write(f"{index}. {action_item}")
 
 def completeness_checklist_rows_for_display(
     package_report: dict,
@@ -809,6 +819,8 @@ with package_tab:
                 st.write("No supporting documents.")
 
         render_package_review_metrics(package_report)
+
+        render_reviewer_action_items(package_report)
 
         render_completeness_checklist_view(package_report)
 
