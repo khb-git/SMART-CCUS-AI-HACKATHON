@@ -191,11 +191,32 @@ def render_package_findings(
 
                 for related in related_evidence:
                     matched_terms = related.get("matched_terms", []) or []
+                    page_number = related.get("page_number")
+                    chunk_index = related.get("chunk_index")
+                    section_heading = related.get("section_heading", "")
+                    excerpt = related.get("excerpt", "")
+
+                    location_parts = []
+
+                    if page_number not in {"", None}:
+                        location_parts.append(f"page {page_number}")
+
+                    if chunk_index not in {"", None}:
+                        location_parts.append(f"chunk {chunk_index}")
+
+                    location_text = ", ".join(location_parts) or "location not listed"
+
                     st.markdown(
                         f"- `{related.get('document_name', 'Unknown document')}` "
-                        f"(`{related.get('document_type', 'unknown')}`): "
+                        f"(`{related.get('document_type', 'unknown')}`, {location_text}): "
                         f"{', '.join(f'`{term}`' for term in matched_terms) or 'No terms listed'}"
                     )
+
+                    if section_heading:
+                        st.caption(f"Section: {section_heading}")
+
+                    if excerpt:
+                        st.write(excerpt)
 
         recommended_fix = finding.get("recommended_fix", "")
         if recommended_fix:

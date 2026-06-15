@@ -169,10 +169,24 @@ def format_related_package_evidence_note(finding: dict[str, Any]) -> str:
         matched_terms = related.get("matched_terms", []) or []
         matched_terms_text = ", ".join(str(term) for term in matched_terms[:5])
 
-        if matched_terms_text:
-            related_parts.append(f"{document_name}: {matched_terms_text}")
+        page_number = related.get("page_number")
+        excerpt = related.get("excerpt", "")
+
+        location_bits = [str(document_name)]
+
+        if page_number not in {"", None}:
+            location_bits.append(f"page {page_number}")
+
+        location_text = ", ".join(location_bits)
+
+        if matched_terms_text and excerpt:
+            related_parts.append(
+                f"{location_text}: {matched_terms_text}. Excerpt: {excerpt}"
+            )
+        elif matched_terms_text:
+            related_parts.append(f"{location_text}: {matched_terms_text}")
         else:
-            related_parts.append(str(document_name))
+            related_parts.append(location_text)
 
     if not related_parts:
         return ""
