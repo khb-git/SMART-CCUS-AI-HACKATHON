@@ -69,6 +69,35 @@ ITEM_ANCHOR_TERMS = {
     ],
 }
 
+@dataclass
+class EvidenceLocation:
+    """Location-aware evidence supporting one checklist finding."""
+
+    file_name: str
+    page_number: int | None = None
+    chunk_index: int | None = None
+    content_type: str = "text"
+    section_heading: str = ""
+    sheet_name: str = ""
+    row_start: int | None = None
+    row_end: int | None = None
+    excerpt: str = ""
+    matched_terms: list[str] = field(default_factory=list)
+
+    def to_dict(self) -> dict[str, Any]:
+        """Return JSON-serializable evidence location data."""
+        return {
+            "file_name": self.file_name,
+            "page_number": self.page_number,
+            "chunk_index": self.chunk_index,
+            "content_type": self.content_type,
+            "section_heading": self.section_heading,
+            "sheet_name": self.sheet_name,
+            "row_start": self.row_start,
+            "row_end": self.row_end,
+            "excerpt": self.excerpt,
+            "matched_terms": self.matched_terms,
+        }
 
 @dataclass
 class ReviewFinding:
@@ -85,6 +114,7 @@ class ReviewFinding:
     supporting_excerpts: list[str] = field(default_factory=list)
     finding: str = ""
     recommended_fix: str = ""
+    evidence_locations: list[EvidenceLocation] = field(default_factory=list)
 
     def to_dict(self) -> dict[str, Any]:
         """Return JSON-serializable finding data."""
@@ -100,6 +130,10 @@ class ReviewFinding:
             "recommended_fix": self.recommended_fix,
             "matched_evidence_groups": self.matched_evidence_groups,
             "matched_evidence_group_names": self.matched_evidence_group_names,
+            "evidence_locations": [
+                location.to_dict()
+                for location in self.evidence_locations
+            ],
         }
 
 
@@ -337,6 +371,115 @@ def find_supporting_excerpts(
 
     return excerpts
 
+def chunk_page_number(metadata: dict[str, Any]) -> int | None:
+    """Return a normalized page number from chunk metadata."""
+    page = metadata.get("page_number", metadata.get("page"))
+
+    if page in {"", None}:
+        return None
+
+    try:
+        page_int = int(page)
+    except (TypeError, ValueError):
+        return None
+
+    if page_int <= 0:
+        return None
+
+    return page_int
+
+
+def chunk_evidence_location(
+    *,
+    document_name: str,
+    chunk,
+    excerpt: str,
+    matched_terms: list[str],
+) -> EvidenceLocation:
+    """Build a location-aware evidence row from one temporary chunk."""
+    metadata = dict(getattr(chunk, "metadata", {}) or {})
+
+    return EvidenceLocation(
+        file_name=document_name,
+        page_number=chunk_page_number(metadata),
+        chunk_index=metadata.get("chunk_index"),
+        content_type=str(metadata.get("content_type", "text") or "text"),
+        section_heading=str(
+            metadata.get("section_heading")
+            or metadata.get("local_section_title")
+            or metadata.get("detected_heading_on_page")
+            or ""
+        ),
+        sheet_name=str(metadata.get("sheet_name") or ""),
+        row_start=metadata.get("row_start"),
+        row_end=metadata.get("row_end"),
+        excerpt=excerpt,
+        matched_terms=matched_terms,
+    )
+
+
+def find_evidence_locations(
+    document,
+    matched_terms: list[str],
+    max_locations: int = 3,
+    item: ReviewChecklistItem | None = None,
+) -> list[EvidenceLocation]:
+    """Find page/location-aware evidence for matched checklist terms."""
+    if not matched_terms:
+        return []
+
+    document_name = getattr(document, "original_filename", "uploaded_document")
+    locations: list[EvidenceLocation] = []
+    seen = set()
+
+    for chunk in getattr(document, "chunks", []) or []:
+        chunk_text = getattr(chunk, "text", "") or ""
+
+        excerpts = find_supporting_excerpts(
+            chunk_text,
+            matched_terms,
+            max_excerpts=1,
+            item=item,
+        )
+
+        if not excerpts:
+            continue
+
+        normalized_chunk_text = normalize_text(chunk_text)
+        terms_in_chunk = [
+            term
+            for term in matched_terms
+            if normalize_text(term) in normalized_chunk_text
+        ]
+
+        if not terms_in_chunk:
+            continue
+
+        excerpt = excerpts[0]
+        metadata = dict(getattr(chunk, "metadata", {}) or {})
+        key = (
+            metadata.get("page_number", metadata.get("page")),
+            metadata.get("chunk_index"),
+            excerpt,
+        )
+
+        if key in seen:
+            continue
+
+        locations.append(
+            chunk_evidence_location(
+                document_name=document_name,
+                chunk=chunk,
+                excerpt=excerpt,
+                matched_terms=terms_in_chunk,
+            )
+        )
+        seen.add(key)
+
+        if len(locations) >= max_locations:
+            break
+
+    return locations
 
 def classify_item_status(
     item: ReviewChecklistItem,
@@ -507,10 +650,24 @@ def build_finding_text(
 
 
 def analyze_checklist_item(
-    document_text: str,
-    item: ReviewChecklistItem,
+    document_or_text,
+    document_text_or_item,
+    item: ReviewChecklistItem | None = None,
 ) -> ReviewFinding:
-    """Analyze one checklist item against document text."""
+    """Analyze one checklist item against document text.
+
+    Supports both:
+    - analyze_checklist_item(document_text, item)
+    - analyze_checklist_item(document, document_text, item)
+    """
+    if item is None:
+        document = None
+        document_text = document_or_text
+        item = document_text_or_item
+    else:
+        document = document_or_text
+        document_text = document_text_or_item
+
     matched_terms = find_matching_terms(
         document_text,
         item.expected_evidence_terms,
@@ -543,6 +700,15 @@ def analyze_checklist_item(
         item=item,
     )
 
+    evidence_locations = []
+
+    if document is not None:
+        evidence_locations = find_evidence_locations(
+            document,
+            combined_matched_terms,
+            item=item,
+        )
+
     return ReviewFinding(
         item_id=item.item_id,
         label=item.label,
@@ -560,6 +726,7 @@ def analyze_checklist_item(
             matched_group_names=matched_group_names,
         ),
         recommended_fix=item.recommended_fix,
+        evidence_locations=evidence_locations,
     )
 
 
@@ -633,7 +800,7 @@ def analyze_document_against_checklist(
     document_text = collect_document_text(document)
 
     findings = [
-        analyze_checklist_item(document_text, item)
+        analyze_checklist_item(document, document_text, item)
         for item in checklist.items
     ]
 
