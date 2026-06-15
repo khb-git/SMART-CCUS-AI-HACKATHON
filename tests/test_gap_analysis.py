@@ -1,4 +1,10 @@
 from review.temp_ingestion import TemporaryReviewChunk, TemporaryReviewDocument
+from review.gap_analysis import analyze_checklist_item
+from review.types import (
+    ReviewChecklistItem,
+    ReviewRequirementLevel,
+    ReviewSeverity,
+)
 
 
 def make_document(text: str):
@@ -81,6 +87,26 @@ def test_analyze_checklist_item_returns_partial_finding():
     assert "calibrated annually" in finding.matched_terms
     assert finding.recommended_fix
 
+def test_analyze_checklist_item_includes_confidence_for_missing_item():
+    item = ReviewChecklistItem(
+        item_id="financial_instrument",
+        label="Financial instrument",
+        description="Document should identify the financial instrument used for financial responsibility.",
+        requirement_level=ReviewRequirementLevel.REQUIRED,
+        severity=ReviewSeverity.CRITICAL,
+        expected_evidence_terms=["letter of credit", "surety bond"],
+        recommended_fix="Add the financial instrument type.",
+    )
+
+    finding = analyze_checklist_item(
+        "This document discusses unrelated project background.",
+        item,
+    )
+
+    data = finding.to_dict()
+
+    assert data["status"] == "missing"
+    assert data["confidence"] == "High"
 
 def test_analyze_document_against_checklist_flags_missing_items():
     from review.gap_analysis import analyze_document_against_checklist
@@ -524,3 +550,48 @@ def test_gap_analysis_includes_page_aware_evidence_locations():
     assert first_location["chunk_index"] == 1
     assert first_location["excerpt"]
     assert first_location["matched_terms"]
+
+def test_analyze_checklist_item_confidence_uses_page_located_evidence():
+    item = ReviewChecklistItem(
+        item_id="coverage_amount",
+        label="Coverage amount",
+        description="Document should provide financial responsibility coverage amount evidence.",
+        requirement_level=ReviewRequirementLevel.REQUIRED,
+        severity=ReviewSeverity.CRITICAL,
+        expected_evidence_terms=[
+            "financial responsibility",
+            "financial assurance",
+            "cost estimate",
+        ],
+        recommended_fix="Confirm the coverage amount.",
+    )
+
+    document = TemporaryReviewDocument(
+        original_filename="ADM_Cost_Estimates.pdf",
+        file_extension=".pdf",
+        chunks=[
+            TemporaryReviewChunk(
+                text=(
+                    "The financial responsibility section provides financial assurance "
+                    "and a cost estimate for closure."
+                ),
+                metadata={
+                    "page": 4,
+                    "chunk_index": 1,
+                    "content_type": "text",
+                },
+            )
+        ],
+    )
+
+    finding = analyze_checklist_item(
+        document,
+        "The financial responsibility section provides financial assurance and a cost estimate for closure.",
+        item,
+    )
+
+    data = finding.to_dict()
+
+    assert data["status"] == "present"
+    assert data["confidence"] == "High"
+    assert data["evidence_locations"][0]["page_number"] == 4
