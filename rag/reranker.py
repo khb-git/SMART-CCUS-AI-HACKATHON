@@ -11,7 +11,7 @@ from __future__ import annotations
 import re
 from dataclasses import replace
 
-from rag.types import RetrievalResult
+from rag.rag_types import RetrievalResult
 
 
 STOPWORDS = {

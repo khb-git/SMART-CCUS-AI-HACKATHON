@@ -12,7 +12,7 @@ import re
 from dataclasses import dataclass
 
 from rag.evidence import EvidenceItem
-from rag.types import Collection
+from rag.rag_types import Collection
 
 
 STOPWORDS = {

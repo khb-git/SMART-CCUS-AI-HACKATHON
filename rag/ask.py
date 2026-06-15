@@ -19,7 +19,7 @@ from rag.review_answer import build_template_answer, format_review_answer
 from rag.vectorstore import VectorStore
 
 from rag.query_intent import QueryIntent, classify_query_intent
-from rag.types import Collection
+from rag.rag_types import Collection
 from rag.query_expansion import expand_query
 
 
@@ -102,6 +102,9 @@ def ask_question(
         permit_results,
         start_index=len(reference_evidence) + 1,
     )
+
+    print("Reference results:", len(reference_results))
+    print("Permit results:", len(permit_results))
 
     evidence_items = reference_evidence + permit_evidence
 
@@ -218,6 +221,8 @@ def main():
 
     print(format_review_answer(review_answer))
 
-
 if __name__ == "__main__":
     main()
+
+
+
