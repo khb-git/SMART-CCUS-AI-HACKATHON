@@ -114,6 +114,7 @@ class ReviewFinding:
     supporting_excerpts: list[str] = field(default_factory=list)
     finding: str = ""
     recommended_fix: str = ""
+    confidence: str = "Low"
     evidence_locations: list[EvidenceLocation] = field(default_factory=list)
 
     def to_dict(self) -> dict[str, Any]:
@@ -128,6 +129,7 @@ class ReviewFinding:
             "supporting_excerpts": self.supporting_excerpts,
             "finding": self.finding,
             "recommended_fix": self.recommended_fix,
+            "confidence": self.confidence,
             "matched_evidence_groups": self.matched_evidence_groups,
             "matched_evidence_group_names": self.matched_evidence_group_names,
             "evidence_locations": [
@@ -528,6 +530,66 @@ def classify_item_status(
 
     return GapStatus.PARTIAL
 
+def evidence_group_coverage_fraction(
+    item: ReviewChecklistItem,
+    matched_group_names: list[str],
+) -> float:
+    """Return fraction of structured evidence groups matched."""
+    if not item.evidence_groups:
+        return 0.0
+
+    return len(matched_group_names) / len(item.evidence_groups)
+
+
+def has_page_located_evidence(evidence_locations: list[EvidenceLocation]) -> bool:
+    """Return whether any evidence location includes a page number."""
+    return any(
+        location.page_number is not None
+        for location in evidence_locations
+    )
+
+
+def finding_confidence_label(
+    *,
+    status: GapStatus,
+    item: ReviewChecklistItem,
+    matched_terms: list[str],
+    matched_group_names: list[str],
+    supporting_excerpts: list[str],
+    evidence_locations: list[EvidenceLocation],
+) -> str:
+    """Return deterministic reviewer confidence label for one finding."""
+    if status == GapStatus.MISSING:
+        return "High"
+
+    if status == GapStatus.UNCLEAR:
+        return "Low"
+
+    strong_count = strong_match_count(matched_terms, item)
+    group_fraction = evidence_group_coverage_fraction(item, matched_group_names)
+    page_located = has_page_located_evidence(evidence_locations)
+
+    if status == GapStatus.PRESENT:
+        if page_located and (
+            strong_count >= 3
+            or group_fraction >= 0.75
+            or len(supporting_excerpts) >= 2
+        ):
+            return "High"
+
+        return "Medium"
+
+    if status == GapStatus.PARTIAL:
+        if page_located and (
+            strong_count >= 2
+            or group_fraction >= 0.5
+        ):
+            return "Medium"
+
+        return "Low"
+
+    return "Low"
+
 def readable_list(values: list[str], empty: str = "none") -> str:
     """Return a compact human-readable list."""
     cleaned_values = [
@@ -709,6 +771,15 @@ def analyze_checklist_item(
             item=item,
         )
 
+    confidence = finding_confidence_label(
+        status=status,
+        item=item,
+        matched_terms=matched_terms,
+        matched_group_names=matched_group_names,
+        supporting_excerpts=supporting_excerpts,
+        evidence_locations=evidence_locations,
+    )
+
     return ReviewFinding(
         item_id=item.item_id,
         label=item.label,
@@ -727,6 +798,7 @@ def analyze_checklist_item(
         ),
         recommended_fix=item.recommended_fix,
         evidence_locations=evidence_locations,
+        confidence=confidence,
     )
 
 

@@ -198,6 +198,10 @@ def format_completeness_notes(finding: dict[str, Any]) -> str:
     """Build notes for a completeness-checklist row."""
     notes = []
 
+    confidence = finding.get("confidence", "")
+    if confidence:
+        notes.append(f"Confidence: {confidence}.")
+
     finding_text = finding.get("finding", "")
     if finding_text:
         notes.append(finding_text)
@@ -343,6 +347,7 @@ def build_markdown_findings_section(
                 f"- **{status_label(finding.get('status', ''))}: "
                 f"{finding.get('label', finding.get('item_id', 'Finding'))}**",
                 f"  - {finding.get('finding', '')}",
+                f"  - Confidence: {finding.get('confidence', 'Low')}",
             ]
         )
 

@@ -170,6 +170,10 @@ def render_package_findings(
         )
         st.write(finding.get("finding", ""))
 
+        confidence = finding.get("confidence", "")
+        if confidence:
+            st.caption(f"Confidence: {confidence}")
+
         if matched_groups:
             st.caption(
                 "Matched evidence groups: "
@@ -565,6 +569,11 @@ with review_tab:
                 with st.expander(heading, expanded=expanded):
                     st.markdown("**Finding**")
                     st.write(finding.get("finding", ""))
+
+                    confidence = finding.get("confidence", "")
+                    if confidence:
+                        st.markdown("**Confidence**")
+                        st.write(confidence)
 
                     matched_terms = finding.get("matched_terms", [])
                     if matched_terms:
