@@ -1,5 +1,6 @@
 from review.report_export import build_markdown_package_report
 from review.report_export import gsdt_module_folder_label
+from review.report_export import package_review_metrics
 
 def test_package_report_includes_completeness_checklist_section():
     package_response = {
@@ -88,9 +89,89 @@ def test_package_report_includes_completeness_checklist_section():
     assert "| Evidence found | Coverage amount | Financial Responsibility | ADM_Cost_Estimates.pdf | 4 |" in markdown
     assert "| Missing | Financial instrument | Financial Responsibility | ADM_Cost_Estimates.pdf | Not found |" in markdown
     assert "Related evidence elsewhere in package: ADM_Narrative.pdf: cost estimate." in markdown
+    assert "## Package Review Metrics" in markdown
+    assert "| Total checklist rows |" in markdown
+    assert "| Page-located evidence percent |" in markdown
+    assert "| Resolved percent |" in markdown
 
 def test_gsdt_module_folder_label_formats_known_plan_types():
     assert gsdt_module_folder_label("financial_responsibility") == "Financial Responsibility"
     assert gsdt_module_folder_label("pisc_site_closure") == "PISC and Site Closure Plan"
     assert gsdt_module_folder_label("testing_monitoring") == "Testing and Monitoring Plan"
     assert gsdt_module_folder_label("unknown") == "Unknown"
+
+def test_package_review_metrics_count_status_confidence_and_page_locations():
+    report = {
+        "document_reviews": [
+            {
+                "document_name": "ADM_Cost_Estimates.pdf",
+                "document_type": "financial_responsibility",
+                "checklist_reports": {
+                    "financial_responsibility": {
+                        "findings": [
+                            {
+                                "item_id": "coverage_amount",
+                                "label": "Coverage amount",
+                                "status": "present",
+                                "severity": "critical",
+                                "requirement_level": "required",
+                                "confidence": "High",
+                                "finding": "Coverage amount appears addressed.",
+                                "recommended_fix": "",
+                                "evidence_locations": [
+                                    {
+                                        "file_name": "ADM_Cost_Estimates.pdf",
+                                        "page_number": 4,
+                                    }
+                                ],
+                            },
+                            {
+                                "item_id": "financial_instrument",
+                                "label": "Financial instrument",
+                                "status": "missing",
+                                "severity": "critical",
+                                "requirement_level": "required",
+                                "confidence": "High",
+                                "finding": "Financial instrument was not found.",
+                                "recommended_fix": "Add the financial instrument.",
+                                "evidence_locations": [],
+                            },
+                            {
+                                "item_id": "inflation_adjustment",
+                                "label": "Inflation adjustment",
+                                "status": "evidence_found",
+                                "severity": "moderate",
+                                "requirement_level": "recommended",
+                                "confidence": "Medium",
+                                "finding": "Inflation adjustment evidence found.",
+                                "recommended_fix": "",
+                                "evidence_locations": [
+                                    {
+                                        "file_name": "ADM_Cost_Estimates.pdf",
+                                        "page_number": 5,
+                                    }
+                                ],
+                            },
+                        ]
+                    }
+                },
+            }
+        ]
+    }
+
+    metrics = package_review_metrics(report)
+
+    assert metrics["total_checklist_rows"] == 3
+    assert metrics["present_rows"] == 1
+    assert metrics["evidence_found_rows"] == 1
+    assert metrics["missing_rows"] == 1
+    assert metrics["unclear_rows"] == 0
+    assert metrics["required_missing_rows"] == 1
+    assert metrics["critical_missing_rows"] == 1
+    assert metrics["high_confidence_rows"] == 2
+    assert metrics["medium_confidence_rows"] == 1
+    assert metrics["low_confidence_rows"] == 0
+    assert metrics["page_located_rows"] == 2
+    assert metrics["page_located_percent"] == "67%"
+    assert metrics["resolved_rows"] == 2
+    assert metrics["resolved_percent"] == "67%"

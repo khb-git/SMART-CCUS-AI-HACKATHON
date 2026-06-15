@@ -262,6 +262,7 @@ def collect_completeness_checklist_rows(
                         "notes": format_completeness_notes(finding),
                         "severity": finding.get("severity", ""),
                         "requirement_level": finding.get("requirement_level", ""),
+                        "confidence": finding.get("confidence", "Unknown"),
                     }
                 )
 
@@ -279,6 +280,114 @@ def collect_completeness_checklist_rows(
         ),
     )
 
+
+def row_has_page_location(row: dict[str, Any]) -> bool:
+    """Return whether a completeness row has at least one page location."""
+    page_number = str(row.get("page_number", "") or "").strip()
+
+    return bool(page_number and page_number != "Not found")
+
+
+def percent_value(numerator: int, denominator: int) -> str:
+    """Return a readable percentage string."""
+    if denominator <= 0:
+        return "0%"
+
+    return f"{round((numerator / denominator) * 100)}%"
+
+
+def package_review_metrics(report: dict[str, Any]) -> dict[str, Any]:
+    """Return deterministic package-level review metrics."""
+    rows = collect_completeness_checklist_rows(report)
+
+    status_counts = {
+        "present": 0,
+        "evidence_found": 0,
+        "missing": 0,
+        "unclear": 0,
+    }
+
+    confidence_counts = {
+        "High": 0,
+        "Medium": 0,
+        "Low": 0,
+        "Unknown": 0,
+    }
+
+    required_missing = 0
+    critical_missing = 0
+    page_located_rows = 0
+
+    for row in rows:
+        status = row.get("status", "")
+        if status in status_counts:
+            status_counts[status] += 1
+
+        confidence = str(row.get("confidence", "") or "Unknown")
+        if confidence not in confidence_counts:
+            confidence = "Unknown"
+
+        confidence_counts[confidence] += 1
+
+        if row_has_page_location(row):
+            page_located_rows += 1
+
+        requirement_level = row.get("requirement_level", "")
+        severity = row.get("severity", "")
+
+        if status == "missing" and requirement_level == "required":
+            required_missing += 1
+
+        if status == "missing" and severity == "critical":
+            critical_missing += 1
+
+    total_rows = len(rows)
+    resolved_rows = status_counts["present"] + status_counts["evidence_found"]
+
+    return {
+        "total_checklist_rows": total_rows,
+        "present_rows": status_counts["present"],
+        "evidence_found_rows": status_counts["evidence_found"],
+        "missing_rows": status_counts["missing"],
+        "unclear_rows": status_counts["unclear"],
+        "required_missing_rows": required_missing,
+        "critical_missing_rows": critical_missing,
+        "high_confidence_rows": confidence_counts["High"],
+        "medium_confidence_rows": confidence_counts["Medium"],
+        "low_confidence_rows": confidence_counts["Low"],
+        "unknown_confidence_rows": confidence_counts["Unknown"],
+        "page_located_rows": page_located_rows,
+        "page_located_percent": percent_value(page_located_rows, total_rows),
+        "resolved_rows": resolved_rows,
+        "resolved_percent": percent_value(resolved_rows, total_rows),
+    }
+
+
+def build_package_review_metrics_section(report: dict[str, Any]) -> list[str]:
+    """Build a Markdown package metrics section."""
+    metrics = package_review_metrics(report)
+
+    return [
+        "## Package Review Metrics",
+        "",
+        "| Metric | Value |",
+        "| --- | ---: |",
+        f"| Total checklist rows | {metrics['total_checklist_rows']} |",
+        f"| Present rows | {metrics['present_rows']} |",
+        f"| Evidence-found rows | {metrics['evidence_found_rows']} |",
+        f"| Missing rows | {metrics['missing_rows']} |",
+        f"| Unclear rows | {metrics['unclear_rows']} |",
+        f"| Required missing rows | {metrics['required_missing_rows']} |",
+        f"| Critical missing rows | {metrics['critical_missing_rows']} |",
+        f"| High-confidence rows | {metrics['high_confidence_rows']} |",
+        f"| Medium-confidence rows | {metrics['medium_confidence_rows']} |",
+        f"| Low-confidence rows | {metrics['low_confidence_rows']} |",
+        f"| Page-located rows | {metrics['page_located_rows']} |",
+        f"| Page-located evidence percent | {metrics['page_located_percent']} |",
+        f"| Resolved rows | {metrics['resolved_rows']} |",
+        f"| Resolved percent | {metrics['resolved_percent']} |",
+        "",
+    ]
 
 def build_completeness_checklist_section(report: dict[str, Any]) -> list[str]:
     """Build an EPA-style completeness checklist Markdown table."""
@@ -752,6 +861,7 @@ def build_markdown_package_report(package_response: dict[str, Any]) -> str:
     ]
 
     lines.extend(build_package_priority_summary_section(report))
+    lines.extend(build_package_review_metrics_section(report))
 
     lines.extend(
         [

@@ -14,7 +14,10 @@ if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
 from review.coverage_evidence_display import coverage_evidence_rows_for_display
-from review.report_export import collect_completeness_checklist_rows
+from review.report_export import (
+    collect_completeness_checklist_rows,
+    package_review_metrics,
+)
 
 from ui.api_client import (
     DEFAULT_API_URL,
@@ -80,6 +83,40 @@ def render_finding_summary_metrics(findings: list[dict]) -> None:
 
     with metric_cols[3]:
         st.metric("Unclear", counts["unclear"])
+
+def render_package_review_metrics(package_report: dict) -> None:
+    """Render deterministic package-level review metrics."""
+    metrics = package_review_metrics(package_report)
+
+    st.markdown("### Package Review Metrics")
+
+    metric_cols = st.columns(4)
+
+    with metric_cols[0]:
+        st.metric("Checklist rows", metrics["total_checklist_rows"])
+
+    with metric_cols[1]:
+        st.metric("Missing", metrics["missing_rows"])
+
+    with metric_cols[2]:
+        st.metric("Required missing", metrics["required_missing_rows"])
+
+    with metric_cols[3]:
+        st.metric("Page-located evidence", metrics["page_located_percent"])
+
+    metric_cols_2 = st.columns(4)
+
+    with metric_cols_2[0]:
+        st.metric("Resolved", metrics["resolved_percent"])
+
+    with metric_cols_2[1]:
+        st.metric("High confidence", metrics["high_confidence_rows"])
+
+    with metric_cols_2[2]:
+        st.metric("Medium confidence", metrics["medium_confidence_rows"])
+
+    with metric_cols_2[3]:
+        st.metric("Low confidence", metrics["low_confidence_rows"])
 
 def completeness_checklist_rows_for_display(
     package_report: dict,
@@ -770,6 +807,8 @@ with package_tab:
                     st.write(f"🧩 `{document_name}`")
             else:
                 st.write("No supporting documents.")
+
+        render_package_review_metrics(package_report)
 
         render_completeness_checklist_view(package_report)
 
