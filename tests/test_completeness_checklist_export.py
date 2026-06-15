@@ -1,5 +1,5 @@
 from review.report_export import build_markdown_package_report
-
+from review.report_export import gsdt_module_folder_label
 
 def test_package_report_includes_completeness_checklist_section():
     package_response = {
@@ -85,6 +85,12 @@ def test_package_report_includes_completeness_checklist_section():
 
     assert "## Completeness Checklist Review" in markdown
     assert "| Status | Required Item | GSDT Module/Folder | File Name | Page Number | Notes |" in markdown
-    assert "| Evidence found | Coverage amount | financial_responsibility | ADM_Cost_Estimates.pdf | 4 |" in markdown
-    assert "| Missing | Financial instrument | financial_responsibility | ADM_Cost_Estimates.pdf | Not found |" in markdown
+    assert "| Evidence found | Coverage amount | Financial Responsibility | ADM_Cost_Estimates.pdf | 4 |" in markdown
+    assert "| Missing | Financial instrument | Financial Responsibility | ADM_Cost_Estimates.pdf | Not found |" in markdown
     assert "Related evidence elsewhere in package: ADM_Narrative.pdf: cost estimate." in markdown
+
+def test_gsdt_module_folder_label_formats_known_plan_types():
+    assert gsdt_module_folder_label("financial_responsibility") == "Financial Responsibility"
+    assert gsdt_module_folder_label("pisc_site_closure") == "PISC and Site Closure Plan"
+    assert gsdt_module_folder_label("testing_monitoring") == "Testing and Monitoring Plan"
+    assert gsdt_module_folder_label("unknown") == "Unknown"

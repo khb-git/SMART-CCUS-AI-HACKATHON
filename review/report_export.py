@@ -22,6 +22,28 @@ def status_label(status: str) -> str:
 
     return labels.get(str(status or ""), str(status or "Unknown").replace("_", " ").title())
 
+GSDT_MODULE_FOLDER_LABELS = {
+    "project_narrative": "Project Narrative",
+    "site_geologic_characterization": "Site Geologic Characterization",
+    "aor_corrective_action": "AoR and Corrective Action Plan",
+    "financial_responsibility": "Financial Responsibility",
+    "well_construction": "Well Construction Plan",
+    "pre_operational_testing": "Pre-Operational Testing Plan",
+    "site_operating": "Site Operating Plan",
+    "testing_monitoring": "Testing and Monitoring Plan",
+    "injection_well_plugging": "Injection Well Plugging Plan",
+    "pisc_site_closure": "PISC and Site Closure Plan",
+    "emergency_remedial_response": "Emergency and Remedial Response Plan",
+    "unknown": "Unknown",
+}
+
+
+def gsdt_module_folder_label(plan_type: str) -> str:
+    """Return reviewer-facing GSDT module/folder label for a plan type."""
+    return GSDT_MODULE_FOLDER_LABELS.get(
+        str(plan_type or "unknown"),
+        str(plan_type or "Unknown").replace("_", " ").title(),
+    )
 
 def finding_status_counts(findings: list[dict[str, Any]]) -> dict[str, int]:
     """Count finding statuses."""
@@ -213,7 +235,7 @@ def collect_completeness_checklist_rows(
                             "label",
                             finding.get("item_id", "Checklist item"),
                         ),
-                        "module_folder": plan_type,
+                        "module_folder": gsdt_module_folder_label(plan_type),
                         "file_name": format_location_file_names(
                             finding,
                             document_name,
