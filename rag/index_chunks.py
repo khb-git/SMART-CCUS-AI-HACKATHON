@@ -26,7 +26,7 @@ import json
 from pathlib import Path
 
 from rag.embeddings import DEFAULT_MODEL, Embeddings
-from rag.types import Chunk, ChunkMetadata, Collection, DocumentType
+from rag.rag_types import Chunk, ChunkMetadata, Collection, DocumentType
 from rag.vectorstore import VectorStore
 
 

@@ -15,7 +15,7 @@ import argparse
 
 from rag.embeddings import DEFAULT_MODEL, Embeddings
 from rag.retriever import Retriever
-from rag.types import Collection
+from rag.rag_types import Collection
 from rag.vectorstore import VectorStore
 from rag.query_expansion import expand_query
 
