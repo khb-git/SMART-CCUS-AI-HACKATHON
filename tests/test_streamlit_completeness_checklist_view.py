@@ -6,6 +6,7 @@ from ui.app import (
     filter_rows_by_reviewer_confirmation,
     reviewer_confirmation_counts,
     reviewer_confirmation_state_key,
+    reviewer_note_state_key,
 )
 
 
@@ -92,6 +93,7 @@ def test_build_reviewer_confirmation_export_section_includes_selected_states():
     rows = [
         {
             "Reviewer Confirmation": "Confirmed",
+            "Reviewer Notes": "Confirmed against cost estimate table.",
             "Status": "✅ Present",
             "Required Item": "Coverage amount",
             "GSDT Module/Folder": "Financial Responsibility",
@@ -100,6 +102,7 @@ def test_build_reviewer_confirmation_export_section_includes_selected_states():
         },
         {
             "Reviewer Confirmation": "Needs follow-up",
+            "Reviewer Notes": "Need the actual financial instrument document.",
             "Status": "🔴 Missing",
             "Required Item": "Financial instrument",
             "GSDT Module/Folder": "Financial Responsibility",
@@ -111,9 +114,18 @@ def test_build_reviewer_confirmation_export_section_includes_selected_states():
     markdown = build_reviewer_confirmation_export_section(rows)
 
     assert "## Reviewer Confirmation Export" in markdown
-    assert "| Reviewer Confirmation | Status | Required Item | GSDT Module/Folder | File Name | Page Number |" in markdown
-    assert "| Confirmed | ✅ Present | Coverage amount | Financial Responsibility | ADM_Cost_Estimates.pdf | 4 |" in markdown
-    assert "| Needs follow-up | 🔴 Missing | Financial instrument | Financial Responsibility | ADM_Cost_Estimates.pdf | Not found |" in markdown
+    assert (
+        "| Reviewer Confirmation | Reviewer Notes | Status | Required Item | "
+        "GSDT Module/Folder | File Name | Page Number |"
+    ) in markdown
+    assert (
+        "| Confirmed | Confirmed against cost estimate table. | ✅ Present | "
+        "Coverage amount | Financial Responsibility | ADM_Cost_Estimates.pdf | 4 |"
+    ) in markdown
+    assert (
+        "| Needs follow-up | Need the actual financial instrument document. | 🔴 Missing | "
+        "Financial instrument | Financial Responsibility | ADM_Cost_Estimates.pdf | Not found |"
+    ) in markdown
 
 
 def test_append_reviewer_confirmation_export_appends_section():
@@ -140,6 +152,7 @@ def test_build_completeness_checklist_csv_includes_reviewer_confirmations():
     rows = [
         {
             "Reviewer Confirmation": "Confirmed",
+            "Reviewer Notes": "Confirmed against cost estimate table.",
             "Status": "✅ Present",
             "Required Item": "Coverage amount",
             "GSDT Module/Folder": "Financial Responsibility",
@@ -149,6 +162,7 @@ def test_build_completeness_checklist_csv_includes_reviewer_confirmations():
         },
         {
             "Reviewer Confirmation": "Needs follow-up",
+            "Reviewer Notes": "Need the actual financial instrument document.",
             "Status": "🔴 Missing",
             "Required Item": "Financial instrument",
             "GSDT Module/Folder": "Financial Responsibility",
@@ -161,16 +175,17 @@ def test_build_completeness_checklist_csv_includes_reviewer_confirmations():
     csv_text = build_completeness_checklist_csv(rows)
 
     assert (
-        "Reviewer Confirmation,Status,Required Item,GSDT Module/Folder,"
+        "Reviewer Confirmation,Reviewer Notes,Status,Required Item,GSDT Module/Folder,"
         "File Name,Page Number,Notes"
     ) in csv_text
     assert (
-        "Confirmed,✅ Present,Coverage amount,Financial Responsibility,"
-        "ADM_Cost_Estimates.pdf,4,Coverage amount evidence found."
+        "Confirmed,Confirmed against cost estimate table.,✅ Present,Coverage amount,"
+        "Financial Responsibility,ADM_Cost_Estimates.pdf,4,Coverage amount evidence found."
     ) in csv_text
     assert (
-        "Needs follow-up,🔴 Missing,Financial instrument,Financial Responsibility,"
-        "ADM_Cost_Estimates.pdf,Not found,Financial instrument missing."
+        "Needs follow-up,Need the actual financial instrument document.,🔴 Missing,"
+        "Financial instrument,Financial Responsibility,ADM_Cost_Estimates.pdf,"
+        "Not found,Financial instrument missing."
     ) in csv_text
 
 def test_filter_rows_by_reviewer_confirmation_returns_matching_rows():
@@ -223,3 +238,15 @@ def test_filter_rows_by_reviewer_confirmation_returns_all_rows_when_empty():
     ]
 
     assert filter_rows_by_reviewer_confirmation(rows, []) == rows
+
+def test_reviewer_note_state_key_is_stable_and_safe():
+    row = {
+        "Review Key": "Financial Responsibility::Coverage amount::ADM_Cost_Estimates.pdf",
+    }
+
+    key = reviewer_note_state_key(row)
+
+    assert key == (
+        "reviewer_note_"
+        "Financial_Responsibility__Coverage_amount__ADM_Cost_Estimates_pdf"
+    )
