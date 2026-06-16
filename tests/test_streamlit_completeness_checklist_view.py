@@ -10,6 +10,8 @@ from ui.reviewer_workflow import (
     reviewer_confirmation_counts,
     reviewer_confirmation_state_key,
     reviewer_note_state_key,
+    build_reviewer_state_export,
+    parse_reviewer_state_import,
 )
 
 
@@ -371,3 +373,87 @@ def test_build_deficiency_checklist_csv_excludes_present_rows():
     assert "Confirm monitoring interval." in csv_text
     assert "Coverage amount" not in csv_text
     assert "Looks complete." not in csv_text
+
+def test_build_reviewer_state_export_includes_confirmations_and_notes():
+    rows = [
+        {
+            "Review Key": "Financial Responsibility::Financial instrument::ADM_Cost_Estimates.pdf",
+            "Reviewer Confirmation": "Needs follow-up",
+            "Reviewer Notes": "Need actual instrument.",
+            "Status": "🔴 Missing",
+            "Required Item": "Financial instrument",
+            "GSDT Module/Folder": "Financial Responsibility",
+            "Regulatory Citation": "40 CFR 146.85 - Financial responsibility",
+            "File Name": "ADM_Cost_Estimates.pdf",
+            "Page Number": "Not found",
+        }
+    ]
+
+    json_text = build_reviewer_state_export(
+        rows,
+        package_name="uploaded_package",
+    )
+
+    assert '"version": 1' in json_text
+    assert '"package_name": "uploaded_package"' in json_text
+    assert "Financial instrument" in json_text
+    assert "Needs follow-up" in json_text
+    assert "Need actual instrument." in json_text
+
+
+def test_parse_reviewer_state_import_returns_session_state_updates():
+    json_text = """
+    {
+      "version": 1,
+      "package_name": "uploaded_package",
+      "reviewer_state": [
+        {
+          "Review Key": "Financial Responsibility::Financial instrument::ADM_Cost_Estimates.pdf",
+          "Reviewer Confirmation": "Needs follow-up",
+          "Reviewer Notes": "Need actual instrument."
+        }
+      ]
+    }
+    """
+
+    updates = parse_reviewer_state_import(json_text)
+
+    assert updates[
+        "reviewer_confirmation_Financial_Responsibility__Financial_instrument__ADM_Cost_Estimates_pdf"
+    ] == "Needs follow-up"
+    assert updates[
+        "reviewer_note_Financial_Responsibility__Financial_instrument__ADM_Cost_Estimates_pdf"
+    ] == "Need actual instrument."
+
+
+def test_parse_reviewer_state_import_defaults_invalid_confirmation_to_pending():
+    json_text = """
+    {
+      "version": 1,
+      "reviewer_state": [
+        {
+          "Review Key": "Testing::Monitoring frequency::Testing_Monitoring.pdf",
+          "Reviewer Confirmation": "Invalid status",
+          "Reviewer Notes": "Check this."
+        }
+      ]
+    }
+    """
+
+    updates = parse_reviewer_state_import(json_text)
+
+    assert updates[
+        "reviewer_confirmation_Testing__Monitoring_frequency__Testing_Monitoring_pdf"
+    ] == "Pending review"
+    assert updates[
+        "reviewer_note_Testing__Monitoring_frequency__Testing_Monitoring_pdf"
+    ] == "Check this."
+
+
+def test_parse_reviewer_state_import_rejects_invalid_json():
+    try:
+        parse_reviewer_state_import("not valid json")
+    except ValueError as exc:
+        assert "not valid JSON" in str(exc)
+    else:
+        raise AssertionError("Expected invalid reviewer state JSON to raise ValueError")

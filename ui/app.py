@@ -26,7 +26,9 @@ from ui.reviewer_workflow import (
     apply_reviewer_confirmations,
     build_completeness_checklist_csv,
     build_deficiency_checklist_csv,
+    build_reviewer_state_export,
     filter_rows_by_reviewer_confirmation,
+    parse_reviewer_state_import,
     reviewer_confirmation_counts,
     reviewer_confirmation_state_key,
     reviewer_note_state_key,
@@ -209,6 +211,41 @@ def render_completeness_checklist_view(package_report: dict) -> list[dict[str, s
         st.info("No completeness checklist rows were returned for this package.")
         return []
 
+    with st.expander("Reviewer state import", expanded=False):
+        st.caption(
+            "Upload a reviewer state JSON file to restore previous confirmations "
+            "and reviewer notes for matching checklist rows."
+        )
+
+        reviewer_state_file = st.file_uploader(
+            "Upload reviewer state JSON",
+            type=["json"],
+            key="reviewer_state_import_file",
+        )
+
+        apply_reviewer_state_clicked = st.button(
+            "Apply reviewer state",
+            key="apply_reviewer_state_import",
+        )
+
+        if apply_reviewer_state_clicked:
+            if reviewer_state_file is None:
+                st.warning("Upload a reviewer state JSON file first.")
+            else:
+                try:
+                    imported_state = parse_reviewer_state_import(
+                        reviewer_state_file.getvalue().decode("utf-8")
+                    )
+                except ValueError as exc:
+                    st.error(str(exc))
+                else:
+                    for state_key, state_value in imported_state.items():
+                        st.session_state[state_key] = state_value
+
+                    st.success(
+                        f"Applied reviewer state to {len(imported_state) // 2} checklist rows."
+                    )
+
     status_filter = st.multiselect(
         "Filter checklist statuses",
         options=[
@@ -236,7 +273,7 @@ def render_completeness_checklist_view(package_report: dict) -> list[dict[str, s
         st.caption(
             "Use these controls to mark the reviewer disposition for each visible "
             "checklist row. These selections are held in the current Streamlit "
-            "session only."
+            "session unless exported as reviewer state JSON."
         )
 
         for index, row in enumerate(rows, start=1):
@@ -969,6 +1006,18 @@ with package_tab:
             data=deficiency_csv,
             file_name=package_report_filename.replace(".md", "_deficiencies.csv"),
             mime="text/csv",
+        )
+
+        reviewer_state_json = build_reviewer_state_export(
+            reviewer_confirmation_rows,
+            package_name=package_response.get("package_name", "uploaded_package"),
+        )
+
+        st.download_button(
+            label="Download reviewer state JSON",
+            data=reviewer_state_json,
+            file_name=package_report_filename.replace(".md", "_reviewer_state.json"),
+            mime="application/json",
         )
 
         st.markdown("### Package Coverage Evidence")
