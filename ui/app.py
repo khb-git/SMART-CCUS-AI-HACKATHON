@@ -5,6 +5,8 @@ Streamlit chatbot UI for the SMART CCUS Class VI Review Assistant.
 from __future__ import annotations
 
 import sys
+import csv
+from io import StringIO
 from pathlib import Path
 
 import streamlit as st
@@ -290,6 +292,47 @@ def append_reviewer_confirmation_export(
     section = build_reviewer_confirmation_export_section(rows)
 
     return markdown_report.rstrip() + "\n\n" + section.rstrip() + "\n"
+
+def build_completeness_checklist_csv(
+    rows: list[dict[str, str]],
+) -> str:
+    """Build CSV text for completeness checklist rows."""
+    output = StringIO()
+
+    fieldnames = [
+        "Reviewer Confirmation",
+        "Status",
+        "Required Item",
+        "GSDT Module/Folder",
+        "File Name",
+        "Page Number",
+        "Notes",
+    ]
+
+    writer = csv.DictWriter(
+        output,
+        fieldnames=fieldnames,
+        extrasaction="ignore",
+    )
+    writer.writeheader()
+
+    for row in rows:
+        writer.writerow(
+            {
+                "Reviewer Confirmation": row.get(
+                    "Reviewer Confirmation",
+                    "Pending review",
+                ),
+                "Status": row.get("Status", ""),
+                "Required Item": row.get("Required Item", ""),
+                "GSDT Module/Folder": row.get("GSDT Module/Folder", ""),
+                "File Name": row.get("File Name", ""),
+                "Page Number": row.get("Page Number", ""),
+                "Notes": row.get("Notes", ""),
+            }
+        )
+
+    return output.getvalue()
 
 def render_completeness_checklist_view(package_report: dict) -> list[dict[str, str]]:
     """Render EPA-style completeness checklist rows in the package review UI."""
@@ -764,6 +807,17 @@ with review_tab:
             data=markdown_report,
             file_name=report_filename,
             mime="text/markdown",
+        )
+
+        checklist_csv = build_completeness_checklist_csv(
+            reviewer_confirmation_rows
+        )
+
+        st.download_button(
+            label="Download completeness checklist CSV",
+            data=checklist_csv,
+            file_name=package_report_filename.replace(".md", "_checklist.csv"),
+            mime="text/csv",
         )
 
         with st.expander("Classification details", expanded=False):
