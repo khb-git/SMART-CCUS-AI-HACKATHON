@@ -6,6 +6,7 @@ from __future__ import annotations
 
 from typing import Any
 
+from review.regulatory_citations import format_regulatory_citations
 
 def status_label(status: str) -> str:
     """Format status values for reports."""
@@ -254,6 +255,7 @@ def collect_completeness_checklist_rows(
                             finding.get("item_id", "Checklist item"),
                         ),
                         "module_folder": gsdt_module_folder_label(plan_type),
+                        "regulatory_citation": format_regulatory_citations(plan_type),
                         "file_name": format_location_file_names(
                             finding,
                             document_name,
@@ -496,8 +498,8 @@ def build_completeness_checklist_section(report: dict[str, Any]) -> list[str]:
 
     lines.extend(
         [
-            "| Status | Required Item | GSDT Module/Folder | File Name | Page Number | Notes |",
-            "| --- | --- | --- | --- | --- | --- |",
+            "| Status | Required Item | GSDT Module/Folder | Regulatory Citation | File Name | Page Number | Notes |",
+            "| --- | --- | --- | --- | --- | --- | --- |",
         ]
     )
 
@@ -509,6 +511,7 @@ def build_completeness_checklist_section(report: dict[str, Any]) -> list[str]:
                     markdown_table_escape(status_label(row["status"])),
                     markdown_table_escape(row["required_item"]),
                     markdown_table_escape(row["module_folder"]),
+                    markdown_table_escape(row["regulatory_citation"]),
                     markdown_table_escape(row["file_name"]),
                     markdown_table_escape(row["page_number"]),
                     markdown_table_escape(row["notes"]),
