@@ -3,8 +3,6 @@ langchain-community>=0.4.1
 langchain-text-splitters>=1.1.2
 langchain-chroma
 langchain-ollama
-langchain-openai>=1.2.1
-langchain-anthropic>=1.4.3
 
 python-dotenv==1.2.2
 pydantic>=2.13.4
