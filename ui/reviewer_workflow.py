@@ -196,3 +196,32 @@ def build_completeness_checklist_csv(
         )
 
     return output.getvalue()
+
+DEFICIENCY_STATUS_LABELS = [
+    "Missing",
+    "Evidence found",
+    "Unclear",
+]
+
+
+def filter_deficiency_rows(
+    rows: list[dict[str, str]],
+) -> list[dict[str, str]]:
+    """Return rows that should appear in a deficiency/follow-up export."""
+    return [
+        row
+        for row in rows
+        if any(
+            status_label in row.get("Status", "")
+            for status_label in DEFICIENCY_STATUS_LABELS
+        )
+    ]
+
+
+def build_deficiency_checklist_csv(
+    rows: list[dict[str, str]],
+) -> str:
+    """Build CSV text for unresolved checklist rows only."""
+    deficiency_rows = filter_deficiency_rows(rows)
+
+    return build_completeness_checklist_csv(deficiency_rows)

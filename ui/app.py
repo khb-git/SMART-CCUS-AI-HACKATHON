@@ -25,6 +25,7 @@ from ui.reviewer_workflow import (
     append_reviewer_confirmation_export,
     apply_reviewer_confirmations,
     build_completeness_checklist_csv,
+    build_deficiency_checklist_csv,
     filter_rows_by_reviewer_confirmation,
     reviewer_confirmation_counts,
     reviewer_confirmation_state_key,
@@ -956,6 +957,17 @@ with package_tab:
             label="Download completeness checklist CSV",
             data=checklist_csv,
             file_name=package_report_filename.replace(".md", "_checklist.csv"),
+            mime="text/csv",
+        )
+
+        deficiency_csv = build_deficiency_checklist_csv(
+            reviewer_confirmation_rows
+        )
+
+        st.download_button(
+            label="Download deficiency CSV",
+            data=deficiency_csv,
+            file_name=package_report_filename.replace(".md", "_deficiencies.csv"),
             mime="text/csv",
         )
 
