@@ -1,5 +1,6 @@
 from ui.app import (
     append_reviewer_confirmation_export,
+    build_completeness_checklist_csv,
     build_reviewer_confirmation_export_section,
     completeness_checklist_rows_for_display,
     reviewer_confirmation_counts,
@@ -133,3 +134,40 @@ def test_append_reviewer_confirmation_export_appends_section():
     assert "Existing report content." in markdown
     assert "## Reviewer Confirmation Export" in markdown
     assert "Resolved after cross-reference" in markdown
+
+def test_build_completeness_checklist_csv_includes_reviewer_confirmations():
+    rows = [
+        {
+            "Reviewer Confirmation": "Confirmed",
+            "Status": "✅ Present",
+            "Required Item": "Coverage amount",
+            "GSDT Module/Folder": "Financial Responsibility",
+            "File Name": "ADM_Cost_Estimates.pdf",
+            "Page Number": "4",
+            "Notes": "Coverage amount evidence found.",
+        },
+        {
+            "Reviewer Confirmation": "Needs follow-up",
+            "Status": "🔴 Missing",
+            "Required Item": "Financial instrument",
+            "GSDT Module/Folder": "Financial Responsibility",
+            "File Name": "ADM_Cost_Estimates.pdf",
+            "Page Number": "Not found",
+            "Notes": "Financial instrument missing.",
+        },
+    ]
+
+    csv_text = build_completeness_checklist_csv(rows)
+
+    assert (
+        "Reviewer Confirmation,Status,Required Item,GSDT Module/Folder,"
+        "File Name,Page Number,Notes"
+    ) in csv_text
+    assert (
+        "Confirmed,✅ Present,Coverage amount,Financial Responsibility,"
+        "ADM_Cost_Estimates.pdf,4,Coverage amount evidence found."
+    ) in csv_text
+    assert (
+        "Needs follow-up,🔴 Missing,Financial instrument,Financial Responsibility,"
+        "ADM_Cost_Estimates.pdf,Not found,Financial instrument missing."
+    ) in csv_text
