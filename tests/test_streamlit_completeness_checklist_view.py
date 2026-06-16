@@ -1,13 +1,15 @@
 from ui.app import completeness_checklist_rows_for_display
 from ui.reviewer_workflow import (
     append_reviewer_confirmation_export,
+    apply_reviewer_confirmations,
     build_completeness_checklist_csv,
+    build_deficiency_checklist_csv,
     build_reviewer_confirmation_export_section,
+    filter_deficiency_rows,
     filter_rows_by_reviewer_confirmation,
     reviewer_confirmation_counts,
     reviewer_confirmation_state_key,
     reviewer_note_state_key,
-    apply_reviewer_confirmations,
 )
 
 
@@ -282,3 +284,90 @@ def test_apply_reviewer_confirmations_uses_supplied_state():
             "Reviewer Notes": "Confirmed against cost estimate table.",
         }
     ]
+
+def test_filter_deficiency_rows_returns_only_unresolved_rows():
+    rows = [
+        {
+            "Status": "✅ Present",
+            "Required Item": "Coverage amount",
+        },
+        {
+            "Status": "🟡 Evidence found",
+            "Required Item": "Monitoring frequency",
+        },
+        {
+            "Status": "🔴 Missing",
+            "Required Item": "Financial instrument",
+        },
+        {
+            "Status": "🟠 Unclear",
+            "Required Item": "Corrective action narrative",
+        },
+    ]
+
+    filtered_rows = filter_deficiency_rows(rows)
+
+    assert filtered_rows == [
+        {
+            "Status": "🟡 Evidence found",
+            "Required Item": "Monitoring frequency",
+        },
+        {
+            "Status": "🔴 Missing",
+            "Required Item": "Financial instrument",
+        },
+        {
+            "Status": "🟠 Unclear",
+            "Required Item": "Corrective action narrative",
+        },
+    ]
+
+
+def test_build_deficiency_checklist_csv_excludes_present_rows():
+    rows = [
+        {
+            "Reviewer Confirmation": "Confirmed",
+            "Reviewer Notes": "Looks complete.",
+            "Status": "✅ Present",
+            "Required Item": "Coverage amount",
+            "GSDT Module/Folder": "Financial Responsibility",
+            "Regulatory Citation": "40 CFR 146.85 - Financial responsibility",
+            "File Name": "ADM_Cost_Estimates.pdf",
+            "Page Number": "4",
+            "Notes": "Coverage amount evidence found.",
+        },
+        {
+            "Reviewer Confirmation": "Needs follow-up",
+            "Reviewer Notes": "Need actual instrument.",
+            "Status": "🔴 Missing",
+            "Required Item": "Financial instrument",
+            "GSDT Module/Folder": "Financial Responsibility",
+            "Regulatory Citation": "40 CFR 146.85 - Financial responsibility",
+            "File Name": "ADM_Cost_Estimates.pdf",
+            "Page Number": "Not found",
+            "Notes": "Financial instrument missing.",
+        },
+        {
+            "Reviewer Confirmation": "Pending review",
+            "Reviewer Notes": "Confirm monitoring interval.",
+            "Status": "🟡 Evidence found",
+            "Required Item": "Monitoring frequency",
+            "GSDT Module/Folder": "Testing and Monitoring Plan",
+            "Regulatory Citation": (
+                "40 CFR 146.90 - Testing and monitoring requirements; "
+                "40 CFR 146.91 - Reporting requirements"
+            ),
+            "File Name": "Testing_Monitoring.pdf",
+            "Page Number": "12",
+            "Notes": "Monitoring frequency evidence found.",
+        },
+    ]
+
+    csv_text = build_deficiency_checklist_csv(rows)
+
+    assert "Financial instrument" in csv_text
+    assert "Monitoring frequency" in csv_text
+    assert "Need actual instrument." in csv_text
+    assert "Confirm monitoring interval." in csv_text
+    assert "Coverage amount" not in csv_text
+    assert "Looks complete." not in csv_text
