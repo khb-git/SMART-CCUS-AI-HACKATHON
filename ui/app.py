@@ -17,6 +17,7 @@ from review.coverage_evidence_display import coverage_evidence_rows_for_display
 from review.report_export import (
     collect_completeness_checklist_rows,
     collect_reviewer_action_items,
+    markdown_table_escape,
     package_review_metrics,
 )
 
@@ -236,7 +237,61 @@ def render_reviewer_confirmation_summary(
             counts["Resolved after cross-reference"],
         )
 
-def render_completeness_checklist_view(package_report: dict) -> None:
+def build_reviewer_confirmation_export_section(
+    rows: list[dict[str, str]],
+) -> str:
+    """Build Markdown section for reviewer confirmation states."""
+    lines = [
+        "## Reviewer Confirmation Export",
+        "",
+        (
+            "This section reflects reviewer confirmation selections from the "
+            "current Streamlit session. These values are not persisted unless "
+            "the exported report is saved."
+        ),
+        "",
+    ]
+
+    if not rows:
+        return "\n".join(lines + ["No reviewer confirmation rows were available.", ""])
+
+    lines.extend(
+        [
+            "| Reviewer Confirmation | Status | Required Item | GSDT Module/Folder | File Name | Page Number |",
+            "| --- | --- | --- | --- | --- | --- |",
+        ]
+    )
+
+    for row in rows:
+        lines.append(
+            "| "
+            + " | ".join(
+                [
+                    markdown_table_escape(row.get("Reviewer Confirmation", "Pending review")),
+                    markdown_table_escape(row.get("Status", "")),
+                    markdown_table_escape(row.get("Required Item", "")),
+                    markdown_table_escape(row.get("GSDT Module/Folder", "")),
+                    markdown_table_escape(row.get("File Name", "")),
+                    markdown_table_escape(row.get("Page Number", "")),
+                ]
+            )
+            + " |"
+        )
+
+    lines.append("")
+    return "\n".join(lines)
+
+
+def append_reviewer_confirmation_export(
+    markdown_report: str,
+    rows: list[dict[str, str]],
+) -> str:
+    """Append reviewer confirmation export rows to a Markdown package report."""
+    section = build_reviewer_confirmation_export_section(rows)
+
+    return markdown_report.rstrip() + "\n\n" + section.rstrip() + "\n"
+
+def render_completeness_checklist_view(package_report: dict) -> list[dict[str, str]]:
     """Render EPA-style completeness checklist rows in the package review UI."""
     st.markdown("### Completeness Checklist Review")
     st.caption(
@@ -249,7 +304,7 @@ def render_completeness_checklist_view(package_report: dict) -> None:
 
     if not rows:
         st.info("No completeness checklist rows were returned for this package.")
-        return
+        return []
 
     status_filter = st.multiselect(
         "Filter checklist statuses",
@@ -312,6 +367,8 @@ def render_completeness_checklist_view(package_report: dict) -> None:
             "Notes",
         ],
     )
+
+    return display_rows
 
 def render_package_findings(
     findings: list[dict],
@@ -877,17 +934,6 @@ with package_tab:
         if storage_policy:
             st.info(storage_policy)
 
-        package_markdown_report = build_markdown_package_report(package_response)
-        package_report_filename = default_package_report_filename(
-            package_response.get("package_name", "uploaded_package")
-        )
-
-        st.download_button(
-            label="Download Markdown package review report",
-            data=package_markdown_report,
-            file_name=package_report_filename,
-            mime="text/markdown",
-        )
 
         st.markdown("### Package coverage")
 
@@ -944,7 +990,23 @@ with package_tab:
 
         render_reviewer_action_items(package_report)
 
-        render_completeness_checklist_view(package_report)
+        reviewer_confirmation_rows = render_completeness_checklist_view(package_report)
+
+        package_markdown_report = build_markdown_package_report(package_response)
+        package_markdown_report = append_reviewer_confirmation_export(
+            package_markdown_report,
+            reviewer_confirmation_rows,
+        )
+        package_report_filename = default_package_report_filename(
+            package_response.get("package_name", "uploaded_package")
+        )
+
+        st.download_button(
+            label="Download Markdown package review report with reviewer confirmations",
+            data=package_markdown_report,
+            file_name=package_report_filename,
+            mime="text/markdown",
+        )
 
         st.markdown("### Package Coverage Evidence")
 
