@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import csv
+import json
 from io import StringIO
 from typing import Mapping
 
@@ -151,6 +152,87 @@ def append_reviewer_confirmation_export(
     section = build_reviewer_confirmation_export_section(rows)
     return markdown_report.rstrip() + "\n\n" + section.rstrip() + "\n"
 
+def build_reviewer_state_export(
+    rows: list[dict[str, str]],
+    package_name: str = "",
+) -> str:
+    """Build portable JSON text for reviewer confirmations and notes."""
+    reviewer_state_rows = []
+
+    for row in rows:
+        review_key = row.get("Review Key", "")
+
+        if not review_key:
+            continue
+
+        reviewer_state_rows.append(
+            {
+                "Review Key": review_key,
+                "Reviewer Confirmation": row.get(
+                    "Reviewer Confirmation",
+                    "Pending review",
+                ),
+                "Reviewer Notes": row.get("Reviewer Notes", ""),
+                "Status": row.get("Status", ""),
+                "Required Item": row.get("Required Item", ""),
+                "GSDT Module/Folder": row.get("GSDT Module/Folder", ""),
+                "Regulatory Citation": row.get("Regulatory Citation", ""),
+                "File Name": row.get("File Name", ""),
+                "Page Number": row.get("Page Number", ""),
+            }
+        )
+
+    return json.dumps(
+        {
+            "version": 1,
+            "package_name": package_name,
+            "reviewer_state": reviewer_state_rows,
+        },
+        indent=2,
+    )
+
+
+def parse_reviewer_state_import(json_text: str) -> dict[str, str]:
+    """Parse reviewer state JSON into Streamlit session-state key values."""
+    try:
+        payload = json.loads(json_text)
+    except json.JSONDecodeError as exc:
+        raise ValueError("Reviewer state file is not valid JSON.") from exc
+
+    if not isinstance(payload, dict):
+        raise ValueError("Reviewer state file must contain a JSON object.")
+
+    reviewer_state_rows = payload.get("reviewer_state", [])
+
+    if not isinstance(reviewer_state_rows, list):
+        raise ValueError("Reviewer state file must contain a reviewer_state list.")
+
+    session_updates: dict[str, str] = {}
+
+    for row in reviewer_state_rows:
+        if not isinstance(row, dict):
+            continue
+
+        review_key = str(row.get("Review Key", ""))
+
+        if not review_key:
+            continue
+
+        confirmation = str(
+            row.get("Reviewer Confirmation", "Pending review")
+        )
+
+        if confirmation not in REVIEWER_CONFIRMATION_OPTIONS:
+            confirmation = "Pending review"
+
+        reviewer_note = str(row.get("Reviewer Notes", ""))
+
+        key_row = {"Review Key": review_key}
+
+        session_updates[reviewer_confirmation_state_key(key_row)] = confirmation
+        session_updates[reviewer_note_state_key(key_row)] = reviewer_note
+
+    return session_updates
 
 def build_completeness_checklist_csv(
     rows: list[dict[str, str]],
