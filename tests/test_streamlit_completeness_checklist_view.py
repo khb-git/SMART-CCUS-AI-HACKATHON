@@ -3,6 +3,7 @@ from ui.app import (
     build_completeness_checklist_csv,
     build_reviewer_confirmation_export_section,
     completeness_checklist_rows_for_display,
+    filter_rows_by_reviewer_confirmation,
     reviewer_confirmation_counts,
     reviewer_confirmation_state_key,
 )
@@ -171,3 +172,54 @@ def test_build_completeness_checklist_csv_includes_reviewer_confirmations():
         "Needs follow-up,🔴 Missing,Financial instrument,Financial Responsibility,"
         "ADM_Cost_Estimates.pdf,Not found,Financial instrument missing."
     ) in csv_text
+
+def test_filter_rows_by_reviewer_confirmation_returns_matching_rows():
+    rows = [
+        {
+            "Reviewer Confirmation": "Pending review",
+            "Required Item": "Coverage amount",
+        },
+        {
+            "Reviewer Confirmation": "Confirmed",
+            "Required Item": "Financial instrument",
+        },
+        {
+            "Reviewer Confirmation": "Needs follow-up",
+            "Required Item": "Inflation adjustment",
+        },
+        {
+            "Reviewer Confirmation": "Resolved after cross-reference",
+            "Required Item": "Cross-reference row",
+        },
+    ]
+
+    filtered_rows = filter_rows_by_reviewer_confirmation(
+        rows,
+        ["Confirmed", "Needs follow-up"],
+    )
+
+    assert filtered_rows == [
+        {
+            "Reviewer Confirmation": "Confirmed",
+            "Required Item": "Financial instrument",
+        },
+        {
+            "Reviewer Confirmation": "Needs follow-up",
+            "Required Item": "Inflation adjustment",
+        },
+    ]
+
+
+def test_filter_rows_by_reviewer_confirmation_returns_all_rows_when_empty():
+    rows = [
+        {
+            "Reviewer Confirmation": "Pending review",
+            "Required Item": "Coverage amount",
+        },
+        {
+            "Reviewer Confirmation": "Confirmed",
+            "Required Item": "Financial instrument",
+        },
+    ]
+
+    assert filter_rows_by_reviewer_confirmation(rows, []) == rows
