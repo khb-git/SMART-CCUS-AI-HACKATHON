@@ -35,6 +35,7 @@ from ui.api_client import (
     DEFAULT_API_URL,
     ask_api,
     build_ask_payload,
+    build_final_review_packet,
     build_markdown_package_report,
     build_markdown_review_report,
     default_package_report_filename,
@@ -928,6 +929,22 @@ with package_tab:
             label="Download Markdown package review report with reviewer confirmations",
             data=package_markdown_report,
             file_name=package_report_filename,
+            mime="text/markdown",
+        )
+
+        final_review_packet = build_final_review_packet(package_response)
+        final_review_packet = append_reviewer_confirmation_export(
+            final_review_packet,
+            reviewer_confirmation_rows,
+        )
+
+        st.download_button(
+            label="Download final review packet",
+            data=final_review_packet,
+            file_name=package_report_filename.replace(
+                "_review_report.md",
+                "_final_review_packet.md",
+            ),
             mime="text/markdown",
         )
 

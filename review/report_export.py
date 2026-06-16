@@ -906,6 +906,128 @@ def build_package_coverage_evidence_section(
     lines.append("")
     return lines
 
+def collect_deficiency_rows(report: dict[str, Any]) -> list[dict[str, Any]]:
+    """Collect checklist rows that should appear in a deficiency table."""
+    rows = collect_completeness_checklist_rows(report)
+
+    return [
+        row
+        for row in rows
+        if row.get("status") in {"missing", "evidence_found", "unclear"}
+    ]
+
+
+def build_deficiency_table_section(report: dict[str, Any]) -> list[str]:
+    """Build a regulator-style deficiency table from checklist rows."""
+    rows = collect_deficiency_rows(report)
+
+    lines = [
+        "## Deficiency Table",
+        "",
+        (
+            "This table summarizes checklist rows that require reviewer attention. "
+            "`Evidence found` rows may still require reviewer confirmation before "
+            "they are treated as fully satisfied."
+        ),
+        "",
+    ]
+
+    if not rows:
+        return lines + ["No deficiencies or unresolved checklist rows were identified.", ""]
+
+    lines.extend(
+        [
+            "| Status | Required Item | GSDT Module/Folder | Regulatory Citation | File Name | Page Number | Reviewer Follow-Up |",
+            "| --- | --- | --- | --- | --- | --- | --- |",
+        ]
+    )
+
+    for row in rows:
+        lines.append(
+            "| "
+            + " | ".join(
+                [
+                    markdown_table_escape(status_label(row["status"])),
+                    markdown_table_escape(row["required_item"]),
+                    markdown_table_escape(row["module_folder"]),
+                    markdown_table_escape(row["regulatory_citation"]),
+                    markdown_table_escape(row["file_name"]),
+                    markdown_table_escape(row["page_number"]),
+                    markdown_table_escape(row["notes"]),
+                ]
+            )
+            + " |"
+        )
+
+    lines.append("")
+    return lines
+
+
+def build_reviewer_signoff_section() -> list[str]:
+    """Build a reviewer sign-off section for final review packets."""
+    return [
+        "## Reviewer Sign-Off",
+        "",
+        "| Field | Value |",
+        "| --- | --- |",
+        "| Reviewer name |  |",
+        "| Review date |  |",
+        "| Final disposition |  |",
+        "| Follow-up required? |  |",
+        "| Notes |  |",
+        "",
+    ]
+
+
+def build_final_review_packet(package_response: dict[str, Any]) -> str:
+    """Build a regulator-style final Markdown review packet."""
+    report = package_response.get("report", {}) or {}
+    package_name = package_response.get(
+        "package_name",
+        report.get("package_name", "uploaded_package"),
+    )
+    overall_status = report.get("overall_status", "unknown")
+    summary = report.get("summary", "")
+    full_package_report = build_markdown_package_report(package_response)
+
+    lines = [
+        "# Class VI Final Review Packet",
+        "",
+        "## Packet Purpose",
+        "",
+        (
+            "This packet summarizes the deterministic Class VI package review "
+            "results for reviewer use. Backend-generated findings, regulatory "
+            "citations, evidence locations, and reviewer action items should be "
+            "confirmed by a qualified reviewer before final disposition."
+        ),
+        "",
+        "## Final Package Summary",
+        "",
+        f"- **Package name:** {package_name}",
+        f"- **Overall status:** {status_label(overall_status)}",
+        "",
+        summary or "No summary returned.",
+        "",
+    ]
+
+    lines.extend(build_package_review_metrics_section(report))
+    lines.extend(build_reviewer_action_items_section(report))
+    lines.extend(build_deficiency_table_section(report))
+    lines.extend(build_completeness_checklist_section(report))
+    lines.extend(build_reviewer_signoff_section())
+
+    lines.extend(
+        [
+            "## Appendix: Full Package Review Report",
+            "",
+            full_package_report,
+            "",
+        ]
+    )
+
+    return "\n".join(lines).rstrip() + "\n"
+
 def build_markdown_package_report(package_response: dict[str, Any]) -> str:
     """Build a Markdown report from /review-package response JSON."""
     report = package_response.get("report", {}) or {}
