@@ -26,6 +26,7 @@ from ui.reviewer_workflow import (
     apply_reviewer_confirmations,
     build_completeness_checklist_csv,
     build_deficiency_checklist_csv,
+    build_reviewer_confirmation_summary_section,
     build_reviewer_state_export,
     filter_rows_by_reviewer_confirmation,
     parse_reviewer_state_import,
@@ -971,6 +972,14 @@ with package_tab:
         )
 
         final_review_packet = build_final_review_packet(package_response)
+        final_review_packet = (
+                final_review_packet.rstrip()
+                + "\n\n"
+                + build_reviewer_confirmation_summary_section(
+            reviewer_confirmation_rows
+        ).rstrip()
+                + "\n"
+        )
         final_review_packet = append_reviewer_confirmation_export(
             final_review_packet,
             reviewer_confirmation_rows,

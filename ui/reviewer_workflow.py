@@ -81,6 +81,24 @@ def reviewer_confirmation_counts(
 
     return counts
 
+def build_reviewer_confirmation_summary_section(
+    rows: list[dict[str, str]],
+) -> str:
+    """Build Markdown summary counts for reviewer confirmations."""
+    counts = reviewer_confirmation_counts(rows)
+
+    lines = [
+        "## Reviewer Confirmation Summary",
+        "",
+        "| Reviewer Confirmation | Count |",
+        "| --- | ---: |",
+    ]
+
+    for option in REVIEWER_CONFIRMATION_OPTIONS:
+        lines.append(f"| {markdown_table_escape(option)} | {counts[option]} |")
+
+    lines.append("")
+    return "\n".join(lines)
 
 def filter_rows_by_reviewer_confirmation(
     rows: list[dict[str, str]],
