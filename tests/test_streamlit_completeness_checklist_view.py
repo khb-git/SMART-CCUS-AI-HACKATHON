@@ -12,6 +12,7 @@ from ui.reviewer_workflow import (
     reviewer_note_state_key,
     build_reviewer_state_export,
     parse_reviewer_state_import,
+    build_reviewer_confirmation_summary_section,
 )
 
 
@@ -457,3 +458,45 @@ def test_parse_reviewer_state_import_rejects_invalid_json():
         assert "not valid JSON" in str(exc)
     else:
         raise AssertionError("Expected invalid reviewer state JSON to raise ValueError")
+
+def test_build_reviewer_confirmation_summary_section_counts_rows():
+    rows = [
+        {
+            "Reviewer Confirmation": "Pending review",
+        },
+        {
+            "Reviewer Confirmation": "Confirmed",
+        },
+        {
+            "Reviewer Confirmation": "Confirmed",
+        },
+        {
+            "Reviewer Confirmation": "Needs follow-up",
+        },
+        {
+            "Reviewer Confirmation": "Resolved after cross-reference",
+        },
+        {
+            "Reviewer Confirmation": "Unexpected value",
+        },
+    ]
+
+    markdown = build_reviewer_confirmation_summary_section(rows)
+
+    assert "## Reviewer Confirmation Summary" in markdown
+    assert "| Reviewer Confirmation | Count |" in markdown
+    assert "| Pending review | 2 |" in markdown
+    assert "| Confirmed | 2 |" in markdown
+    assert "| Needs follow-up | 1 |" in markdown
+    assert "| Not applicable | 0 |" in markdown
+    assert "| Resolved after cross-reference | 1 |" in markdown
+
+def test_reviewer_confirmation_summary_section_handles_empty_rows():
+    markdown = build_reviewer_confirmation_summary_section([])
+
+    assert "## Reviewer Confirmation Summary" in markdown
+    assert "| Pending review | 0 |" in markdown
+    assert "| Confirmed | 0 |" in markdown
+    assert "| Needs follow-up | 0 |" in markdown
+    assert "| Not applicable | 0 |" in markdown
+    assert "| Resolved after cross-reference | 0 |" in markdown
