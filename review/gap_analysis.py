@@ -712,23 +712,22 @@ def build_finding_text(
 
 
 def analyze_checklist_item(
-    document_or_text,
-    document_text_or_item,
-    item: ReviewChecklistItem | None = None,
+    document_text: str,
+    item: ReviewChecklistItem,
+    *,
+    document=None,
 ) -> ReviewFinding:
+    """Analyze one checklist item against document text.
+
+    The optional document is keyword-only so callers do not rely on positional
+    dispatch between text-only and location-aware analysis.
+    """
     """Analyze one checklist item against document text.
 
     Supports both:
     - analyze_checklist_item(document_text, item)
     - analyze_checklist_item(document, document_text, item)
     """
-    if item is None:
-        document = None
-        document_text = document_or_text
-        item = document_text_or_item
-    else:
-        document = document_or_text
-        document_text = document_text_or_item
 
     matched_terms = find_matching_terms(
         document_text,
@@ -872,7 +871,11 @@ def analyze_document_against_checklist(
     document_text = collect_document_text(document)
 
     findings = [
-        analyze_checklist_item(document, document_text, item)
+        analyze_checklist_item(
+            document_text,
+            item,
+            document=document,
+        )
         for item in checklist.items
     ]
 
