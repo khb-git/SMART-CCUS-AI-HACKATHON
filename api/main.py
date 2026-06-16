@@ -179,8 +179,6 @@ def review_document(
     }
 
 @app.post("/review-package", response_model=ReviewPackageResponse)
-@app.post("/review-package", response_model=ReviewPackageResponse)
-@app.post("/review-package", response_model=ReviewPackageResponse)
 def review_package(
     files: Annotated[
         list[UploadFile],
