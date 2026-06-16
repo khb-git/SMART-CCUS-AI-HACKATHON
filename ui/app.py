@@ -174,6 +174,16 @@ def reviewer_confirmation_state_key(row: dict[str, str]) -> str:
 
     return f"reviewer_confirmation_{safe_key}"
 
+def reviewer_note_state_key(row: dict[str, str]) -> str:
+    """Return stable Streamlit state key for one reviewer note row."""
+    review_key = row.get("Review Key", "")
+
+    safe_key = "".join(
+        char if char.isalnum() else "_"
+        for char in review_key
+    )
+
+    return f"reviewer_note_{safe_key}"
 
 def apply_reviewer_confirmations(
     rows: list[dict[str, str]],
@@ -185,8 +195,12 @@ def apply_reviewer_confirmations(
         state_key = reviewer_confirmation_state_key(row)
         confirmation = st.session_state.get(state_key, "Pending review")
 
+        note_key = reviewer_note_state_key(row)
+        reviewer_note = st.session_state.get(note_key, "")
+
         confirmed_row = dict(row)
         confirmed_row["Reviewer Confirmation"] = confirmation
+        confirmed_row["Reviewer Notes"] = reviewer_note
         confirmed_rows.append(confirmed_row)
 
     return confirmed_rows
@@ -273,8 +287,8 @@ def build_reviewer_confirmation_export_section(
 
     lines.extend(
         [
-            "| Reviewer Confirmation | Status | Required Item | GSDT Module/Folder | File Name | Page Number |",
-            "| --- | --- | --- | --- | --- | --- |",
+            "| Reviewer Confirmation | Reviewer Notes | Status | Required Item | GSDT Module/Folder | File Name | Page Number |",
+            "| --- | --- | --- | --- | --- | --- | --- |",
         ]
     )
 
@@ -284,6 +298,7 @@ def build_reviewer_confirmation_export_section(
             + " | ".join(
                 [
                     markdown_table_escape(row.get("Reviewer Confirmation", "Pending review")),
+                    markdown_table_escape(row.get("Reviewer Notes", "")),
                     markdown_table_escape(row.get("Status", "")),
                     markdown_table_escape(row.get("Required Item", "")),
                     markdown_table_escape(row.get("GSDT Module/Folder", "")),
@@ -315,6 +330,7 @@ def build_completeness_checklist_csv(
 
     fieldnames = [
         "Reviewer Confirmation",
+        "Reviewer Notes",
         "Status",
         "Required Item",
         "GSDT Module/Folder",
@@ -337,6 +353,7 @@ def build_completeness_checklist_csv(
                     "Reviewer Confirmation",
                     "Pending review",
                 ),
+                "Reviewer Notes": row.get("Reviewer Notes", ""),
                 "Status": row.get("Status", ""),
                 "Required Item": row.get("Required Item", ""),
                 "GSDT Module/Folder": row.get("GSDT Module/Folder", ""),
@@ -406,6 +423,13 @@ def render_completeness_checklist_view(package_report: dict) -> list[dict[str, s
                 key=reviewer_confirmation_state_key(row),
             )
 
+            st.text_area(
+                f"Reviewer notes for row {index}",
+                value=st.session_state.get(reviewer_note_state_key(row), ""),
+                key=reviewer_note_state_key(row),
+                height=80,
+            )
+
     display_rows = apply_reviewer_confirmations(rows)
 
     reviewer_confirmation_filter = st.multiselect(
@@ -428,6 +452,7 @@ def render_completeness_checklist_view(package_report: dict) -> list[dict[str, s
         hide_index=True,
         column_order=[
             "Reviewer Confirmation",
+            "Reviewer Notes",
             "Status",
             "Required Item",
             "GSDT Module/Folder",
