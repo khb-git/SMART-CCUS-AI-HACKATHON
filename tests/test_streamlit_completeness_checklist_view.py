@@ -1,12 +1,13 @@
-from ui.app import (
+from ui.app import completeness_checklist_rows_for_display
+from ui.reviewer_workflow import (
     append_reviewer_confirmation_export,
     build_completeness_checklist_csv,
     build_reviewer_confirmation_export_section,
-    completeness_checklist_rows_for_display,
     filter_rows_by_reviewer_confirmation,
     reviewer_confirmation_counts,
     reviewer_confirmation_state_key,
     reviewer_note_state_key,
+    apply_reviewer_confirmations,
 )
 
 
@@ -250,3 +251,29 @@ def test_reviewer_note_state_key_is_stable_and_safe():
         "reviewer_note_"
         "Financial_Responsibility__Coverage_amount__ADM_Cost_Estimates_pdf"
     )
+
+def test_apply_reviewer_confirmations_uses_supplied_state():
+    row = {
+        "Review Key": "Financial Responsibility::Coverage amount::ADM_Cost_Estimates.pdf",
+        "Required Item": "Coverage amount",
+    }
+
+    confirmation_key = reviewer_confirmation_state_key(row)
+    note_key = reviewer_note_state_key(row)
+
+    rows = apply_reviewer_confirmations(
+        [row],
+        {
+            confirmation_key: "Confirmed",
+            note_key: "Confirmed against cost estimate table.",
+        },
+    )
+
+    assert rows == [
+        {
+            "Review Key": "Financial Responsibility::Coverage amount::ADM_Cost_Estimates.pdf",
+            "Required Item": "Coverage amount",
+            "Reviewer Confirmation": "Confirmed",
+            "Reviewer Notes": "Confirmed against cost estimate table.",
+        }
+    ]
