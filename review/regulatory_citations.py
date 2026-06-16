@@ -43,14 +43,133 @@ REGULATORY_CITATIONS_BY_PLAN_TYPE = {
 }
 
 
+REGULATORY_CITATIONS_BY_PLAN_TYPE_AND_ITEM = {
+    "financial_responsibility": {
+        "coverage_amount": [
+            "40 CFR 146.85 - Financial responsibility",
+        ],
+        "financial_instrument": [
+            "40 CFR 146.85 - Financial responsibility",
+        ],
+        "inflation_adjustment": [
+            "40 CFR 146.85 - Financial responsibility",
+        ],
+    },
+    "testing_monitoring": {
+        "injection_pressure_monitoring": [
+            "40 CFR 146.90 - Testing and monitoring requirements",
+        ],
+        "injection_rate_monitoring": [
+            "40 CFR 146.90 - Testing and monitoring requirements",
+        ],
+        "injection_volume_monitoring": [
+            "40 CFR 146.90 - Testing and monitoring requirements",
+        ],
+        "annular_pressure_monitoring": [
+            "40 CFR 146.90 - Testing and monitoring requirements",
+        ],
+        "monitoring_frequency": [
+            "40 CFR 146.90 - Testing and monitoring requirements",
+            "40 CFR 146.91 - Reporting requirements",
+        ],
+        "scada_or_data_recording": [
+            "40 CFR 146.90 - Testing and monitoring requirements",
+            "40 CFR 146.91 - Reporting requirements",
+        ],
+    },
+    "aor_corrective_action": {
+        "area_of_review": [
+            "40 CFR 146.84 - Area of review and corrective action",
+        ],
+        "corrective_action": [
+            "40 CFR 146.84 - Area of review and corrective action",
+        ],
+    },
+    "well_construction": {
+        "casing_and_cementing": [
+            "40 CFR 146.86 - Injection well construction requirements",
+        ],
+        "well_materials": [
+            "40 CFR 146.86 - Injection well construction requirements",
+        ],
+    },
+    "pre_operational_testing": {
+        "logging_sampling_testing": [
+            "40 CFR 146.87 - Logging, sampling, and testing prior to injection well operation",
+        ],
+        "formation_testing": [
+            "40 CFR 146.87 - Logging, sampling, and testing prior to injection well operation",
+        ],
+    },
+    "site_operating": {
+        "injection_pressure_limit": [
+            "40 CFR 146.88 - Injection well operating requirements",
+        ],
+        "mechanical_integrity": [
+            "40 CFR 146.89 - Mechanical integrity",
+        ],
+    },
+    "injection_well_plugging": {
+        "plugging_plan": [
+            "40 CFR 146.92 - Injection well plugging",
+        ],
+    },
+    "pisc_site_closure": {
+        "post_injection_site_care": [
+            "40 CFR 146.93 - Post-injection site care and site closure",
+        ],
+        "site_closure": [
+            "40 CFR 146.93 - Post-injection site care and site closure",
+        ],
+    },
+    "emergency_remedial_response": {
+        "emergency_response": [
+            "40 CFR 146.94 - Emergency and remedial response",
+        ],
+        "remedial_response": [
+            "40 CFR 146.94 - Emergency and remedial response",
+        ],
+    },
+}
+
+
 def regulatory_citations_for_plan_type(plan_type: str) -> list[str]:
     """Return deterministic regulatory citations for a checklist plan type."""
     return REGULATORY_CITATIONS_BY_PLAN_TYPE.get(str(plan_type or ""), [])
 
 
+def regulatory_citations_for_item(
+    plan_type: str,
+    item_id: str,
+) -> list[str]:
+    """Return deterministic regulatory citations for a checklist item."""
+    item_citations = REGULATORY_CITATIONS_BY_PLAN_TYPE_AND_ITEM.get(
+        str(plan_type or ""),
+        {},
+    )
+
+    return item_citations.get(str(item_id or ""), [])
+
+
 def format_regulatory_citations(plan_type: str) -> str:
     """Return reviewer-facing citation text for a checklist plan type."""
     citations = regulatory_citations_for_plan_type(plan_type)
+
+    if not citations:
+        return "Not mapped"
+
+    return "; ".join(citations)
+
+
+def format_item_regulatory_citations(
+    plan_type: str,
+    item_id: str,
+) -> str:
+    """Return item-level citation text with plan-level fallback."""
+    citations = regulatory_citations_for_item(plan_type, item_id)
+
+    if not citations:
+        citations = regulatory_citations_for_plan_type(plan_type)
 
     if not citations:
         return "Not mapped"

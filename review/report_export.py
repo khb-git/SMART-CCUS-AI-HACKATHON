@@ -6,7 +6,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from review.regulatory_citations import format_regulatory_citations
+from review.regulatory_citations import format_item_regulatory_citations
 
 def status_label(status: str) -> str:
     """Format status values for reports."""
@@ -255,7 +255,10 @@ def collect_completeness_checklist_rows(
                             finding.get("item_id", "Checklist item"),
                         ),
                         "module_folder": gsdt_module_folder_label(plan_type),
-                        "regulatory_citation": format_regulatory_citations(plan_type),
+                        "regulatory_citation": format_item_regulatory_citations(
+                            plan_type,
+                            finding.get("item_id", ""),
+                        ),
                         "file_name": format_location_file_names(
                             finding,
                             document_name,

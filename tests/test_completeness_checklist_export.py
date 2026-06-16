@@ -6,6 +6,13 @@ from review.report_export import (
     package_review_metrics,
 )
 
+from review.regulatory_citations import (
+    format_item_regulatory_citations,
+    format_regulatory_citations,
+)
+
+from review.report_export import collect_completeness_checklist_rows
+
 def test_package_report_includes_completeness_checklist_section():
     package_response = {
         "package_name": "uploaded_package",
@@ -271,3 +278,78 @@ def test_format_regulatory_citations_maps_plan_types():
 
     assert "40 CFR 146.90" in format_regulatory_citations("testing_monitoring")
     assert format_regulatory_citations("unknown") == "Not mapped"
+
+def test_format_item_regulatory_citations_prefers_item_mapping_and_falls_back():
+    assert (
+        format_item_regulatory_citations(
+            "testing_monitoring",
+            "injection_pressure_monitoring",
+        )
+        == "40 CFR 146.90 - Testing and monitoring requirements"
+    )
+
+    assert (
+        format_item_regulatory_citations(
+            "testing_monitoring",
+            "monitoring_frequency",
+        )
+        == (
+            "40 CFR 146.90 - Testing and monitoring requirements; "
+            "40 CFR 146.91 - Reporting requirements"
+        )
+    )
+
+    assert (
+        format_item_regulatory_citations(
+            "financial_responsibility",
+            "unknown_item",
+        )
+        == "40 CFR 146.85 - Financial responsibility"
+    )
+
+    assert (
+        format_item_regulatory_citations(
+            "unknown_plan_type",
+            "unknown_item",
+        )
+        == "Not mapped"
+    )
+
+def test_collect_completeness_checklist_rows_uses_item_level_citation():
+    report = {
+        "document_reviews": [
+            {
+                "document_name": "Testing_Monitoring.pdf",
+                "document_type": "testing_monitoring",
+                "checklist_reports": {
+                    "testing_monitoring": {
+                        "findings": [
+                            {
+                                "item_id": "monitoring_frequency",
+                                "label": "Monitoring frequency",
+                                "status": "evidence_found",
+                                "severity": "moderate",
+                                "requirement_level": "required",
+                                "confidence": "Medium",
+                                "finding": "Monitoring frequency evidence found.",
+                                "recommended_fix": "",
+                                "evidence_locations": [
+                                    {
+                                        "file_name": "Testing_Monitoring.pdf",
+                                        "page_number": 12,
+                                    }
+                                ],
+                            }
+                        ]
+                    }
+                },
+            }
+        ]
+    }
+
+    rows = collect_completeness_checklist_rows(report)
+
+    assert rows[0]["regulatory_citation"] == (
+        "40 CFR 146.90 - Testing and monitoring requirements; "
+        "40 CFR 146.91 - Reporting requirements"
+    )
