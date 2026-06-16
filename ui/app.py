@@ -13,11 +13,32 @@ if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
 # Import backend helpers and API wrappers
-from review.coverage_evidence_display import coverage_evidence_rows_for_display # for displaying coverage evidence
+from review.coverage_evidence_display import coverage_evidence_rows_for_display # for displaying coverage evidencefrom review.report_export import (
+    collect_completeness_checklist_rows,
+    collect_reviewer_action_items,
+    package_review_metrics,
+)
+
+from ui.reviewer_workflow import (
+    REVIEWER_CONFIRMATION_OPTIONS,
+    append_reviewer_confirmation_export,
+    apply_reviewer_confirmations,
+    build_completeness_checklist_csv,
+    build_deficiency_checklist_csv,
+    build_reviewer_confirmation_summary_section,
+    build_reviewer_state_export,
+    filter_rows_by_reviewer_confirmation,
+    parse_reviewer_state_import,
+    reviewer_confirmation_counts,
+    reviewer_confirmation_state_key,
+    reviewer_note_state_key,
+)
+
 from ui.api_client import (
     DEFAULT_API_URL,
     ask_api,
     build_ask_payload,
+    build_final_review_packet,
     build_markdown_package_report,
     build_markdown_review_report,
     default_package_report_filename,
@@ -89,7 +110,237 @@ def render_finding_summary_metrics(findings: list[dict]) -> None:
     with metric_cols[3]:
         st.metric("Unclear", counts["unclear"]) # Display the count of unclear findings
 
-# Helper function to render package checklist findings
+def render_package_review_metrics(package_report: dict) -> None:
+    """Render deterministic package-level review metrics."""
+    metrics = package_review_metrics(package_report)
+
+    st.markdown("### Package Review Metrics")
+
+    metric_cols = st.columns(4)
+
+    with metric_cols[0]:
+        st.metric("Checklist rows", metrics["total_checklist_rows"])
+
+    with metric_cols[1]:
+        st.metric("Missing", metrics["missing_rows"])
+
+    with metric_cols[2]:
+        st.metric("Required missing", metrics["required_missing_rows"])
+
+    with metric_cols[3]:
+        st.metric("Page-located evidence", metrics["page_located_percent"])
+
+    metric_cols_2 = st.columns(4)
+
+    with metric_cols_2[0]:
+        st.metric("Resolved", metrics["resolved_percent"])
+
+    with metric_cols_2[1]:
+        st.metric("High confidence", metrics["high_confidence_rows"])
+
+    with metric_cols_2[2]:
+        st.metric("Medium confidence", metrics["medium_confidence_rows"])
+
+    with metric_cols_2[3]:
+        st.metric("Low confidence", metrics["low_confidence_rows"])
+
+def render_reviewer_action_items(package_report: dict) -> None:
+    """Render deterministic reviewer action items."""
+    action_items = collect_reviewer_action_items(package_report)
+
+    st.markdown("### Reviewer Action Items")
+
+    for index, action_item in enumerate(action_items, start=1):
+        st.write(f"{index}. {action_item}")
+
+def completeness_checklist_rows_for_display(
+    package_report: dict,
+) -> list[dict[str, str]]:
+    """Return completeness checklist rows formatted for Streamlit display."""
+    rows = collect_completeness_checklist_rows(package_report)
+
+    return [
+        {
+            "Review Key": (
+                f"{row.get('module_folder', '')}::"
+                f"{row.get('required_item', '')}::"
+                f"{row.get('file_name', '')}"
+            ),
+            "Status": f"{status_icon(row['status'])} {status_label(row['status'])}",
+            "Required Item": row["required_item"],
+            "GSDT Module/Folder": row["module_folder"],
+            "Regulatory Citation": row["regulatory_citation"],
+            "File Name": row["file_name"],
+            "Page Number": row["page_number"],
+            "Notes": row["notes"],
+        }
+        for row in rows
+    ]
+
+
+def render_reviewer_confirmation_summary(
+    rows: list[dict[str, str]],
+) -> None:
+    """Render reviewer confirmation counts."""
+    counts = reviewer_confirmation_counts(rows)
+
+    st.markdown("#### Reviewer Confirmation Summary")
+
+    summary_cols = st.columns(5)
+
+    with summary_cols[0]:
+        st.metric("Pending review", counts["Pending review"])
+
+    with summary_cols[1]:
+        st.metric("Confirmed", counts["Confirmed"])
+
+    with summary_cols[2]:
+        st.metric("Needs follow-up", counts["Needs follow-up"])
+
+    with summary_cols[3]:
+        st.metric("Not applicable", counts["Not applicable"])
+
+    with summary_cols[4]:
+        st.metric(
+            "Resolved after cross-reference",
+            counts["Resolved after cross-reference"],
+        )
+
+def render_completeness_checklist_view(package_report: dict) -> list[dict[str, str]]:
+    """Render EPA-style completeness checklist rows in the package review UI."""
+    st.markdown("### Completeness Checklist Review")
+    st.caption(
+        "This table reformats the package review into a completeness-checklist "
+        "view. Page numbers are taken from evidence locations when available. "
+        "Missing items show `Not found` unless related evidence is noted elsewhere."
+    )
+
+    rows = completeness_checklist_rows_for_display(package_report)
+
+    if not rows:
+        st.info("No completeness checklist rows were returned for this package.")
+        return []
+
+    with st.expander("Reviewer state import", expanded=False):
+        st.caption(
+            "Upload a reviewer state JSON file to restore previous confirmations "
+            "and reviewer notes for matching checklist rows."
+        )
+
+        reviewer_state_file = st.file_uploader(
+            "Upload reviewer state JSON",
+            type=["json"],
+            key="reviewer_state_import_file",
+        )
+
+        apply_reviewer_state_clicked = st.button(
+            "Apply reviewer state",
+            key="apply_reviewer_state_import",
+        )
+
+        if apply_reviewer_state_clicked:
+            if reviewer_state_file is None:
+                st.warning("Upload a reviewer state JSON file first.")
+            else:
+                try:
+                    imported_state = parse_reviewer_state_import(
+                        reviewer_state_file.getvalue().decode("utf-8")
+                    )
+                except ValueError as exc:
+                    st.error(str(exc))
+                else:
+                    for state_key, state_value in imported_state.items():
+                        st.session_state[state_key] = state_value
+
+                    st.success(
+                        f"Applied reviewer state to {len(imported_state) // 2} checklist rows."
+                    )
+
+    status_filter = st.multiselect(
+        "Filter checklist statuses",
+        options=[
+            "Missing",
+            "Evidence found",
+            "Unclear",
+            "Present",
+        ],
+        default=[
+            "Missing",
+            "Evidence found",
+            "Unclear",
+        ],
+        key="completeness_checklist_status_filter",
+    )
+
+    if status_filter:
+        rows = [
+            row
+            for row in rows
+            if any(status in row["Status"] for status in status_filter)
+        ]
+
+    with st.expander("Reviewer confirmations", expanded=False):
+        st.caption(
+            "Use these controls to mark the reviewer disposition for each visible "
+            "checklist row. These selections are held in the current Streamlit "
+            "session unless exported as reviewer state JSON."
+        )
+
+        for index, row in enumerate(rows, start=1):
+            label = (
+                f"{index}. {row['Required Item']} "
+                f"({row['GSDT Module/Folder']})"
+            )
+
+            st.selectbox(
+                label,
+                options=REVIEWER_CONFIRMATION_OPTIONS,
+                index=0,
+                key=reviewer_confirmation_state_key(row),
+            )
+
+            st.text_area(
+                f"Reviewer notes for row {index}",
+                value=st.session_state.get(reviewer_note_state_key(row), ""),
+                key=reviewer_note_state_key(row),
+                height=80,
+            )
+
+    display_rows = apply_reviewer_confirmations(rows, st.session_state)
+
+    reviewer_confirmation_filter = st.multiselect(
+        "Filter by reviewer confirmation",
+        options=REVIEWER_CONFIRMATION_OPTIONS,
+        default=[],
+        key="reviewer_confirmation_filter",
+    )
+
+    display_rows = filter_rows_by_reviewer_confirmation(
+        display_rows,
+        reviewer_confirmation_filter,
+    )
+
+    render_reviewer_confirmation_summary(display_rows)
+
+    st.dataframe(
+        display_rows,
+        use_container_width=True,
+        hide_index=True,
+        column_order=[
+            "Reviewer Confirmation",
+            "Reviewer Notes",
+            "Status",
+            "Required Item",
+            "GSDT Module/Folder",
+            "Regulatory Citation",
+            "File Name",
+            "Page Number",
+            "Notes",
+        ],
+    )
+
+    return display_rows
+
 def render_package_findings(
     findings: list[dict],
     key_prefix: str,
@@ -116,6 +367,14 @@ def render_package_findings(
         )
         st.write(finding.get("finding", "")) # Display the finding
 
+        confidence = finding.get("confidence", "")
+        if confidence:
+            st.caption(f"Confidence: {confidence}")
+
+        confidence = finding.get("confidence", "")
+        if confidence:
+            st.caption(f"Confidence: {confidence}")
+
         if matched_groups:
             st.caption(
                 "Matched evidence groups: "
@@ -137,11 +396,32 @@ def render_package_findings(
 
                 for related in related_evidence:
                     matched_terms = related.get("matched_terms", []) or []
+                    page_number = related.get("page_number")
+                    chunk_index = related.get("chunk_index")
+                    section_heading = related.get("section_heading", "")
+                    excerpt = related.get("excerpt", "")
+
+                    location_parts = []
+
+                    if page_number not in {"", None}:
+                        location_parts.append(f"page {page_number}")
+
+                    if chunk_index not in {"", None}:
+                        location_parts.append(f"chunk {chunk_index}")
+
+                    location_text = ", ".join(location_parts) or "location not listed"
+
                     st.markdown(
                         f"- `{related.get('document_name', 'Unknown document')}` " # Display the related document name
-                        f"(`{related.get('document_type', 'unknown')}`): " # Display the related document type
+                        f"(`{related.get('document_type', 'unknown')}`, {location_text}): " # Display the related document type
                         f"{', '.join(f'`{term}`' for term in matched_terms) or 'No terms listed'}" # Display the matched terms  
                     )
+
+                    if section_heading:
+                        st.caption(f"Section: {section_heading}")
+
+                    if excerpt:
+                        st.write(excerpt)
 
         recommended_fix = finding.get("recommended_fix", "")
         if recommended_fix:
@@ -465,6 +745,7 @@ with review_tab:
             mime="text/markdown",
         )
 
+
         with st.expander("Classification details", expanded=False):
             st.json(classification)
 
@@ -494,6 +775,11 @@ with review_tab:
                 with st.expander(heading, expanded=expanded):
                     st.markdown("**Finding**")
                     st.write(finding.get("finding", ""))
+
+                    confidence = finding.get("confidence", "")
+                    if confidence:
+                        st.markdown("**Confidence**")
+                        st.write(confidence)
 
                     matched_terms = finding.get("matched_terms", [])
                     if matched_terms:
@@ -628,17 +914,6 @@ with package_tab:
         if storage_policy:
             st.info(storage_policy)
 
-        package_markdown_report = build_markdown_package_report(package_response)
-        package_report_filename = default_package_report_filename(
-            package_response.get("package_name", "uploaded_package")
-        )
-
-        st.download_button(
-            label="Download Markdown package review report",
-            data=package_markdown_report,
-            file_name=package_report_filename,
-            mime="text/markdown",
-        )
 
         st.markdown("### Package coverage")
 
@@ -690,6 +965,86 @@ with package_tab:
                     st.write(f"🧩 `{document_name}`")
             else:
                 st.write("No supporting documents.")
+
+        render_package_review_metrics(package_report)
+
+        render_reviewer_action_items(package_report)
+
+        reviewer_confirmation_rows = render_completeness_checklist_view(package_report)
+
+        package_markdown_report = build_markdown_package_report(package_response)
+        package_markdown_report = append_reviewer_confirmation_export(
+            package_markdown_report,
+            reviewer_confirmation_rows,
+        )
+        package_report_filename = default_package_report_filename(
+            package_response.get("package_name", "uploaded_package")
+        )
+
+        st.download_button(
+            label="Download Markdown package review report with reviewer confirmations",
+            data=package_markdown_report,
+            file_name=package_report_filename,
+            mime="text/markdown",
+        )
+
+        final_review_packet = build_final_review_packet(package_response)
+        final_review_packet = (
+                final_review_packet.rstrip()
+                + "\n\n"
+                + build_reviewer_confirmation_summary_section(
+            reviewer_confirmation_rows
+        ).rstrip()
+                + "\n"
+        )
+        final_review_packet = append_reviewer_confirmation_export(
+            final_review_packet,
+            reviewer_confirmation_rows,
+        )
+
+        st.download_button(
+            label="Download final review packet",
+            data=final_review_packet,
+            file_name=package_report_filename.replace(
+                "_review_report.md",
+                "_final_review_packet.md",
+            ),
+            mime="text/markdown",
+        )
+
+        checklist_csv = build_completeness_checklist_csv(
+            reviewer_confirmation_rows
+        )
+
+        st.download_button(
+            label="Download completeness checklist CSV",
+            data=checklist_csv,
+            file_name=package_report_filename.replace(".md", "_checklist.csv"),
+            mime="text/csv",
+        )
+
+        deficiency_csv = build_deficiency_checklist_csv(
+            reviewer_confirmation_rows
+        )
+
+        st.download_button(
+            label="Download deficiency CSV",
+            data=deficiency_csv,
+            file_name=package_report_filename.replace(".md", "_deficiencies.csv"),
+            mime="text/csv",
+        )
+
+        reviewer_state_json = build_reviewer_state_export(
+            reviewer_confirmation_rows,
+            package_name=package_response.get("package_name", "uploaded_package"),
+        )
+
+        st.download_button(
+            label="Download reviewer state JSON",
+            data=reviewer_state_json,
+            file_name=package_report_filename.replace(".md", "_reviewer_state.json"),
+            mime="application/json",
+        )
 
         st.markdown("### Package Coverage Evidence")
 

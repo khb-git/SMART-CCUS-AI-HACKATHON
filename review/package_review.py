@@ -896,6 +896,115 @@ def matched_cross_document_terms(
         }
     )
 
+def metadata_page_number(metadata: dict[str, Any]) -> int | None:
+    """Return normalized page number from chunk metadata."""
+    page_number = metadata.get("page_number", metadata.get("page"))
+
+    if page_number in {"", None}:
+        return None
+
+    try:
+        page_int = int(page_number)
+    except (TypeError, ValueError):
+        return None
+
+    if page_int <= 0:
+        return None
+
+    return page_int
+
+
+def excerpt_around_first_term(
+    text: str,
+    matched_terms: list[str],
+    max_chars: int = 350,
+) -> str:
+    """Return a compact excerpt around the first matched term."""
+    if not text:
+        return ""
+
+    lower_text = text.lower()
+
+    first_index = -1
+    for term in matched_terms:
+        term_index = lower_text.find(str(term).lower())
+        if term_index >= 0 and (first_index < 0 or term_index < first_index):
+            first_index = term_index
+
+    if first_index < 0:
+        return text[:max_chars].strip()
+
+    half_window = max_chars // 2
+    start = max(first_index - half_window, 0)
+    end = min(first_index + half_window, len(text))
+
+    excerpt = text[start:end].strip()
+
+    if start > 0:
+        excerpt = "... " + excerpt
+
+    if end < len(text):
+        excerpt = excerpt + " ..."
+
+    return excerpt
+
+
+def related_package_evidence_from_document(
+    *,
+    document,
+    document_type: str,
+    terms: list[str],
+    minimum_matches: int,
+    max_terms_per_document: int = 8,
+) -> dict[str, Any] | None:
+    """Return the strongest related evidence row from one package document."""
+    best_row: dict[str, Any] | None = None
+    best_match_count = 0
+
+    for chunk in getattr(document, "chunks", []) or []:
+        chunk_text = getattr(chunk, "text", "") or ""
+
+        if not chunk_text:
+            continue
+
+        matched_terms = matched_cross_document_terms(chunk_text, terms)
+
+        if len(matched_terms) < minimum_matches:
+            continue
+
+        metadata = dict(getattr(chunk, "metadata", {}) or {})
+        limited_terms = matched_terms[:max_terms_per_document]
+
+        row = {
+            "document_name": document_name(document),
+            "document_type": document_type,
+            "evidence_source": "cross_document_text",
+            "matched_terms": limited_terms,
+            "page_number": metadata_page_number(metadata),
+            "chunk_index": metadata.get("chunk_index"),
+            "content_type": str(metadata.get("content_type", "text") or "text"),
+            "section_heading": str(
+                metadata.get("section_heading")
+                or metadata.get("local_section_title")
+                or metadata.get("detected_heading_on_page")
+                or ""
+            ),
+            "excerpt": excerpt_around_first_term(
+                chunk_text,
+                limited_terms,
+            ),
+            "note": (
+                "Related package evidence found outside the reviewed document. "
+                "Reviewer should confirm whether this satisfies the checklist item "
+                "or whether an explicit cross-reference is needed."
+            ),
+        }
+
+        if len(matched_terms) > best_match_count:
+            best_row = row
+            best_match_count = len(matched_terms)
+
+    return best_row
 
 def build_related_package_evidence_for_finding(
     *,
@@ -941,25 +1050,18 @@ def build_related_package_evidence_for_finding(
         if other_document_name == source_document_name:
             continue
 
-        text = collect_package_document_text(document)
-        matched_terms = matched_cross_document_terms(text, terms)
+        related_evidence = related_package_evidence_from_document(
+            document=document,
+            document_type=review.document_type,
+            terms=terms,
+            minimum_matches=minimum_matches,
+            max_terms_per_document=max_terms_per_document,
+        )
 
-        if len(matched_terms) < minimum_matches:
+        if not related_evidence:
             continue
 
-        related_rows.append(
-            {
-                "document_name": other_document_name,
-                "document_type": review.document_type,
-                "evidence_source": "cross_document_text",
-                "matched_terms": matched_terms[:max_terms_per_document],
-                "note": (
-                    "Related package evidence found outside the reviewed document. "
-                    "Reviewer should confirm whether this satisfies the checklist item "
-                    "or whether an explicit cross-reference is needed."
-                ),
-            }
-        )
+        related_rows.append(related_evidence)
 
         if len(related_rows) >= max_documents:
             break
