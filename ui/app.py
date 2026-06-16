@@ -20,6 +20,11 @@ from review.report_export import (
     package_review_metrics,
 )
 
+from ui.rag_status import (
+    ASK_ASSISTANT_RAG_GUIDANCE,
+    ASK_ASSISTANT_RAG_NOTICE,
+)
+
 from ui.reviewer_workflow import (
     REVIEWER_CONFIRMATION_OPTIONS,
     append_reviewer_confirmation_export,
@@ -499,6 +504,11 @@ ask_tab, review_tab, package_tab = st.tabs(
 
 
 with ask_tab:
+    st.warning(ASK_ASSISTANT_RAG_NOTICE)
+
+    with st.expander("Ask Assistant status", expanded=False):
+        st.write(ASK_ASSISTANT_RAG_GUIDANCE)
+
     default_question = "How do applicants monitor injection pressure and flow rate?"
 
     query = st.text_area(
