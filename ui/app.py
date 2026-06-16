@@ -210,6 +210,20 @@ def reviewer_confirmation_counts(
 
     return counts
 
+def filter_rows_by_reviewer_confirmation(
+    rows: list[dict[str, str]],
+    selected_confirmations: list[str],
+) -> list[dict[str, str]]:
+    """Return rows matching selected reviewer confirmation values."""
+    if not selected_confirmations:
+        return rows
+
+    return [
+        row
+        for row in rows
+        if row.get("Reviewer Confirmation", "Pending review")
+        in selected_confirmations
+    ]
 
 def render_reviewer_confirmation_summary(
     rows: list[dict[str, str]],
@@ -393,6 +407,18 @@ def render_completeness_checklist_view(package_report: dict) -> list[dict[str, s
             )
 
     display_rows = apply_reviewer_confirmations(rows)
+
+    reviewer_confirmation_filter = st.multiselect(
+        "Filter by reviewer confirmation",
+        options=REVIEWER_CONFIRMATION_OPTIONS,
+        default=[],
+        key="reviewer_confirmation_filter",
+    )
+
+    display_rows = filter_rows_by_reviewer_confirmation(
+        display_rows,
+        reviewer_confirmation_filter,
+    )
 
     render_reviewer_confirmation_summary(display_rows)
 
@@ -809,16 +835,6 @@ with review_tab:
             mime="text/markdown",
         )
 
-        checklist_csv = build_completeness_checklist_csv(
-            reviewer_confirmation_rows
-        )
-
-        st.download_button(
-            label="Download completeness checklist CSV",
-            data=checklist_csv,
-            file_name=package_report_filename.replace(".md", "_checklist.csv"),
-            mime="text/csv",
-        )
 
         with st.expander("Classification details", expanded=False):
             st.json(classification)
@@ -1060,6 +1076,17 @@ with package_tab:
             data=package_markdown_report,
             file_name=package_report_filename,
             mime="text/markdown",
+        )
+
+        checklist_csv = build_completeness_checklist_csv(
+            reviewer_confirmation_rows
+        )
+
+        st.download_button(
+            label="Download completeness checklist CSV",
+            data=checklist_csv,
+            file_name=package_report_filename.replace(".md", "_checklist.csv"),
+            mime="text/csv",
         )
 
         st.markdown("### Package Coverage Evidence")
