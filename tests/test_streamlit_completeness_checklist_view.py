@@ -1,5 +1,6 @@
 from ui.app import (
     completeness_checklist_rows_for_display,
+    reviewer_confirmation_counts,
     reviewer_confirmation_state_key,
 )
 
@@ -63,3 +64,22 @@ def test_reviewer_confirmation_state_key_is_stable_and_safe():
         "reviewer_confirmation_"
         "Financial_Responsibility__Coverage_amount__ADM_Cost_Estimates_pdf"
     )
+
+def test_reviewer_confirmation_counts_summarizes_rows():
+    rows = [
+        {"Reviewer Confirmation": "Pending review"},
+        {"Reviewer Confirmation": "Confirmed"},
+        {"Reviewer Confirmation": "Confirmed"},
+        {"Reviewer Confirmation": "Needs follow-up"},
+        {"Reviewer Confirmation": "Not applicable"},
+        {"Reviewer Confirmation": "Resolved after cross-reference"},
+        {"Reviewer Confirmation": "Unexpected value"},
+    ]
+
+    counts = reviewer_confirmation_counts(rows)
+
+    assert counts["Pending review"] == 2
+    assert counts["Confirmed"] == 2
+    assert counts["Needs follow-up"] == 1
+    assert counts["Not applicable"] == 1
+    assert counts["Resolved after cross-reference"] == 1

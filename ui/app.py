@@ -188,6 +188,54 @@ def apply_reviewer_confirmations(
 
     return confirmed_rows
 
+def reviewer_confirmation_counts(
+    rows: list[dict[str, str]],
+) -> dict[str, int]:
+    """Count reviewer confirmation values for displayed checklist rows."""
+    counts = {
+        option: 0
+        for option in REVIEWER_CONFIRMATION_OPTIONS
+    }
+
+    for row in rows:
+        confirmation = row.get("Reviewer Confirmation", "Pending review")
+
+        if confirmation not in counts:
+            confirmation = "Pending review"
+
+        counts[confirmation] += 1
+
+    return counts
+
+
+def render_reviewer_confirmation_summary(
+    rows: list[dict[str, str]],
+) -> None:
+    """Render reviewer confirmation counts."""
+    counts = reviewer_confirmation_counts(rows)
+
+    st.markdown("#### Reviewer Confirmation Summary")
+
+    summary_cols = st.columns(5)
+
+    with summary_cols[0]:
+        st.metric("Pending review", counts["Pending review"])
+
+    with summary_cols[1]:
+        st.metric("Confirmed", counts["Confirmed"])
+
+    with summary_cols[2]:
+        st.metric("Needs follow-up", counts["Needs follow-up"])
+
+    with summary_cols[3]:
+        st.metric("Not applicable", counts["Not applicable"])
+
+    with summary_cols[4]:
+        st.metric(
+            "Resolved after cross-reference",
+            counts["Resolved after cross-reference"],
+        )
+
 def render_completeness_checklist_view(package_report: dict) -> None:
     """Render EPA-style completeness checklist rows in the package review UI."""
     st.markdown("### Completeness Checklist Review")
@@ -247,6 +295,8 @@ def render_completeness_checklist_view(package_report: dict) -> None:
             )
 
     display_rows = apply_reviewer_confirmations(rows)
+
+    render_reviewer_confirmation_summary(display_rows)
 
     st.dataframe(
         display_rows,
