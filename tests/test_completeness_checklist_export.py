@@ -1,7 +1,10 @@
-from review.report_export import build_markdown_package_report
-from review.report_export import gsdt_module_folder_label
-from review.report_export import package_review_metrics
-from review.report_export import collect_reviewer_action_items, package_review_metrics
+from review.regulatory_citations import format_regulatory_citations
+from review.report_export import (
+    build_markdown_package_report,
+    collect_reviewer_action_items,
+    gsdt_module_folder_label,
+    package_review_metrics,
+)
 
 def test_package_report_includes_completeness_checklist_section():
     package_response = {
@@ -86,9 +89,18 @@ def test_package_report_includes_completeness_checklist_section():
     markdown = build_markdown_package_report(package_response)
 
     assert "## Completeness Checklist Review" in markdown
-    assert "| Status | Required Item | GSDT Module/Folder | File Name | Page Number | Notes |" in markdown
-    assert "| Evidence found | Coverage amount | Financial Responsibility | ADM_Cost_Estimates.pdf | 4 |" in markdown
-    assert "| Missing | Financial instrument | Financial Responsibility | ADM_Cost_Estimates.pdf | Not found |" in markdown
+    assert (
+               "| Status | Required Item | GSDT Module/Folder | Regulatory Citation | "
+               "File Name | Page Number | Notes |"
+           ) in markdown
+    assert (
+               "| Evidence found | Coverage amount | Financial Responsibility | "
+               "40 CFR 146.85 - Financial responsibility | ADM_Cost_Estimates.pdf | 4 |"
+           ) in markdown
+    assert (
+               "| Missing | Financial instrument | Financial Responsibility | "
+               "40 CFR 146.85 - Financial responsibility | ADM_Cost_Estimates.pdf | Not found |"
+           ) in markdown
     assert "Related evidence elsewhere in package: ADM_Narrative.pdf: cost estimate." in markdown
     assert "## Package Review Metrics" in markdown
     assert "| Total checklist rows |" in markdown
@@ -250,3 +262,12 @@ def test_collect_reviewer_action_items_prioritizes_missing_and_cross_document_ro
     assert any("low-confidence" in item for item in action_items)
     assert any("without page-located evidence" in item for item in action_items)
     assert any("cross-document related evidence" in item for item in action_items)
+
+def test_format_regulatory_citations_maps_plan_types():
+    assert (
+        format_regulatory_citations("financial_responsibility")
+        == "40 CFR 146.85 - Financial responsibility"
+    )
+
+    assert "40 CFR 146.90" in format_regulatory_citations("testing_monitoring")
+    assert format_regulatory_citations("unknown") == "Not mapped"

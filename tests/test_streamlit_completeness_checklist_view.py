@@ -50,6 +50,7 @@ def test_completeness_checklist_rows_for_display_formats_rows():
             "Status": "🟡 Evidence found",
             "Required Item": "Coverage amount",
             "GSDT Module/Folder": "Financial Responsibility",
+            "Regulatory Citation": "40 CFR 146.85 - Financial responsibility",
             "File Name": "ADM_Cost_Estimates.pdf",
             "Page Number": "4",
             "Notes": (
@@ -157,6 +158,7 @@ def test_build_completeness_checklist_csv_includes_reviewer_confirmations():
             "Status": "✅ Present",
             "Required Item": "Coverage amount",
             "GSDT Module/Folder": "Financial Responsibility",
+            "Regulatory Citation": "40 CFR 146.85 - Financial responsibility",
             "File Name": "ADM_Cost_Estimates.pdf",
             "Page Number": "4",
             "Notes": "Coverage amount evidence found.",
@@ -167,6 +169,7 @@ def test_build_completeness_checklist_csv_includes_reviewer_confirmations():
             "Status": "🔴 Missing",
             "Required Item": "Financial instrument",
             "GSDT Module/Folder": "Financial Responsibility",
+            "Regulatory Citation": "40 CFR 146.85 - Financial responsibility",
             "File Name": "ADM_Cost_Estimates.pdf",
             "Page Number": "Not found",
             "Notes": "Financial instrument missing.",
@@ -177,15 +180,17 @@ def test_build_completeness_checklist_csv_includes_reviewer_confirmations():
 
     assert (
         "Reviewer Confirmation,Reviewer Notes,Status,Required Item,GSDT Module/Folder,"
-        "File Name,Page Number,Notes"
+        "Regulatory Citation,File Name,Page Number,Notes"
     ) in csv_text
     assert (
         "Confirmed,Confirmed against cost estimate table.,✅ Present,Coverage amount,"
-        "Financial Responsibility,ADM_Cost_Estimates.pdf,4,Coverage amount evidence found."
+        "Financial Responsibility,40 CFR 146.85 - Financial responsibility,"
+        "ADM_Cost_Estimates.pdf,4,Coverage amount evidence found."
     ) in csv_text
     assert (
         "Needs follow-up,Need the actual financial instrument document.,🔴 Missing,"
-        "Financial instrument,Financial Responsibility,ADM_Cost_Estimates.pdf,"
+        "Financial instrument,Financial Responsibility,"
+        "40 CFR 146.85 - Financial responsibility,ADM_Cost_Estimates.pdf,"
         "Not found,Financial instrument missing."
     ) in csv_text
 
