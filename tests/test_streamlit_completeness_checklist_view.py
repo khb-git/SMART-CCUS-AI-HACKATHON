@@ -542,20 +542,40 @@ def test_maip_validation_rows_for_display_formats_findings():
 
     assert rows == [
         {
+            "Review Key": "MAIP::maip_evidence_present",
             "Status": "ℹ️ Missing Evidence",
             "Severity": "High",
             "Finding": "maip_evidence_present",
+            "Required Item": "maip_evidence_present",
+            "GSDT Module/Folder": "MAIP Cross-Reference Validation",
+            "Regulatory Citation": "Class VI MAIP cross-reference validation",
+            "File Name": "See supporting values",
+            "Page Number": "See supporting values",
             "Message": "The package does not provide a clear proposed MAIP.",
             "Recommended Action": "Reviewer should locate the proposed MAIP value.",
             "Supporting Values": "None",
+            "Notes": (
+                "The package does not provide a clear proposed MAIP. "
+                "Recommended action: Reviewer should locate the proposed MAIP value."
+            ),
         },
         {
+            "Review Key": "MAIP::maip_below_90_percent_fracture_pressure",
             "Status": "ℹ️ Pass",
             "Severity": "Info",
             "Finding": "maip_below_90_percent_fracture_pressure",
+            "Required Item": "maip_below_90_percent_fracture_pressure",
+            "GSDT Module/Folder": "MAIP Cross-Reference Validation",
+            "Regulatory Citation": "Class VI MAIP cross-reference validation",
+            "File Name": "See supporting values",
+            "Page Number": "See supporting values",
             "Message": "The proposed MAIP is below 90% of fracture pressure.",
             "Recommended Action": "Reviewer should confirm cited values.",
             "Supporting Values": "proposed_maip: 1800.0 psi (Operating_Plan.pdf, page 8)",
+            "Notes": (
+                "The proposed MAIP is below 90% of fracture pressure. "
+                "Recommended action: Reviewer should confirm cited values."
+            ),
         },
     ]
 
@@ -564,3 +584,34 @@ def test_maip_validation_rows_for_display_handles_missing_report():
     rows = maip_validation_rows_for_display({})
 
     assert rows == []
+
+def test_maip_validation_rows_work_with_reviewer_confirmation_helpers():
+    package_report = {
+        "maip_validation": {
+            "findings": [
+                {
+                    "finding_id": "maip_evidence_present",
+                    "status": "missing_evidence",
+                    "severity": "high",
+                    "message": "The package does not provide a clear proposed MAIP.",
+                    "recommended_action": "Reviewer should locate the proposed MAIP value.",
+                    "supporting_values": [],
+                }
+            ],
+        }
+    }
+
+    rows = maip_validation_rows_for_display(package_report)
+    state = {
+        reviewer_confirmation_state_key(rows[0]): "Needs follow-up",
+        reviewer_note_state_key(rows[0]): "Applicant should provide the proposed MAIP source table.",
+    }
+
+    confirmed_rows = apply_reviewer_confirmations(rows, state)
+
+    assert confirmed_rows[0]["Reviewer Confirmation"] == "Needs follow-up"
+    assert (
+        confirmed_rows[0]["Reviewer Notes"]
+        == "Applicant should provide the proposed MAIP source table."
+    )
+    assert confirmed_rows[0]["Review Key"] == "MAIP::maip_evidence_present"
