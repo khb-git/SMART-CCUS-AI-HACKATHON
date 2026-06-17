@@ -149,6 +149,113 @@ def render_reviewer_action_items(package_report: dict) -> None:
     for index, action_item in enumerate(action_items, start=1):
         st.write(f"{index}. {action_item}")
 
+def maip_validation_rows_for_display(
+    package_report: dict,
+) -> list[dict[str, str]]:
+    """Return MAIP validation findings formatted for Streamlit display."""
+    maip_validation = package_report.get("maip_validation") or {}
+    findings = maip_validation.get("findings", []) or []
+
+    rows = []
+
+    for finding in findings:
+        supporting_values = finding.get("supporting_values", []) or []
+        value_parts = []
+
+        for value in supporting_values:
+            concept = value.get("concept", "value")
+            numeric_value = value.get("value")
+            unit = value.get("unit", "")
+            source_file = value.get("source_file", "")
+            page_number = value.get("page_number")
+
+            value_text = str(concept)
+
+            if numeric_value is not None:
+                value_text += f": {numeric_value} {unit}".strip()
+
+            if source_file:
+                value_text += f" ({source_file}"
+
+                if page_number not in {"", None}:
+                    value_text += f", page {page_number}"
+
+                value_text += ")"
+
+            value_parts.append(value_text)
+
+        rows.append(
+            {
+                "Status": (
+                    f"{status_icon(finding.get('status', ''))} "
+                    f"{status_label(finding.get('status', ''))}"
+                ),
+                "Severity": status_label(finding.get("severity", "")),
+                "Finding": finding.get("finding_id", ""),
+                "Message": finding.get("message", ""),
+                "Recommended Action": finding.get("recommended_action", ""),
+                "Supporting Values": "; ".join(value_parts) if value_parts else "None",
+            }
+        )
+
+    return rows
+
+
+def render_maip_validation_panel(package_report: dict) -> None:
+    """Render package-level MAIP validation results."""
+    maip_validation = package_report.get("maip_validation") or {}
+
+    st.markdown("### MAIP Cross-Reference Validation")
+    st.caption(
+        "This section summarizes deterministic Maximum Allowable Injection "
+        "Pressure checks. Until extraction is implemented, the validator reports "
+        "missing evidence rather than inferring pressure values."
+    )
+
+    if not maip_validation:
+        st.info("No MAIP validation report was returned for this package.")
+        return
+
+    overall_status = maip_validation.get("overall_status", "unknown")
+    summary = maip_validation.get("summary", "")
+    rows = maip_validation_rows_for_display(package_report)
+
+    maip_cols = st.columns(3)
+
+    with maip_cols[0]:
+        st.metric(
+            "MAIP status",
+            f"{status_icon(overall_status)} {status_label(overall_status)}",
+        )
+
+    with maip_cols[1]:
+        st.metric("MAIP findings", len(rows))
+
+    with maip_cols[2]:
+        unresolved_count = sum(
+            1
+            for row in rows
+            if any(
+                label in row["Status"]
+                for label in ["Missing Evidence", "Warning", "Fail"]
+            )
+        )
+        st.metric("Needs reviewer attention", unresolved_count)
+
+    if summary:
+        st.write(summary)
+
+    if not rows:
+        st.info("No MAIP validation findings were returned.")
+        return
+
+    with st.expander("View MAIP validation findings", expanded=True):
+        st.dataframe(
+            rows,
+            use_container_width=True,
+            hide_index=True,
+        )
+
 def completeness_checklist_rows_for_display(
     package_report: dict,
 ) -> list[dict[str, str]]:
@@ -962,6 +1069,8 @@ with package_tab:
         render_package_review_metrics(package_report)
 
         render_reviewer_action_items(package_report)
+
+        render_maip_validation_panel(package_report)
 
         reviewer_confirmation_rows = render_completeness_checklist_view(package_report)
 

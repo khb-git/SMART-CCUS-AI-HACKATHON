@@ -1,4 +1,7 @@
-from ui.app import completeness_checklist_rows_for_display
+from ui.app import (
+    completeness_checklist_rows_for_display,
+    maip_validation_rows_for_display,
+)
 from ui.reviewer_workflow import (
     append_reviewer_confirmation_export,
     apply_reviewer_confirmations,
@@ -500,3 +503,64 @@ def test_reviewer_confirmation_summary_section_handles_empty_rows():
     assert "| Needs follow-up | 0 |" in markdown
     assert "| Not applicable | 0 |" in markdown
     assert "| Resolved after cross-reference | 0 |" in markdown
+
+def test_maip_validation_rows_for_display_formats_findings():
+    package_report = {
+        "maip_validation": {
+            "overall_status": "missing_evidence",
+            "summary": "MAIP validation complete.",
+            "findings": [
+                {
+                    "finding_id": "maip_evidence_present",
+                    "status": "missing_evidence",
+                    "severity": "high",
+                    "message": "The package does not provide a clear proposed MAIP.",
+                    "recommended_action": "Reviewer should locate the proposed MAIP value.",
+                    "supporting_values": [],
+                },
+                {
+                    "finding_id": "maip_below_90_percent_fracture_pressure",
+                    "status": "pass",
+                    "severity": "info",
+                    "message": "The proposed MAIP is below 90% of fracture pressure.",
+                    "recommended_action": "Reviewer should confirm cited values.",
+                    "supporting_values": [
+                        {
+                            "concept": "proposed_maip",
+                            "value": 1800.0,
+                            "unit": "psi",
+                            "source_file": "Operating_Plan.pdf",
+                            "page_number": 8,
+                        }
+                    ],
+                },
+            ],
+        }
+    }
+
+    rows = maip_validation_rows_for_display(package_report)
+
+    assert rows == [
+        {
+            "Status": "ℹ️ Missing Evidence",
+            "Severity": "High",
+            "Finding": "maip_evidence_present",
+            "Message": "The package does not provide a clear proposed MAIP.",
+            "Recommended Action": "Reviewer should locate the proposed MAIP value.",
+            "Supporting Values": "None",
+        },
+        {
+            "Status": "ℹ️ Pass",
+            "Severity": "Info",
+            "Finding": "maip_below_90_percent_fracture_pressure",
+            "Message": "The proposed MAIP is below 90% of fracture pressure.",
+            "Recommended Action": "Reviewer should confirm cited values.",
+            "Supporting Values": "proposed_maip: 1800.0 psi (Operating_Plan.pdf, page 8)",
+        },
+    ]
+
+
+def test_maip_validation_rows_for_display_handles_missing_report():
+    rows = maip_validation_rows_for_display({})
+
+    assert rows == []
