@@ -18,7 +18,11 @@ from review.package_document_audit import (
     find_matching_aliases,
 )
 from review.gap_analysis import GapAnalysisReport, analyze_document_against_checklist
-from review.maip_validation import MaipValidationReport, MaipValidationInput, validate_maip_chain
+from review.maip_validation import (
+    MaipValidationReport,
+    build_maip_validation_input_from_package_reviews,
+    validate_maip_chain,
+)
 from review.schema import load_default_checklist
 
 
@@ -1106,15 +1110,15 @@ def add_cross_document_context_to_findings(
 def build_package_maip_validation_report(
     document_reviews: list[PackageDocumentReview],
 ) -> MaipValidationReport:
-    """Build conservative package-level MAIP validation.
+    """Build package-level MAIP validation from conservative extracted evidence."""
+    validation_input = build_maip_validation_input_from_package_reviews(
+        [
+            document_review.to_dict()
+            for document_review in document_reviews
+        ]
+    )
 
-    This first integration intentionally does not perform numeric extraction.
-    It attaches a deterministic MAIP report to package review output so the
-    package workflow can surface the MAIP validation section while extraction
-    is implemented in a later branch.
-    """
-    _ = document_reviews
-    return validate_maip_chain(MaipValidationInput())
+    return validate_maip_chain(validation_input)
 
 def review_document_package(
     documents: list,
