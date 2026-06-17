@@ -16,6 +16,10 @@ from ui.reviewer_workflow import (
     build_reviewer_state_export,
     parse_reviewer_state_import,
     build_reviewer_confirmation_summary_section,
+    append_maip_reviewer_confirmation_export,
+    build_maip_reviewer_confirmation_export_section,
+    is_maip_reviewer_row,
+    split_maip_reviewer_rows,
 )
 
 
@@ -615,3 +619,106 @@ def test_maip_validation_rows_work_with_reviewer_confirmation_helpers():
         == "Applicant should provide the proposed MAIP source table."
     )
     assert confirmed_rows[0]["Review Key"] == "MAIP::maip_evidence_present"
+
+def test_is_maip_reviewer_row_identifies_maip_rows():
+    assert is_maip_reviewer_row(
+        {
+            "Review Key": "MAIP::maip_evidence_present",
+            "GSDT Module/Folder": "MAIP Cross-Reference Validation",
+        }
+    )
+
+    assert not is_maip_reviewer_row(
+        {
+            "Review Key": "Financial Responsibility::Coverage amount::ADM.pdf",
+            "GSDT Module/Folder": "Financial Responsibility",
+        }
+    )
+
+
+def test_split_maip_reviewer_rows_separates_checklist_and_maip_rows():
+    rows = [
+        {
+            "Review Key": "Financial Responsibility::Coverage amount::ADM.pdf",
+            "GSDT Module/Folder": "Financial Responsibility",
+        },
+        {
+            "Review Key": "MAIP::maip_evidence_present",
+            "GSDT Module/Folder": "MAIP Cross-Reference Validation",
+        },
+    ]
+
+    checklist_rows, maip_rows = split_maip_reviewer_rows(rows)
+
+    assert len(checklist_rows) == 1
+    assert len(maip_rows) == 1
+    assert checklist_rows[0]["Review Key"].startswith("Financial Responsibility")
+    assert maip_rows[0]["Review Key"] == "MAIP::maip_evidence_present"
+
+
+def test_build_maip_reviewer_confirmation_export_section_includes_maip_rows():
+    rows = [
+        {
+            "Review Key": "MAIP::maip_evidence_present",
+            "Reviewer Confirmation": "Needs follow-up",
+            "Reviewer Notes": "Applicant must provide MAIP source.",
+            "Status": "ℹ️ Missing Evidence",
+            "Severity": "High",
+            "Finding": "maip_evidence_present",
+            "Message": "The package does not provide a clear proposed MAIP.",
+            "Recommended Action": "Reviewer should locate the proposed MAIP value.",
+            "Supporting Values": "None",
+            "GSDT Module/Folder": "MAIP Cross-Reference Validation",
+        }
+    ]
+
+    markdown = build_maip_reviewer_confirmation_export_section(rows)
+
+    assert "## MAIP Reviewer Confirmation Export" in markdown
+    assert (
+        "| Reviewer Confirmation | Reviewer Notes | Status | Severity | Finding | "
+        "Message | Recommended Action | Supporting Values |"
+    ) in markdown
+    assert "Needs follow-up" in markdown
+    assert "Applicant must provide MAIP source." in markdown
+    assert "maip_evidence_present" in markdown
+
+
+def test_build_maip_reviewer_confirmation_export_section_handles_no_maip_rows():
+    rows = [
+        {
+            "Review Key": "Financial Responsibility::Coverage amount::ADM.pdf",
+            "Reviewer Confirmation": "Confirmed",
+            "GSDT Module/Folder": "Financial Responsibility",
+        }
+    ]
+
+    markdown = build_maip_reviewer_confirmation_export_section(rows)
+
+    assert "## MAIP Reviewer Confirmation Export" in markdown
+    assert "No MAIP reviewer confirmation rows were available." in markdown
+
+
+def test_append_maip_reviewer_confirmation_export_appends_section():
+    base_markdown = "# Class VI Final Review Packet\n\nExisting report content.\n"
+    rows = [
+        {
+            "Review Key": "MAIP::maip_evidence_present",
+            "Reviewer Confirmation": "Needs follow-up",
+            "Reviewer Notes": "Need MAIP source table.",
+            "Status": "ℹ️ Missing Evidence",
+            "Severity": "High",
+            "Finding": "maip_evidence_present",
+            "Message": "The package does not provide a clear proposed MAIP.",
+            "Recommended Action": "Reviewer should locate the proposed MAIP value.",
+            "Supporting Values": "None",
+            "GSDT Module/Folder": "MAIP Cross-Reference Validation",
+        }
+    ]
+
+    markdown = append_maip_reviewer_confirmation_export(base_markdown, rows)
+
+    assert markdown.startswith("# Class VI Final Review Packet")
+    assert "Existing report content." in markdown
+    assert "## MAIP Reviewer Confirmation Export" in markdown
+    assert "Need MAIP source table." in markdown
