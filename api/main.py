@@ -21,6 +21,12 @@ from review.temp_ingestion import (
 
 from review.package_review import review_document_package
 
+from demo_samples.maip_demo_package import (
+    build_maip_demo_final_review_packet,
+    build_maip_demo_markdown_report,
+    build_maip_demo_package_response,
+)
+
 app = FastAPI(
     title="SMART CCUS Class VI Review Assistant",
     version="0.1.0",
@@ -71,6 +77,13 @@ class ReviewPackageResponse(BaseModel):
     report: dict[str, Any]
     storage_policy: str
 
+class DemoMarkdownResponse(BaseModel):
+    """Response body for deterministic demo Markdown outputs."""
+
+    package_name: str
+    markdown: str
+    storage_policy: str
+
 @app.get("/health")
 def health():
     """Simple health check."""
@@ -79,6 +92,31 @@ def health():
         "service": "class-vi-review-assistant",
     }
 
+
+@app.get("/demo/maip-package", response_model=ReviewPackageResponse)
+def maip_demo_package():
+    """Return a deterministic MAIP demo package review response."""
+    return build_maip_demo_package_response()
+
+
+@app.get("/demo/maip-package/report", response_model=DemoMarkdownResponse)
+def maip_demo_package_report():
+    """Return the deterministic MAIP demo Markdown package report."""
+    return {
+        "package_name": "maip_demo_package",
+        "markdown": build_maip_demo_markdown_report(),
+        "storage_policy": "Demo fixture only. No uploaded files are processed.",
+    }
+
+
+@app.get("/demo/maip-package/final-packet", response_model=DemoMarkdownResponse)
+def maip_demo_final_review_packet():
+    """Return the deterministic MAIP demo final review packet."""
+    return {
+        "package_name": "maip_demo_package",
+        "markdown": build_maip_demo_final_review_packet(),
+        "storage_policy": "Demo fixture only. No uploaded files are processed.",
+    }
 
 @app.post("/ask", response_model=AskResponse)
 def ask(request: AskRequest):

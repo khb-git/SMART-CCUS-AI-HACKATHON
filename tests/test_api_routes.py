@@ -25,3 +25,6 @@ def test_expected_api_routes_are_registered():
     assert route_exists("/ask", "POST")
     assert route_exists("/review-document", "POST")
     assert route_exists("/review-package", "POST")
+    assert route_exists("/demo/maip-package", "GET")
+    assert route_exists("/demo/maip-package/report", "GET")
+    assert route_exists("/demo/maip-package/final-packet", "GET")
