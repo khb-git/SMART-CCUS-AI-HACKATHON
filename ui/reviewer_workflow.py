@@ -161,6 +161,156 @@ def build_reviewer_confirmation_export_section(
     lines.append("")
     return "\n".join(lines)
 
+def is_maip_reviewer_row(row: dict[str, str]) -> bool:
+    """Return whether a reviewer row belongs to MAIP validation."""
+    review_key = row.get("Review Key", "")
+    module_folder = row.get("GSDT Module/Folder", "")
+
+    return (
+        review_key.startswith("MAIP::")
+        or module_folder == "MAIP Cross-Reference Validation"
+    )
+
+
+def split_maip_reviewer_rows(
+    rows: list[dict[str, str]],
+) -> tuple[list[dict[str, str]], list[dict[str, str]]]:
+    """Split reviewer rows into checklist rows and MAIP rows."""
+    checklist_rows = []
+    maip_rows = []
+
+    for row in rows:
+        if is_maip_reviewer_row(row):
+            maip_rows.append(row)
+        else:
+            checklist_rows.append(row)
+
+    return checklist_rows, maip_rows
+
+
+def build_maip_reviewer_confirmation_export_section(
+    rows: list[dict[str, str]],
+) -> str:
+    """Build Markdown section for MAIP reviewer confirmation states."""
+    _checklist_rows, maip_rows = split_maip_reviewer_rows(rows)
+
+    lines = [
+        "## MAIP Reviewer Confirmation Export",
+        "",
+        (
+            "This section reflects reviewer confirmation selections for MAIP "
+            "cross-reference findings from the current Streamlit session. "
+            "These values should be used as reviewer annotations, not as a "
+            "replacement for the deterministic MAIP validation results."
+        ),
+        "",
+    ]
+
+    if not maip_rows:
+        return "\n".join(lines + ["No MAIP reviewer confirmation rows were available.", ""])
+
+    lines.extend(
+        [
+            "| Reviewer Confirmation | Reviewer Notes | Status | Severity | Finding | Message | Recommended Action | Supporting Values |",
+            "| --- | --- | --- | --- | --- | --- | --- | --- |",
+        ]
+    )
+
+    for row in maip_rows:
+        lines.append(
+            "| "
+            + " | ".join(
+                [
+                    markdown_table_escape(row.get("Reviewer Confirmation", "Pending review")),
+                    markdown_table_escape(row.get("Reviewer Notes", "")),
+                    markdown_table_escape(row.get("Status", "")),
+                    markdown_table_escape(row.get("Severity", "")),
+                    markdown_table_escape(row.get("Finding", "")),
+                    markdown_table_escape(row.get("Message", "")),
+                    markdown_table_escape(row.get("Recommended Action", "")),
+                    markdown_table_escape(row.get("Supporting Values", "")),
+                ]
+            )
+            + " |"
+        )
+
+    lines.append("")
+    return "\n".join(lines)
+
+
+def append_maip_reviewer_confirmation_export(
+    markdown_report: str,
+    rows: list[dict[str, str]],
+) -> str:
+    """Append MAIP reviewer confirmation export rows to a Markdown report."""
+    section = build_maip_reviewer_confirmation_export_section(rows)
+    return markdown_report.rstrip() + "\n\n" + section.rstrip() + "\n"
+
+MAIP_DEFICIENCY_STATUS_LABELS = [
+    "Missing Evidence",
+    "Warning",
+    "Fail",
+]
+
+
+def filter_maip_deficiency_rows(
+    rows: list[dict[str, str]],
+) -> list[dict[str, str]]:
+    """Return MAIP reviewer rows that need reviewer follow-up."""
+    _checklist_rows, maip_rows = split_maip_reviewer_rows(rows)
+
+    return [
+        row
+        for row in maip_rows
+        if any(
+            status_label in row.get("Status", "")
+            for status_label in MAIP_DEFICIENCY_STATUS_LABELS
+        )
+    ]
+
+
+def build_maip_deficiency_csv(
+    rows: list[dict[str, str]],
+) -> str:
+    """Build CSV text for unresolved MAIP validation rows only."""
+    output = StringIO()
+
+    fieldnames = [
+        "Reviewer Confirmation",
+        "Reviewer Notes",
+        "Status",
+        "Severity",
+        "Finding",
+        "Message",
+        "Recommended Action",
+        "Supporting Values",
+    ]
+
+    writer = csv.DictWriter(
+        output,
+        fieldnames=fieldnames,
+        extrasaction="ignore",
+    )
+    writer.writeheader()
+
+    for row in filter_maip_deficiency_rows(rows):
+        writer.writerow(
+            {
+                "Reviewer Confirmation": row.get(
+                    "Reviewer Confirmation",
+                    "Pending review",
+                ),
+                "Reviewer Notes": row.get("Reviewer Notes", ""),
+                "Status": row.get("Status", ""),
+                "Severity": row.get("Severity", ""),
+                "Finding": row.get("Finding", ""),
+                "Message": row.get("Message", ""),
+                "Recommended Action": row.get("Recommended Action", ""),
+                "Supporting Values": row.get("Supporting Values", ""),
+            }
+        )
+
+    return output.getvalue()
 
 def append_reviewer_confirmation_export(
     markdown_report: str,

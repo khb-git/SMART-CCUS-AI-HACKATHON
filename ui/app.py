@@ -19,6 +19,11 @@ from review.coverage_evidence_display import coverage_evidence_rows_for_display 
     package_review_metrics,
 )
 
+from ui.rag_status import (
+    ASK_ASSISTANT_RAG_GUIDANCE,
+    ASK_ASSISTANT_RAG_NOTICE,
+)
+
 from ui.reviewer_workflow import (
     REVIEWER_CONFIRMATION_OPTIONS,
     append_reviewer_confirmation_export,
@@ -32,6 +37,9 @@ from ui.reviewer_workflow import (
     reviewer_confirmation_counts,
     reviewer_confirmation_state_key,
     reviewer_note_state_key,
+    append_maip_reviewer_confirmation_export,
+    append_reviewer_confirmation_export,
+    build_maip_deficiency_csv,
 )
 
 from ui.api_client import (
@@ -45,7 +53,9 @@ from ui.api_client import (
     default_report_filename,
     format_evidence_heading,
     format_similarity_score,
+    maip_demo_package_api,
     review_document_api,
+    review_narrative_api,
     review_package_api,
     status_icon,
     status_label,
@@ -152,6 +162,179 @@ def render_reviewer_action_items(package_report: dict) -> None:
 
     for index, action_item in enumerate(action_items, start=1):
         st.write(f"{index}. {action_item}")
+
+def maip_validation_rows_for_display(
+    package_report: dict,
+) -> list[dict[str, str]]:
+    """Return MAIP validation findings formatted for Streamlit display."""
+    maip_validation = package_report.get("maip_validation") or {}
+    findings = maip_validation.get("findings", []) or []
+
+    rows = []
+
+    for finding in findings:
+        supporting_values = finding.get("supporting_values", []) or []
+        value_parts = []
+        audit_parts = []
+
+        for value in supporting_values:
+            concept = value.get("concept", "value")
+            numeric_value = value.get("value")
+            unit = value.get("unit", "")
+            source_file = value.get("source_file", "")
+            page_number = value.get("page_number")
+
+            value_text = str(concept)
+
+            if numeric_value is not None:
+                value_text += f": {numeric_value} {unit}".strip()
+
+            if source_file:
+                value_text += f" ({source_file}"
+
+                if page_number not in {"", None}:
+                    value_text += f", page {page_number}"
+
+                value_text += ")"
+
+            value_parts.append(value_text)
+
+            audit_parts.append(
+                "; ".join(
+                    part
+                    for part in [
+                        f"concept={value.get('concept', '')}",
+                        f"finding_id={value.get('source_finding_id', '')}",
+                        f"label={value.get('source_label', '')}",
+                        f"matched_term={value.get('matched_term', '')}",
+                        f"method={value.get('extraction_method', '')}",
+                        f"confidence={value.get('confidence', '')}",
+                    ]
+                    if part.split("=", 1)[1]
+                )
+            )
+
+        rows.append(
+            {
+                "Review Key": f"MAIP::{finding.get('finding_id', '')}",
+                "Status": (
+                    f"{status_icon(finding.get('status', ''))} "
+                    f"{status_label(finding.get('status', ''))}"
+                ),
+                "Severity": status_label(finding.get("severity", "")),
+                "Finding": finding.get("finding_id", ""),
+                "Required Item": finding.get("finding_id", ""),
+                "GSDT Module/Folder": "MAIP Cross-Reference Validation",
+                "Regulatory Citation": "Class VI MAIP cross-reference validation",
+                "File Name": "See supporting values",
+                "Page Number": "See supporting values",
+                "Message": finding.get("message", ""),
+                "Recommended Action": finding.get("recommended_action", ""),
+                "Supporting Values": "; ".join(value_parts) if value_parts else "None",
+                "Audit Trail": "; ".join(audit_parts) if audit_parts else "None",
+                "Notes": (
+                    f"{finding.get('message', '')} "
+                    f"Recommended action: {finding.get('recommended_action', '')}"
+                ).strip(),
+            }
+        )
+
+    return rows
+
+
+def render_maip_validation_panel(package_report: dict) -> list[dict[str, str]]:
+    """Render package-level MAIP validation results."""
+    maip_validation = package_report.get("maip_validation") or {}
+
+    st.markdown("### MAIP Cross-Reference Validation")
+    st.caption(
+        "This section summarizes deterministic Maximum Allowable Injection "
+        "Pressure checks. Extracted values are conservative and include source "
+        "traceability where available."
+    )
+
+    if not maip_validation:
+        st.info("No MAIP validation report was returned for this package.")
+        return []
+
+    overall_status = maip_validation.get("overall_status", "unknown")
+    summary = maip_validation.get("summary", "")
+    rows = maip_validation_rows_for_display(package_report)
+
+    maip_cols = st.columns(3)
+
+    with maip_cols[0]:
+        st.metric(
+            "MAIP status",
+            f"{status_icon(overall_status)} {status_label(overall_status)}",
+        )
+
+    with maip_cols[1]:
+        st.metric("MAIP findings", len(rows))
+
+    with maip_cols[2]:
+        unresolved_count = sum(
+            1
+            for row in rows
+            if any(
+                label in row["Status"]
+                for label in ["Missing Evidence", "Warning", "Fail"]
+            )
+        )
+        st.metric("Needs reviewer attention", unresolved_count)
+
+    if summary:
+        st.write(summary)
+
+    if not rows:
+        st.info("No MAIP validation findings were returned.")
+        return []
+
+    with st.expander("Reviewer confirmations for MAIP findings", expanded=False):
+        st.caption(
+            "Use these controls to mark the reviewer disposition for each MAIP "
+            "cross-reference finding. These selections are held in the current "
+            "Streamlit session unless exported as reviewer state JSON."
+        )
+
+        for index, row in enumerate(rows, start=1):
+            label = f"{index}. {row['Finding']}"
+
+            st.selectbox(
+                label,
+                options=REVIEWER_CONFIRMATION_OPTIONS,
+                index=0,
+                key=reviewer_confirmation_state_key(row),
+            )
+
+            st.text_area(
+                f"Reviewer notes for MAIP finding {index}",
+                value=st.session_state.get(reviewer_note_state_key(row), ""),
+                key=reviewer_note_state_key(row),
+                height=80,
+            )
+
+    display_rows = apply_reviewer_confirmations(rows, st.session_state)
+
+    with st.expander("View MAIP validation findings", expanded=True):
+        st.dataframe(
+            display_rows,
+            use_container_width=True,
+            hide_index=True,
+            column_order=[
+                "Reviewer Confirmation",
+                "Reviewer Notes",
+                "Status",
+                "Severity",
+                "Finding",
+                "Message",
+                "Recommended Action",
+                "Supporting Values",
+                "Audit Trail",
+            ],
+        )
+
+    return display_rows
 
 def completeness_checklist_rows_for_display(
     package_report: dict,
@@ -507,6 +690,11 @@ ask_tab, review_tab, package_tab = st.tabs(
 
 # Ask tab content
 with ask_tab:
+    st.warning(ASK_ASSISTANT_RAG_NOTICE)
+
+    with st.expander("Ask Assistant status", expanded=False):
+        st.write(ASK_ASSISTANT_RAG_GUIDANCE)
+
     default_question = "How do applicants monitor injection pressure and flow rate?"
 
     query = st.text_area(
@@ -804,13 +992,462 @@ with review_tab:
                         st.markdown("**Recommended fix**")
                         st.write(recommended_fix)
 
-# Package tab
+def render_llm_review_narrative_panel(
+    package_response: dict,
+    reviewer_confirmation_rows: list[dict[str, str]],
+    api_url: str,
+) -> None:
+    """Render optional LLM/template reviewer narrative controls."""
+    st.markdown("### Reviewer Narrative")
+
+    st.caption(
+        "Generate a reviewer-facing narrative from deterministic backend findings. "
+        "The narrative does not change statuses, severity, citations, evidence, "
+        "MAIP validation, or reviewer confirmations."
+    )
+
+    with st.expander("Narrative generation settings", expanded=False):
+        use_llm = st.checkbox(
+            "Use local LLM if available",
+            value=False,
+            key="review_narrative_use_llm",
+            help=(
+                "When unchecked, the backend returns a deterministic template narrative. "
+                "When checked, the backend attempts local Ollama generation and falls "
+                "back to the deterministic template if unavailable."
+            ),
+        )
+
+        model_name = st.text_input(
+            "Local Ollama model name",
+            value="llama3.1",
+            key="review_narrative_model_name",
+        )
+
+    generate_narrative_clicked = st.button(
+        "Generate reviewer narrative",
+        key="generate_reviewer_narrative",
+    )
+
+    if generate_narrative_clicked:
+        try:
+            with st.spinner("Generating reviewer narrative..."):
+                st.session_state["review_narrative_response"] = review_narrative_api(
+                    package_response=package_response,
+                    reviewer_confirmations=reviewer_confirmation_rows,
+                    use_llm=use_llm,
+                    model_name=model_name,
+                    api_url=api_url,
+                )
+        except Exception as exc:
+            st.error("The reviewer narrative request failed.")
+            st.exception(exc)
+        else:
+            st.success("Reviewer narrative generated.")
+
+    narrative_response = st.session_state.get("review_narrative_response")
+
+    if not narrative_response:
+        st.info(
+            "Click **Generate reviewer narrative** after reviewing the deterministic "
+            "package findings."
+        )
+        return
+
+    if narrative_response.get("used_llm"):
+        st.success(f"Generated with local LLM: `{narrative_response.get('model_name', '')}`")
+    else:
+        st.info(
+            "Displayed narrative was generated by the deterministic template or fallback."
+        )
+
+    boundary_notice = narrative_response.get("boundary_notice", "")
+    if boundary_notice:
+        st.warning(boundary_notice)
+
+    st.markdown(narrative_response.get("narrative", ""))
+
+    st.download_button(
+        label="Download reviewer narrative Markdown",
+        data=narrative_response.get("narrative", ""),
+        file_name="reviewer_narrative.md",
+        mime="text/markdown",
+    )
+
+def render_package_review_response(package_response: dict) -> None:
+    """Render a package review response in the Review Package tab."""
+    package_report = package_response.get("report", {})
+    package_status = package_report.get("overall_status", "")
+
+    st.subheader("Package review result")
+
+    review_source = st.session_state.get("package_review_source", "unknown")
+
+    if review_source == "demo":
+        st.success("Displaying deterministic MAIP demo package.")
+    elif review_source == "uploaded":
+        st.info("Displaying uploaded package review result.")
+
+    package_metric_cols = st.columns(4)
+
+    with package_metric_cols[0]:
+        st.metric("Package", package_response.get("package_name", "Unknown"))
+
+    with package_metric_cols[1]:
+        st.metric(
+            "Overall status",
+            f"{status_icon(package_status)} {status_label(package_status)}",
+        )
+
+    with package_metric_cols[2]:
+        st.metric(
+            "Detected document types",
+            len(package_report.get("detected_plan_types", []) or []),
+        )
+
+    with package_metric_cols[3]:
+        st.metric(
+            "Missing required",
+            len(package_report.get("missing_required_plan_types", []) or []),
+        )
+
+    st.markdown("### Summary")
+    st.write(package_report.get("summary", ""))
+
+    storage_policy = package_response.get("storage_policy", "")
+    if storage_policy:
+        st.info(storage_policy)
+
+    st.markdown("### Package coverage")
+
+    coverage_cols = st.columns(5)
+
+    with coverage_cols[0]:
+        st.markdown("**Detected document types**")
+        detected = package_report.get("detected_plan_types", []) or []
+        if detected:
+            for plan_type in detected:
+                st.write(f"✅ `{plan_type}`")
+        else:
+            st.write("None detected.")
+
+    with coverage_cols[1]:
+        st.markdown("**Missing required**")
+        missing_required = (
+            package_report.get("missing_required_plan_types", []) or []
+        )
+        if missing_required:
+            for plan_type in missing_required:
+                st.write(f"🔴 `{plan_type}`")
+        else:
+            st.write("No required document types missing.")
+
+    with coverage_cols[2]:
+        st.markdown("**Duplicate document types**")
+        duplicates = package_report.get("duplicate_plan_types", []) or []
+        if duplicates:
+            for plan_type in duplicates:
+                st.write(f"🟠 `{plan_type}`")
+        else:
+            st.write("No duplicates detected.")
+
+    with coverage_cols[3]:
+        st.markdown("**Unknown documents**")
+        unknown_documents = package_report.get("unknown_documents", []) or []
+        if unknown_documents:
+            for document_name in unknown_documents:
+                st.write(f"⚪ `{document_name}`")
+        else:
+            st.write("No unknown documents.")
+
+    with coverage_cols[4]:
+        st.markdown("**Supporting documents**")
+        supporting_documents = package_report.get("supporting_documents", []) or []
+        if supporting_documents:
+            for document_name in supporting_documents:
+                st.write(f"🧩 `{document_name}`")
+        else:
+            st.write("No supporting documents.")
+
+    render_package_review_metrics(package_report)
+
+    render_reviewer_action_items(package_report)
+
+    maip_reviewer_confirmation_rows = render_maip_validation_panel(package_report)
+
+    reviewer_confirmation_rows = render_completeness_checklist_view(package_report)
+
+    all_reviewer_confirmation_rows = (
+        reviewer_confirmation_rows
+        + maip_reviewer_confirmation_rows
+    )
+
+    render_llm_review_narrative_panel(
+        package_response=package_response,
+        reviewer_confirmation_rows=all_reviewer_confirmation_rows,
+        api_url=api_url,
+    )
+
+    package_markdown_report = build_markdown_package_report(package_response)
+    package_markdown_report = append_maip_reviewer_confirmation_export(
+        package_markdown_report,
+        all_reviewer_confirmation_rows,
+    )
+    package_report_filename = default_package_report_filename(
+        package_response.get("package_name", "uploaded_package")
+    )
+
+    st.download_button(
+        label="Download Markdown package review report with reviewer confirmations",
+        data=package_markdown_report,
+        file_name=package_report_filename,
+        mime="text/markdown",
+    )
+
+    final_review_packet = build_final_review_packet(package_response)
+    final_review_packet = (
+        final_review_packet.rstrip()
+        + "\n\n"
+        + build_reviewer_confirmation_summary_section(
+            all_reviewer_confirmation_rows
+        ).rstrip()
+        + "\n"
+    )
+    final_review_packet = append_maip_reviewer_confirmation_export(
+        final_review_packet,
+        all_reviewer_confirmation_rows,
+    )
+
+    st.download_button(
+        label="Download final review packet",
+        data=final_review_packet,
+        file_name=package_report_filename.replace(
+            "_review_report.md",
+            "_final_review_packet.md",
+        ),
+        mime="text/markdown",
+    )
+
+    checklist_csv = build_completeness_checklist_csv(
+        reviewer_confirmation_rows
+    )
+
+    st.download_button(
+        label="Download completeness checklist CSV",
+        data=checklist_csv,
+        file_name=package_report_filename.replace(".md", "_checklist.csv"),
+        mime="text/csv",
+    )
+
+    deficiency_csv = build_deficiency_checklist_csv(
+        reviewer_confirmation_rows
+    )
+
+    st.download_button(
+        label="Download deficiency CSV",
+        data=deficiency_csv,
+        file_name=package_report_filename.replace(".md", "_deficiencies.csv"),
+        mime="text/csv",
+    )
+
+    maip_deficiency_csv = build_maip_deficiency_csv(
+        all_reviewer_confirmation_rows
+    )
+
+    st.download_button(
+        label="Download MAIP deficiency CSV",
+        data=maip_deficiency_csv,
+        file_name=package_report_filename.replace(".md", "_maip_deficiencies.csv"),
+        mime="text/csv",
+    )
+
+    reviewer_state_json = build_reviewer_state_export(
+        all_reviewer_confirmation_rows,
+        package_name=package_response.get("package_name", "uploaded_package"),
+    )
+
+    st.download_button(
+        label="Download reviewer state JSON",
+        data=reviewer_state_json,
+        file_name=package_report_filename.replace(".md", "_reviewer_state.json"),
+        mime="application/json",
+    )
+
+    st.markdown("### Package Coverage Evidence")
+
+    coverage_evidence = package_report.get("coverage_evidence", []) or []
+
+    st.caption(
+        "This table explains why package topics were credited as detected. "
+        "Text evidence should be treated as reviewer-supporting evidence, "
+        "not an automatic final compliance determination."
+    )
+
+    if coverage_evidence:
+        st.dataframe(
+            coverage_evidence_rows_for_display(coverage_evidence),
+            use_container_width=True,
+            hide_index=True,
+        )
+    else:
+        st.info("No package coverage evidence was returned for this review.")
+
+    with st.expander("Expected package document types", expanded=False):
+        expected = package_report.get("expected_plan_types", []) or []
+        for plan_type in expected:
+            st.write(f"- `{plan_type}`")
+
+    st.markdown("### Per-document reviews")
+
+    document_reviews = package_report.get("document_reviews", []) or []
+
+    if not document_reviews:
+        st.warning("No document reviews returned.")
+    else:
+        for document_review in document_reviews:
+            document_name = document_review.get("document_name", "Unknown document")
+            document_type = document_review.get("document_type", "unknown")
+            confidence = document_review.get(
+                "classification_confidence",
+                "unknown",
+            )
+            document_report = document_review.get("report") or {}
+
+            document_status = document_report.get("overall_status", "")
+
+            heading = (
+                f"{document_name} — `{document_type}` "
+                f"({confidence})"
+            )
+
+            if document_status:
+                heading += (
+                    f" — {status_icon(document_status)} "
+                    f"{status_label(document_status)}"
+                )
+
+            with st.expander(heading, expanded=False):
+                document_role = document_review.get("document_role", "main")
+                supporting_type = document_review.get(
+                    "supporting_document_type",
+                    "",
+                )
+                covered_plan_types = (
+                    document_review.get("covered_plan_types", []) or []
+                )
+                checklist_reports = (
+                    document_review.get("checklist_reports", {}) or {}
+                )
+                error = document_review.get("error", "")
+
+                role_cols = st.columns(3)
+
+                with role_cols[0]:
+                    st.metric("Document role", document_role)
+
+                with role_cols[1]:
+                    st.metric("Covered plan types", len(covered_plan_types))
+
+                with role_cols[2]:
+                    st.metric("Checklist reports", len(checklist_reports))
+
+                if supporting_type:
+                    st.info(f"Supporting document type: `{supporting_type}`")
+
+                if covered_plan_types:
+                    st.markdown("**Covered plan types**")
+                    st.write(
+                        ", ".join(
+                            f"`{plan_type}`"
+                            for plan_type in covered_plan_types
+                        )
+                    )
+
+                if error:
+                    if document_role == "supporting":
+                        st.info(error)
+                    else:
+                        st.error(error)
+
+                classification = document_review.get("classification", {})
+                with st.expander("Classification details", expanded=False):
+                    st.json(classification)
+
+                if checklist_reports:
+                    st.markdown("**Checklist reports by covered plan type**")
+
+                    for plan_type, checklist_report in checklist_reports.items():
+                        checklist_status = checklist_report.get(
+                            "overall_status",
+                            "",
+                        )
+                        checklist_findings = (
+                            checklist_report.get("findings", []) or []
+                        )
+
+                        checklist_heading = (
+                            f"{plan_type} — "
+                            f"{status_icon(checklist_status)} "
+                            f"{status_label(checklist_status)}"
+                        )
+
+                        with st.expander(checklist_heading, expanded=False):
+                            st.write(checklist_report.get("summary", ""))
+
+                            render_finding_summary_metrics(checklist_findings)
+
+                            render_package_findings(
+                                checklist_findings,
+                                key_prefix=f"{document_name}_{plan_type}",
+                                default_show=False,
+                            )
+
+                elif document_report:
+                    st.markdown("**Document review summary**")
+                    st.write(document_report.get("summary", ""))
+
+                    findings = document_report.get("findings", []) or []
+
+                    render_finding_summary_metrics(findings)
+
+                    render_package_findings(
+                        findings,
+                        key_prefix=document_name,
+                        default_show=False,
+                    )
+
 with package_tab:
     st.subheader("Review uploaded document package")
     st.caption(
         "Upload multiple Class VI documents for temporary package-level review. "
         "Uploaded files are processed for this request and are not stored permanently."
     )
+
+    with st.expander("Deterministic MAIP demo package", expanded=True):
+        st.caption(
+            "Load a built-in MAIP demo package without uploaded files, RAG, or LLM "
+            "services. This exercises MAIP extraction, validation, reviewer "
+            "confirmation, audit trail, and exports."
+        )
+
+        load_maip_demo_clicked = st.button(
+            "Load deterministic MAIP demo package",
+            key="load_maip_demo_package",
+        )
+
+        if load_maip_demo_clicked:
+            try:
+                with st.spinner("Loading deterministic MAIP demo package..."):
+                    st.session_state["package_review_response"] = (
+                        maip_demo_package_api(api_url=api_url)
+                    )
+                    st.session_state["package_review_source"] = "demo"
+                    st.session_state.pop("review_narrative_response", None)
+            except Exception as exc:
+                st.error("The MAIP demo package request failed.")
+                st.exception(exc)
+            else:
+                st.success("Loaded deterministic MAIP demo package.")
 
     package_files = st.file_uploader(
         "Upload package documents",
@@ -866,325 +1503,27 @@ with package_tab:
             with st.spinner(
                 "Temporarily processing package documents and running package review..."
             ):
-                package_response = review_package_api(
+                st.session_state["package_review_response"] = review_package_api(
                     files=file_payload,
                     package_name=package_name,
                     chunk_size=int(package_chunk_size),
                     chunk_overlap=int(package_chunk_overlap),
                     api_url=api_url,
                 )
+                st.session_state["package_review_source"] = "uploaded"
+                st.session_state.pop("review_narrative_response", None)
 
         except Exception as exc:
             st.error("The package review request failed.")
             st.exception(exc)
             st.stop()
 
-        package_report = package_response.get("report", {})
-        package_status = package_report.get("overall_status", "")
+    package_response = st.session_state.get("package_review_response")
 
-        st.subheader("Package review result")
-
-        package_metric_cols = st.columns(4)
-
-        with package_metric_cols[0]:
-            st.metric("Package", package_response.get("package_name", "Unknown"))
-
-        with package_metric_cols[1]:
-            st.metric(
-                "Overall status",
-                f"{status_icon(package_status)} {status_label(package_status)}",
-            )
-
-        with package_metric_cols[2]:
-            st.metric(
-                "Detected document types",
-                len(package_report.get("detected_plan_types", []) or []),
-            )
-
-        with package_metric_cols[3]:
-            st.metric(
-                "Missing required",
-                len(package_report.get("missing_required_plan_types", []) or []),
-            )
-
-        st.markdown("### Summary")
-        st.write(package_report.get("summary", ""))
-
-        storage_policy = package_response.get("storage_policy", "")
-        if storage_policy:
-            st.info(storage_policy)
-
-
-        st.markdown("### Package coverage")
-
-        coverage_cols = st.columns(5)
-
-        with coverage_cols[0]:
-            st.markdown("**Detected document types**")
-            detected = package_report.get("detected_plan_types", []) or []
-            if detected:
-                for plan_type in detected:
-                    st.write(f"✅ `{plan_type}`")
-            else:
-                st.write("None detected.")
-
-        with coverage_cols[1]:
-            st.markdown("**Missing required**")
-            missing_required = (
-                package_report.get("missing_required_plan_types", []) or []
-            )
-            if missing_required:
-                for plan_type in missing_required:
-                    st.write(f"🔴 `{plan_type}`")
-            else:
-                st.write("No required document types missing.")
-
-        with coverage_cols[2]:
-            st.markdown("**Duplicate document types**")
-            duplicates = package_report.get("duplicate_plan_types", []) or []
-            if duplicates:
-                for plan_type in duplicates:
-                    st.write(f"🟠 `{plan_type}`")
-            else:
-                st.write("No duplicates detected.")
-
-        with coverage_cols[3]:
-            st.markdown("**Unknown documents**")
-            unknown_documents = package_report.get("unknown_documents", []) or []
-            if unknown_documents:
-                for document_name in unknown_documents:
-                    st.write(f"⚪ `{document_name}`")
-            else:
-                st.write("No unknown documents.")
-
-        with coverage_cols[4]:
-            st.markdown("**Supporting documents**")
-            supporting_documents = package_report.get("supporting_documents", []) or []
-            if supporting_documents:
-                for document_name in supporting_documents:
-                    st.write(f"🧩 `{document_name}`")
-            else:
-                st.write("No supporting documents.")
-
-        render_package_review_metrics(package_report)
-
-        render_reviewer_action_items(package_report)
-
-        reviewer_confirmation_rows = render_completeness_checklist_view(package_report)
-
-        package_markdown_report = build_markdown_package_report(package_response)
-        package_markdown_report = append_reviewer_confirmation_export(
-            package_markdown_report,
-            reviewer_confirmation_rows,
+    if package_response:
+        render_package_review_response(package_response)
+    else:
+        st.info(
+            "Upload package documents and click **Review uploaded package**, "
+            "or load the deterministic MAIP demo package."
         )
-        package_report_filename = default_package_report_filename(
-            package_response.get("package_name", "uploaded_package")
-        )
-
-        st.download_button(
-            label="Download Markdown package review report with reviewer confirmations",
-            data=package_markdown_report,
-            file_name=package_report_filename,
-            mime="text/markdown",
-        )
-
-        final_review_packet = build_final_review_packet(package_response)
-        final_review_packet = (
-                final_review_packet.rstrip()
-                + "\n\n"
-                + build_reviewer_confirmation_summary_section(
-            reviewer_confirmation_rows
-        ).rstrip()
-                + "\n"
-        )
-        final_review_packet = append_reviewer_confirmation_export(
-            final_review_packet,
-            reviewer_confirmation_rows,
-        )
-
-        st.download_button(
-            label="Download final review packet",
-            data=final_review_packet,
-            file_name=package_report_filename.replace(
-                "_review_report.md",
-                "_final_review_packet.md",
-            ),
-            mime="text/markdown",
-        )
-
-        checklist_csv = build_completeness_checklist_csv(
-            reviewer_confirmation_rows
-        )
-
-        st.download_button(
-            label="Download completeness checklist CSV",
-            data=checklist_csv,
-            file_name=package_report_filename.replace(".md", "_checklist.csv"),
-            mime="text/csv",
-        )
-
-        deficiency_csv = build_deficiency_checklist_csv(
-            reviewer_confirmation_rows
-        )
-
-        st.download_button(
-            label="Download deficiency CSV",
-            data=deficiency_csv,
-            file_name=package_report_filename.replace(".md", "_deficiencies.csv"),
-            mime="text/csv",
-        )
-
-        reviewer_state_json = build_reviewer_state_export(
-            reviewer_confirmation_rows,
-            package_name=package_response.get("package_name", "uploaded_package"),
-        )
-
-        st.download_button(
-            label="Download reviewer state JSON",
-            data=reviewer_state_json,
-            file_name=package_report_filename.replace(".md", "_reviewer_state.json"),
-            mime="application/json",
-        )
-
-        st.markdown("### Package Coverage Evidence")
-
-        coverage_evidence = package_report.get("coverage_evidence", []) or []
-
-        st.caption(
-            "This table explains why package topics were credited as detected. "
-            "Text evidence should be treated as reviewer-supporting evidence, "
-            "not an automatic final compliance determination."
-        )
-
-        if coverage_evidence:
-            st.dataframe(
-                coverage_evidence_rows_for_display(coverage_evidence),
-                use_container_width=True,
-                hide_index=True,
-            )
-        else:
-            st.info("No package coverage evidence was returned for this review.")
-
-        with st.expander("Expected package document types", expanded=False):
-            expected = package_report.get("expected_plan_types", []) or []
-            for plan_type in expected:
-                st.write(f"- `{plan_type}`")
-
-        st.markdown("### Per-document reviews")
-
-        document_reviews = package_report.get("document_reviews", []) or []
-
-        if not document_reviews:
-            st.warning("No document reviews returned.")
-        else:
-            for document_review in document_reviews:
-                document_name = document_review.get("document_name", "Unknown document")
-                document_type = document_review.get("document_type", "unknown")
-                confidence = document_review.get(
-                    "classification_confidence",
-                    "unknown",
-                )
-                document_report = document_review.get("report") or {}
-
-                document_status = document_report.get("overall_status", "")
-
-                heading = (
-                    f"{document_name} — `{document_type}` "
-                    f"({confidence})"
-                )
-
-                if document_status:
-                    heading += (
-                        f" — {status_icon(document_status)} "
-                        f"{status_label(document_status)}"
-                    )
-
-                with st.expander(heading, expanded=False):
-                    document_role = document_review.get("document_role", "main")
-                    supporting_type = document_review.get(
-                        "supporting_document_type",
-                        "",
-                    )
-                    covered_plan_types = (
-                        document_review.get("covered_plan_types", []) or []
-                    )
-                    checklist_reports = (
-                        document_review.get("checklist_reports", {}) or {}
-                    )
-                    error = document_review.get("error", "")
-
-                    role_cols = st.columns(3)
-
-                    with role_cols[0]:
-                        st.metric("Document role", document_role)
-
-                    with role_cols[1]:
-                        st.metric("Covered plan types", len(covered_plan_types))
-
-                    with role_cols[2]:
-                        st.metric("Checklist reports", len(checklist_reports))
-
-                    if supporting_type:
-                        st.info(f"Supporting document type: `{supporting_type}`")
-
-                    if covered_plan_types:
-                        st.markdown("**Covered plan types**")
-                        st.write(
-                            ", ".join(
-                                f"`{plan_type}`"
-                                for plan_type in covered_plan_types
-                            )
-                        )
-
-                    if error:
-                        if document_role == "supporting":
-                            st.info(error)
-                        else:
-                            st.error(error)
-
-                    classification = document_review.get("classification", {})
-                    with st.expander("Classification details", expanded=False):
-                        st.json(classification)
-
-                    if checklist_reports:
-                        st.markdown("**Checklist reports by covered plan type**")
-
-                        for plan_type, checklist_report in checklist_reports.items():
-                            checklist_status = checklist_report.get(
-                                "overall_status",
-                                "",
-                            )
-                            checklist_findings = (
-                                checklist_report.get("findings", []) or []
-                            )
-
-                            checklist_heading = (
-                                f"{plan_type} — "
-                                f"{status_icon(checklist_status)} "
-                                f"{status_label(checklist_status)}"
-                            )
-
-                            with st.expander(checklist_heading, expanded=False):
-                                st.write(checklist_report.get("summary", ""))
-
-                                render_finding_summary_metrics(checklist_findings)
-
-                                render_package_findings(
-                                    checklist_findings,
-                                    key_prefix=f"{document_name}_{plan_type}",
-                                    default_show=False,
-                                )
-
-                    elif document_report:
-                        st.markdown("**Document review summary**")
-                        st.write(document_report.get("summary", ""))
-
-                        findings = document_report.get("findings", []) or []
-
-                        render_finding_summary_metrics(findings)
-
-                        render_package_findings(
-                            findings,
-                            key_prefix=document_name,
-                            default_show=False,
-                        )

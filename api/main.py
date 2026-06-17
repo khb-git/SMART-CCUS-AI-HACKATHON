@@ -21,6 +21,21 @@ from review.temp_ingestion import (
 
 from review.package_review import review_document_package
 
+from demo_samples.maip_demo_package import (
+    build_maip_demo_final_review_packet,
+    build_maip_demo_markdown_report,
+    build_maip_demo_package_response,
+)
+
+from review.llm_narrative import (
+    LlmNarrativeInput,
+    build_review_narrative,
+)
+from review.report_export import (
+    collect_completeness_checklist_rows,
+    collect_reviewer_action_items,
+)
+
 app = FastAPI(
     title="SMART CCUS Class VI Review Assistant",
     version="0.1.0",
@@ -72,6 +87,30 @@ class ReviewPackageResponse(BaseModel):
     report: dict[str, Any]
     storage_policy: str
 
+class DemoMarkdownResponse(BaseModel):
+    """Response body for deterministic demo Markdown outputs."""
+
+    package_name: str
+    markdown: str
+    storage_policy: str
+
+class LlmNarrativeRequest(BaseModel):
+    """Request body for optional LLM reviewer narrative."""
+
+    package_response: dict[str, Any]
+    reviewer_confirmations: list[dict[str, Any]] = Field(default_factory=list)
+    use_llm: bool = False
+    model_name: str = "llama3.1"
+
+
+class LlmNarrativeResponse(BaseModel):
+    """Response body for optional LLM reviewer narrative."""
+
+    narrative: str
+    model_name: str
+    used_llm: bool
+    boundary_notice: str
+
 @app.get("/health")
 def health():
     """Simple health check."""
@@ -80,6 +119,46 @@ def health():
         "service": "class-vi-review-assistant",
     }
 
+
+@app.get("/demo/maip-package", response_model=ReviewPackageResponse)
+def maip_demo_package():
+    """Return a deterministic MAIP demo package review response."""
+    return build_maip_demo_package_response()
+
+
+@app.get("/demo/maip-package/report", response_model=DemoMarkdownResponse)
+def maip_demo_package_report():
+    """Return the deterministic MAIP demo Markdown package report."""
+    return {
+        "package_name": "maip_demo_package",
+        "markdown": build_maip_demo_markdown_report(),
+        "storage_policy": "Demo fixture only. No uploaded files are processed.",
+    }
+
+
+@app.get("/demo/maip-package/final-packet", response_model=DemoMarkdownResponse)
+def maip_demo_final_review_packet():
+    """Return the deterministic MAIP demo final review packet."""
+    return {
+        "package_name": "maip_demo_package",
+        "markdown": build_maip_demo_final_review_packet(),
+        "storage_policy": "Demo fixture only. No uploaded files are processed.",
+    }
+
+@app.post("/review-narrative", response_model=LlmNarrativeResponse)
+def review_narrative(request: LlmNarrativeRequest):
+    """Generate an optional reviewer narrative over deterministic findings."""
+    narrative_input = build_narrative_input_from_package_response(
+        package_response=request.package_response,
+        reviewer_confirmations=request.reviewer_confirmations,
+    )
+    narrative_result = build_review_narrative(
+        narrative_input,
+        use_llm=request.use_llm,
+        model_name=request.model_name,
+    )
+
+    return narrative_result.to_dict()
 
 @app.post("/ask", response_model=AskResponse)
 def ask(request: AskRequest):
@@ -180,8 +259,6 @@ def review_document(
     }
 
 @app.post("/review-package", response_model=ReviewPackageResponse)
-@app.post("/review-package", response_model=ReviewPackageResponse)
-@app.post("/review-package", response_model=ReviewPackageResponse)
 def review_package(
     files: Annotated[
         list[UploadFile],
@@ -270,3 +347,31 @@ def review_package(
             "request and are not stored in permanent data folders or Chroma collections."
         ),
     }
+
+def build_narrative_input_from_package_response(
+    package_response: dict[str, Any],
+    reviewer_confirmations: list[dict[str, Any]] | None = None,
+) -> LlmNarrativeInput:
+    """Build deterministic LLM narrative input from a package response."""
+    reviewer_confirmations = reviewer_confirmations or []
+    package_report = package_response.get("report", {}) or {}
+
+    checklist_rows = collect_completeness_checklist_rows(package_report)
+    priority_rows = [
+        row
+        for row in checklist_rows
+        if row.get("status") in {"missing", "evidence_found", "unclear"}
+    ][:12]
+
+    return LlmNarrativeInput(
+        package_name=package_response.get(
+            "package_name",
+            package_report.get("package_name", "uploaded_package"),
+        ),
+        overall_status=package_report.get("overall_status", "unknown"),
+        summary=package_report.get("summary", ""),
+        reviewer_action_items=collect_reviewer_action_items(package_report),
+        priority_checklist_rows=priority_rows,
+        maip_validation=package_report.get("maip_validation") or {},
+        reviewer_confirmations=reviewer_confirmations,
+    )

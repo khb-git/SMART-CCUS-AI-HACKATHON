@@ -585,9 +585,9 @@ def test_analyze_checklist_item_confidence_uses_page_located_evidence():
     )
 
     finding = analyze_checklist_item(
-        document,
         "The financial responsibility section provides financial assurance and a cost estimate for closure.",
         item,
+        document=document,
     )
 
     data = finding.to_dict()

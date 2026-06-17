@@ -1,4 +1,7 @@
-from ui.app import completeness_checklist_rows_for_display
+from ui.app import (
+    completeness_checklist_rows_for_display,
+    maip_validation_rows_for_display,
+)
 from ui.reviewer_workflow import (
     append_reviewer_confirmation_export,
     apply_reviewer_confirmations,
@@ -13,6 +16,12 @@ from ui.reviewer_workflow import (
     build_reviewer_state_export,
     parse_reviewer_state_import,
     build_reviewer_confirmation_summary_section,
+    append_maip_reviewer_confirmation_export,
+    build_maip_reviewer_confirmation_export_section,
+    is_maip_reviewer_row,
+    split_maip_reviewer_rows,
+    build_maip_deficiency_csv,
+    filter_maip_deficiency_rows,
 )
 
 
@@ -500,3 +509,335 @@ def test_reviewer_confirmation_summary_section_handles_empty_rows():
     assert "| Needs follow-up | 0 |" in markdown
     assert "| Not applicable | 0 |" in markdown
     assert "| Resolved after cross-reference | 0 |" in markdown
+
+def test_maip_validation_rows_for_display_formats_findings():
+    package_report = {
+        "maip_validation": {
+            "overall_status": "missing_evidence",
+            "summary": "MAIP validation complete.",
+            "findings": [
+                {
+                    "finding_id": "maip_evidence_present",
+                    "status": "missing_evidence",
+                    "severity": "high",
+                    "message": "The package does not provide a clear proposed MAIP.",
+                    "recommended_action": "Reviewer should locate the proposed MAIP value.",
+                    "supporting_values": [],
+                },
+                {
+                    "finding_id": "maip_below_90_percent_fracture_pressure",
+                    "status": "pass",
+                    "severity": "info",
+                    "message": "The proposed MAIP is below 90% of fracture pressure.",
+                    "recommended_action": "Reviewer should confirm cited values.",
+                    "supporting_values": [
+                        {
+                            "concept": "proposed_maip",
+                            "value": 1800.0,
+                            "unit": "psi",
+                            "source_file": "Operating_Plan.pdf",
+                            "page_number": 8,
+                            "source_finding_id": "maximum_allowable_injection_pressure",
+                            "source_label": "Maximum allowable injection pressure",
+                            "matched_term": "maip",
+                            "extraction_method": "concept_term_plus_pressure_value",
+                            "confidence": "Medium",
+                        }
+                    ],
+                },
+            ],
+        }
+    }
+
+    rows = maip_validation_rows_for_display(package_report)
+
+    assert rows == [
+        {
+            "Review Key": "MAIP::maip_evidence_present",
+            "Status": "ℹ️ Missing Evidence",
+            "Severity": "High",
+            "Finding": "maip_evidence_present",
+            "Required Item": "maip_evidence_present",
+            "GSDT Module/Folder": "MAIP Cross-Reference Validation",
+            "Regulatory Citation": "Class VI MAIP cross-reference validation",
+            "File Name": "See supporting values",
+            "Page Number": "See supporting values",
+            "Message": "The package does not provide a clear proposed MAIP.",
+            "Recommended Action": "Reviewer should locate the proposed MAIP value.",
+            "Supporting Values": "None",
+            "Audit Trail": "None",
+            "Notes": (
+                "The package does not provide a clear proposed MAIP. "
+                "Recommended action: Reviewer should locate the proposed MAIP value."
+            ),
+        },
+        {
+            "Review Key": "MAIP::maip_below_90_percent_fracture_pressure",
+            "Status": "ℹ️ Pass",
+            "Severity": "Info",
+            "Finding": "maip_below_90_percent_fracture_pressure",
+            "Required Item": "maip_below_90_percent_fracture_pressure",
+            "GSDT Module/Folder": "MAIP Cross-Reference Validation",
+            "Regulatory Citation": "Class VI MAIP cross-reference validation",
+            "File Name": "See supporting values",
+            "Page Number": "See supporting values",
+            "Message": "The proposed MAIP is below 90% of fracture pressure.",
+            "Recommended Action": "Reviewer should confirm cited values.",
+            "Supporting Values": "proposed_maip: 1800.0 psi (Operating_Plan.pdf, page 8)",
+            "Audit Trail": (
+                "concept=proposed_maip; "
+                "finding_id=maximum_allowable_injection_pressure; "
+                "label=Maximum allowable injection pressure; "
+                "matched_term=maip; "
+                "method=concept_term_plus_pressure_value; "
+                "confidence=Medium"
+            ),
+            "Notes": (
+                "The proposed MAIP is below 90% of fracture pressure. "
+                "Recommended action: Reviewer should confirm cited values."
+            ),
+        },
+    ]
+
+
+def test_maip_validation_rows_for_display_handles_missing_report():
+    rows = maip_validation_rows_for_display({})
+
+    assert rows == []
+
+def test_maip_validation_rows_work_with_reviewer_confirmation_helpers():
+    package_report = {
+        "maip_validation": {
+            "findings": [
+                {
+                    "finding_id": "maip_evidence_present",
+                    "status": "missing_evidence",
+                    "severity": "high",
+                    "message": "The package does not provide a clear proposed MAIP.",
+                    "recommended_action": "Reviewer should locate the proposed MAIP value.",
+                    "supporting_values": [],
+                }
+            ],
+        }
+    }
+
+    rows = maip_validation_rows_for_display(package_report)
+    state = {
+        reviewer_confirmation_state_key(rows[0]): "Needs follow-up",
+        reviewer_note_state_key(rows[0]): "Applicant should provide the proposed MAIP source table.",
+    }
+
+    confirmed_rows = apply_reviewer_confirmations(rows, state)
+
+    assert confirmed_rows[0]["Reviewer Confirmation"] == "Needs follow-up"
+    assert (
+        confirmed_rows[0]["Reviewer Notes"]
+        == "Applicant should provide the proposed MAIP source table."
+    )
+    assert confirmed_rows[0]["Review Key"] == "MAIP::maip_evidence_present"
+
+def test_is_maip_reviewer_row_identifies_maip_rows():
+    assert is_maip_reviewer_row(
+        {
+            "Review Key": "MAIP::maip_evidence_present",
+            "GSDT Module/Folder": "MAIP Cross-Reference Validation",
+        }
+    )
+
+    assert not is_maip_reviewer_row(
+        {
+            "Review Key": "Financial Responsibility::Coverage amount::ADM.pdf",
+            "GSDT Module/Folder": "Financial Responsibility",
+        }
+    )
+
+
+def test_split_maip_reviewer_rows_separates_checklist_and_maip_rows():
+    rows = [
+        {
+            "Review Key": "Financial Responsibility::Coverage amount::ADM.pdf",
+            "GSDT Module/Folder": "Financial Responsibility",
+        },
+        {
+            "Review Key": "MAIP::maip_evidence_present",
+            "GSDT Module/Folder": "MAIP Cross-Reference Validation",
+        },
+    ]
+
+    checklist_rows, maip_rows = split_maip_reviewer_rows(rows)
+
+    assert len(checklist_rows) == 1
+    assert len(maip_rows) == 1
+    assert checklist_rows[0]["Review Key"].startswith("Financial Responsibility")
+    assert maip_rows[0]["Review Key"] == "MAIP::maip_evidence_present"
+
+
+def test_build_maip_reviewer_confirmation_export_section_includes_maip_rows():
+    rows = [
+        {
+            "Review Key": "MAIP::maip_evidence_present",
+            "Reviewer Confirmation": "Needs follow-up",
+            "Reviewer Notes": "Applicant must provide MAIP source.",
+            "Status": "ℹ️ Missing Evidence",
+            "Severity": "High",
+            "Finding": "maip_evidence_present",
+            "Message": "The package does not provide a clear proposed MAIP.",
+            "Recommended Action": "Reviewer should locate the proposed MAIP value.",
+            "Supporting Values": "None",
+            "GSDT Module/Folder": "MAIP Cross-Reference Validation",
+        }
+    ]
+
+    markdown = build_maip_reviewer_confirmation_export_section(rows)
+
+    assert "## MAIP Reviewer Confirmation Export" in markdown
+    assert (
+        "| Reviewer Confirmation | Reviewer Notes | Status | Severity | Finding | "
+        "Message | Recommended Action | Supporting Values |"
+    ) in markdown
+    assert "Needs follow-up" in markdown
+    assert "Applicant must provide MAIP source." in markdown
+    assert "maip_evidence_present" in markdown
+
+
+def test_build_maip_reviewer_confirmation_export_section_handles_no_maip_rows():
+    rows = [
+        {
+            "Review Key": "Financial Responsibility::Coverage amount::ADM.pdf",
+            "Reviewer Confirmation": "Confirmed",
+            "GSDT Module/Folder": "Financial Responsibility",
+        }
+    ]
+
+    markdown = build_maip_reviewer_confirmation_export_section(rows)
+
+    assert "## MAIP Reviewer Confirmation Export" in markdown
+    assert "No MAIP reviewer confirmation rows were available." in markdown
+
+
+def test_append_maip_reviewer_confirmation_export_appends_section():
+    base_markdown = "# Class VI Final Review Packet\n\nExisting report content.\n"
+    rows = [
+        {
+            "Review Key": "MAIP::maip_evidence_present",
+            "Reviewer Confirmation": "Needs follow-up",
+            "Reviewer Notes": "Need MAIP source table.",
+            "Status": "ℹ️ Missing Evidence",
+            "Severity": "High",
+            "Finding": "maip_evidence_present",
+            "Message": "The package does not provide a clear proposed MAIP.",
+            "Recommended Action": "Reviewer should locate the proposed MAIP value.",
+            "Supporting Values": "None",
+            "GSDT Module/Folder": "MAIP Cross-Reference Validation",
+        }
+    ]
+
+    markdown = append_maip_reviewer_confirmation_export(base_markdown, rows)
+
+    assert markdown.startswith("# Class VI Final Review Packet")
+    assert "Existing report content." in markdown
+    assert "## MAIP Reviewer Confirmation Export" in markdown
+    assert "Need MAIP source table." in markdown
+
+def test_filter_maip_deficiency_rows_returns_unresolved_maip_rows_only():
+    rows = [
+        {
+            "Review Key": "MAIP::maip_evidence_present",
+            "Status": "ℹ️ Missing Evidence",
+            "Finding": "maip_evidence_present",
+            "GSDT Module/Folder": "MAIP Cross-Reference Validation",
+        },
+        {
+            "Review Key": "MAIP::maip_below_90_percent_fracture_pressure",
+            "Status": "ℹ️ Pass",
+            "Finding": "maip_below_90_percent_fracture_pressure",
+            "GSDT Module/Folder": "MAIP Cross-Reference Validation",
+        },
+        {
+            "Review Key": "MAIP::maip_below_aor_model_pressure",
+            "Status": "ℹ️ Warning",
+            "Finding": "maip_below_aor_model_pressure",
+            "GSDT Module/Folder": "MAIP Cross-Reference Validation",
+        },
+        {
+            "Review Key": "Financial Responsibility::Coverage amount::ADM.pdf",
+            "Status": "🔴 Missing",
+            "Required Item": "Coverage amount",
+            "GSDT Module/Folder": "Financial Responsibility",
+        },
+    ]
+
+    filtered_rows = filter_maip_deficiency_rows(rows)
+
+    assert filtered_rows == [
+        {
+            "Review Key": "MAIP::maip_evidence_present",
+            "Status": "ℹ️ Missing Evidence",
+            "Finding": "maip_evidence_present",
+            "GSDT Module/Folder": "MAIP Cross-Reference Validation",
+        },
+        {
+            "Review Key": "MAIP::maip_below_aor_model_pressure",
+            "Status": "ℹ️ Warning",
+            "Finding": "maip_below_aor_model_pressure",
+            "GSDT Module/Folder": "MAIP Cross-Reference Validation",
+        },
+    ]
+
+
+def test_build_maip_deficiency_csv_includes_unresolved_maip_rows_only():
+    rows = [
+        {
+            "Review Key": "MAIP::maip_evidence_present",
+            "Reviewer Confirmation": "Needs follow-up",
+            "Reviewer Notes": "Applicant must provide proposed MAIP.",
+            "Status": "ℹ️ Missing Evidence",
+            "Severity": "High",
+            "Finding": "maip_evidence_present",
+            "Message": "The package does not provide a clear proposed MAIP.",
+            "Recommended Action": "Reviewer should locate the proposed MAIP value.",
+            "Supporting Values": "None",
+            "GSDT Module/Folder": "MAIP Cross-Reference Validation",
+        },
+        {
+            "Review Key": "MAIP::maip_below_90_percent_fracture_pressure",
+            "Reviewer Confirmation": "Confirmed",
+            "Reviewer Notes": "Confirmed against operating plan.",
+            "Status": "ℹ️ Pass",
+            "Severity": "Info",
+            "Finding": "maip_below_90_percent_fracture_pressure",
+            "Message": "The proposed MAIP is below 90% of fracture pressure.",
+            "Recommended Action": "Reviewer should confirm cited values.",
+            "Supporting Values": "proposed_maip: 1800.0 psi",
+            "GSDT Module/Folder": "MAIP Cross-Reference Validation",
+        },
+        {
+            "Review Key": "Financial Responsibility::Coverage amount::ADM.pdf",
+            "Reviewer Confirmation": "Needs follow-up",
+            "Reviewer Notes": "Need amount.",
+            "Status": "🔴 Missing",
+            "Required Item": "Coverage amount",
+            "GSDT Module/Folder": "Financial Responsibility",
+        },
+    ]
+
+    csv_text = build_maip_deficiency_csv(rows)
+
+    assert (
+        "Reviewer Confirmation,Reviewer Notes,Status,Severity,Finding,Message,"
+        "Recommended Action,Supporting Values"
+    ) in csv_text
+    assert "maip_evidence_present" in csv_text
+    assert "Applicant must provide proposed MAIP." in csv_text
+    assert "maip_below_90_percent_fracture_pressure" not in csv_text
+    assert "Coverage amount" not in csv_text
+
+def test_render_package_review_response_is_importable():
+    import ui.app as streamlit_app
+
+    assert callable(streamlit_app.render_package_review_response)
+
+def test_render_llm_review_narrative_panel_is_importable():
+    import ui.app as streamlit_app
+
+    assert callable(streamlit_app.render_llm_review_narrative_panel)

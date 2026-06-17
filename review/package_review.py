@@ -18,6 +18,11 @@ from review.package_document_audit import (
     find_matching_aliases,
 )
 from review.gap_analysis import GapAnalysisReport, analyze_document_against_checklist
+from review.maip_validation import (
+    MaipValidationReport,
+    build_maip_validation_input_from_package_reviews,
+    validate_maip_chain,
+)
 from review.schema import load_default_checklist
 
 
@@ -318,6 +323,7 @@ class ReviewPackageReport:
     supporting_documents: list[str]
     coverage_evidence: list[PackageCoverageEvidence] = field(default_factory=list)
     document_reviews: list[PackageDocumentReview] = field(default_factory=list)
+    maip_validation: MaipValidationReport | None = None
 
     def to_dict(self) -> dict[str, Any]:
         """Return JSON-serializable package report data."""
@@ -341,6 +347,11 @@ class ReviewPackageReport:
                 evidence.to_dict()
                 for evidence in self.coverage_evidence
             ],
+            "maip_validation": (
+                self.maip_validation.to_dict()
+                if self.maip_validation is not None
+                else None
+            ),
         }
 
 
@@ -1096,6 +1107,19 @@ def add_cross_document_context_to_findings(
                 if related_evidence:
                     finding["related_package_evidence"] = related_evidence
 
+def build_package_maip_validation_report(
+    document_reviews: list[PackageDocumentReview],
+) -> MaipValidationReport:
+    """Build package-level MAIP validation from conservative extracted evidence."""
+    validation_input = build_maip_validation_input_from_package_reviews(
+        [
+            document_review.to_dict()
+            for document_review in document_reviews
+        ]
+    )
+
+    return validate_maip_chain(validation_input)
+
 def review_document_package(
     documents: list,
     package_name: str = "uploaded_package",
@@ -1129,6 +1153,7 @@ def review_document_package(
         document_reviews=document_reviews,
         classifications=classifications,
     )
+    maip_validation = build_package_maip_validation_report(document_reviews)
 
     detected_plan_types = detected_plan_types_from_reviews(document_reviews)
 
@@ -1183,4 +1208,5 @@ def review_document_package(
         document_reviews=document_reviews,
         supporting_documents=supporting_documents,
         coverage_evidence=coverage_evidence,
+        maip_validation=maip_validation,
     )

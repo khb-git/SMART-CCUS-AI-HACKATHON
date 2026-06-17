@@ -1,0 +1,4 @@
+# Development-only cloud SDKs.
+# These are intentionally excluded from the air-gapped deployment requirements.
+langchain-openai>=1.2.1
+langchain-anthropic>=1.4.3
