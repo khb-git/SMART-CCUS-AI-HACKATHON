@@ -362,6 +362,12 @@ Chroma persist directory: chroma_data
 
 This workflow demonstrates the strongest parts of the system: deterministic review, auditability, reviewer-in-the-loop workflow, and regulator-style exports.
 
+For a step-by-step judge/demo runbook, see:
+
+```text
+docs/demo_readiness_checklist.md
+```
+
 ---
 
 ## MAIP Demo Fixture
