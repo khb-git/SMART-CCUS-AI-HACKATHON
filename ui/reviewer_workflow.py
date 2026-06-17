@@ -246,6 +246,72 @@ def append_maip_reviewer_confirmation_export(
     section = build_maip_reviewer_confirmation_export_section(rows)
     return markdown_report.rstrip() + "\n\n" + section.rstrip() + "\n"
 
+MAIP_DEFICIENCY_STATUS_LABELS = [
+    "Missing Evidence",
+    "Warning",
+    "Fail",
+]
+
+
+def filter_maip_deficiency_rows(
+    rows: list[dict[str, str]],
+) -> list[dict[str, str]]:
+    """Return MAIP reviewer rows that need reviewer follow-up."""
+    _checklist_rows, maip_rows = split_maip_reviewer_rows(rows)
+
+    return [
+        row
+        for row in maip_rows
+        if any(
+            status_label in row.get("Status", "")
+            for status_label in MAIP_DEFICIENCY_STATUS_LABELS
+        )
+    ]
+
+
+def build_maip_deficiency_csv(
+    rows: list[dict[str, str]],
+) -> str:
+    """Build CSV text for unresolved MAIP validation rows only."""
+    output = StringIO()
+
+    fieldnames = [
+        "Reviewer Confirmation",
+        "Reviewer Notes",
+        "Status",
+        "Severity",
+        "Finding",
+        "Message",
+        "Recommended Action",
+        "Supporting Values",
+    ]
+
+    writer = csv.DictWriter(
+        output,
+        fieldnames=fieldnames,
+        extrasaction="ignore",
+    )
+    writer.writeheader()
+
+    for row in filter_maip_deficiency_rows(rows):
+        writer.writerow(
+            {
+                "Reviewer Confirmation": row.get(
+                    "Reviewer Confirmation",
+                    "Pending review",
+                ),
+                "Reviewer Notes": row.get("Reviewer Notes", ""),
+                "Status": row.get("Status", ""),
+                "Severity": row.get("Severity", ""),
+                "Finding": row.get("Finding", ""),
+                "Message": row.get("Message", ""),
+                "Recommended Action": row.get("Recommended Action", ""),
+                "Supporting Values": row.get("Supporting Values", ""),
+            }
+        )
+
+    return output.getvalue()
+
 def append_reviewer_confirmation_export(
     markdown_report: str,
     rows: list[dict[str, str]],

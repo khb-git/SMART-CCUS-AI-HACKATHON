@@ -40,6 +40,7 @@ from ui.reviewer_workflow import (
     reviewer_note_state_key,
     append_maip_reviewer_confirmation_export,
     append_reviewer_confirmation_export,
+    build_maip_deficiency_csv,
 )
 
 from ui.api_client import (
@@ -1188,6 +1189,17 @@ with package_tab:
             label="Download deficiency CSV",
             data=deficiency_csv,
             file_name=package_report_filename.replace(".md", "_deficiencies.csv"),
+            mime="text/csv",
+        )
+
+        maip_deficiency_csv = build_maip_deficiency_csv(
+            all_reviewer_confirmation_rows
+        )
+
+        st.download_button(
+            label="Download MAIP deficiency CSV",
+            data=maip_deficiency_csv,
+            file_name=package_report_filename.replace(".md", "_maip_deficiencies.csv"),
             mime="text/csv",
         )
 

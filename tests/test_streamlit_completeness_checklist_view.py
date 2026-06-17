@@ -20,6 +20,8 @@ from ui.reviewer_workflow import (
     build_maip_reviewer_confirmation_export_section,
     is_maip_reviewer_row,
     split_maip_reviewer_rows,
+    build_maip_deficiency_csv,
+    filter_maip_deficiency_rows,
 )
 
 
@@ -722,3 +724,96 @@ def test_append_maip_reviewer_confirmation_export_appends_section():
     assert "Existing report content." in markdown
     assert "## MAIP Reviewer Confirmation Export" in markdown
     assert "Need MAIP source table." in markdown
+
+def test_filter_maip_deficiency_rows_returns_unresolved_maip_rows_only():
+    rows = [
+        {
+            "Review Key": "MAIP::maip_evidence_present",
+            "Status": "ℹ️ Missing Evidence",
+            "Finding": "maip_evidence_present",
+            "GSDT Module/Folder": "MAIP Cross-Reference Validation",
+        },
+        {
+            "Review Key": "MAIP::maip_below_90_percent_fracture_pressure",
+            "Status": "ℹ️ Pass",
+            "Finding": "maip_below_90_percent_fracture_pressure",
+            "GSDT Module/Folder": "MAIP Cross-Reference Validation",
+        },
+        {
+            "Review Key": "MAIP::maip_below_aor_model_pressure",
+            "Status": "ℹ️ Warning",
+            "Finding": "maip_below_aor_model_pressure",
+            "GSDT Module/Folder": "MAIP Cross-Reference Validation",
+        },
+        {
+            "Review Key": "Financial Responsibility::Coverage amount::ADM.pdf",
+            "Status": "🔴 Missing",
+            "Required Item": "Coverage amount",
+            "GSDT Module/Folder": "Financial Responsibility",
+        },
+    ]
+
+    filtered_rows = filter_maip_deficiency_rows(rows)
+
+    assert filtered_rows == [
+        {
+            "Review Key": "MAIP::maip_evidence_present",
+            "Status": "ℹ️ Missing Evidence",
+            "Finding": "maip_evidence_present",
+            "GSDT Module/Folder": "MAIP Cross-Reference Validation",
+        },
+        {
+            "Review Key": "MAIP::maip_below_aor_model_pressure",
+            "Status": "ℹ️ Warning",
+            "Finding": "maip_below_aor_model_pressure",
+            "GSDT Module/Folder": "MAIP Cross-Reference Validation",
+        },
+    ]
+
+
+def test_build_maip_deficiency_csv_includes_unresolved_maip_rows_only():
+    rows = [
+        {
+            "Review Key": "MAIP::maip_evidence_present",
+            "Reviewer Confirmation": "Needs follow-up",
+            "Reviewer Notes": "Applicant must provide proposed MAIP.",
+            "Status": "ℹ️ Missing Evidence",
+            "Severity": "High",
+            "Finding": "maip_evidence_present",
+            "Message": "The package does not provide a clear proposed MAIP.",
+            "Recommended Action": "Reviewer should locate the proposed MAIP value.",
+            "Supporting Values": "None",
+            "GSDT Module/Folder": "MAIP Cross-Reference Validation",
+        },
+        {
+            "Review Key": "MAIP::maip_below_90_percent_fracture_pressure",
+            "Reviewer Confirmation": "Confirmed",
+            "Reviewer Notes": "Confirmed against operating plan.",
+            "Status": "ℹ️ Pass",
+            "Severity": "Info",
+            "Finding": "maip_below_90_percent_fracture_pressure",
+            "Message": "The proposed MAIP is below 90% of fracture pressure.",
+            "Recommended Action": "Reviewer should confirm cited values.",
+            "Supporting Values": "proposed_maip: 1800.0 psi",
+            "GSDT Module/Folder": "MAIP Cross-Reference Validation",
+        },
+        {
+            "Review Key": "Financial Responsibility::Coverage amount::ADM.pdf",
+            "Reviewer Confirmation": "Needs follow-up",
+            "Reviewer Notes": "Need amount.",
+            "Status": "🔴 Missing",
+            "Required Item": "Coverage amount",
+            "GSDT Module/Folder": "Financial Responsibility",
+        },
+    ]
+
+    csv_text = build_maip_deficiency_csv(rows)
+
+    assert (
+        "Reviewer Confirmation,Reviewer Notes,Status,Severity,Finding,Message,"
+        "Recommended Action,Supporting Values"
+    ) in csv_text
+    assert "maip_evidence_present" in csv_text
+    assert "Applicant must provide proposed MAIP." in csv_text
+    assert "maip_below_90_percent_fracture_pressure" not in csv_text
+    assert "Coverage amount" not in csv_text
