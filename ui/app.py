@@ -186,22 +186,32 @@ def maip_validation_rows_for_display(
 
         rows.append(
             {
+                "Review Key": f"MAIP::{finding.get('finding_id', '')}",
                 "Status": (
                     f"{status_icon(finding.get('status', ''))} "
                     f"{status_label(finding.get('status', ''))}"
                 ),
                 "Severity": status_label(finding.get("severity", "")),
                 "Finding": finding.get("finding_id", ""),
+                "Required Item": finding.get("finding_id", ""),
+                "GSDT Module/Folder": "MAIP Cross-Reference Validation",
+                "Regulatory Citation": "Class VI MAIP cross-reference validation",
+                "File Name": "See supporting values",
+                "Page Number": "See supporting values",
                 "Message": finding.get("message", ""),
                 "Recommended Action": finding.get("recommended_action", ""),
                 "Supporting Values": "; ".join(value_parts) if value_parts else "None",
+                "Notes": (
+                    f"{finding.get('message', '')} "
+                    f"Recommended action: {finding.get('recommended_action', '')}"
+                ).strip(),
             }
         )
 
     return rows
 
 
-def render_maip_validation_panel(package_report: dict) -> None:
+def render_maip_validation_panel(package_report: dict) -> list[dict[str, str]]:
     """Render package-level MAIP validation results."""
     maip_validation = package_report.get("maip_validation") or {}
 
@@ -214,7 +224,7 @@ def render_maip_validation_panel(package_report: dict) -> None:
 
     if not maip_validation:
         st.info("No MAIP validation report was returned for this package.")
-        return
+        return []
 
     overall_status = maip_validation.get("overall_status", "unknown")
     summary = maip_validation.get("summary", "")
@@ -247,14 +257,52 @@ def render_maip_validation_panel(package_report: dict) -> None:
 
     if not rows:
         st.info("No MAIP validation findings were returned.")
-        return
+        return []
+
+    with st.expander("Reviewer confirmations for MAIP findings", expanded=False):
+        st.caption(
+            "Use these controls to mark the reviewer disposition for each MAIP "
+            "cross-reference finding. These selections are held in the current "
+            "Streamlit session unless exported as reviewer state JSON."
+        )
+
+        for index, row in enumerate(rows, start=1):
+            label = f"{index}. {row['Finding']}"
+
+            st.selectbox(
+                label,
+                options=REVIEWER_CONFIRMATION_OPTIONS,
+                index=0,
+                key=reviewer_confirmation_state_key(row),
+            )
+
+            st.text_area(
+                f"Reviewer notes for MAIP finding {index}",
+                value=st.session_state.get(reviewer_note_state_key(row), ""),
+                key=reviewer_note_state_key(row),
+                height=80,
+            )
+
+    display_rows = apply_reviewer_confirmations(rows, st.session_state)
 
     with st.expander("View MAIP validation findings", expanded=True):
         st.dataframe(
-            rows,
+            display_rows,
             use_container_width=True,
             hide_index=True,
+            column_order=[
+                "Reviewer Confirmation",
+                "Reviewer Notes",
+                "Status",
+                "Severity",
+                "Finding",
+                "Message",
+                "Recommended Action",
+                "Supporting Values",
+            ],
         )
+
+    return display_rows
 
 def completeness_checklist_rows_for_display(
     package_report: dict,
@@ -1070,14 +1118,19 @@ with package_tab:
 
         render_reviewer_action_items(package_report)
 
-        render_maip_validation_panel(package_report)
+        maip_reviewer_confirmation_rows = render_maip_validation_panel(package_report)
 
         reviewer_confirmation_rows = render_completeness_checklist_view(package_report)
+
+        all_reviewer_confirmation_rows = (
+                reviewer_confirmation_rows
+                + maip_reviewer_confirmation_rows
+        )
 
         package_markdown_report = build_markdown_package_report(package_response)
         package_markdown_report = append_reviewer_confirmation_export(
             package_markdown_report,
-            reviewer_confirmation_rows,
+            all_reviewer_confirmation_rows,
         )
         package_report_filename = default_package_report_filename(
             package_response.get("package_name", "uploaded_package")
@@ -1095,13 +1148,13 @@ with package_tab:
                 final_review_packet.rstrip()
                 + "\n\n"
                 + build_reviewer_confirmation_summary_section(
-            reviewer_confirmation_rows
+            all_reviewer_confirmation_rows
         ).rstrip()
                 + "\n"
         )
         final_review_packet = append_reviewer_confirmation_export(
             final_review_packet,
-            reviewer_confirmation_rows,
+            all_reviewer_confirmation_rows,
         )
 
         st.download_button(
@@ -1137,7 +1190,7 @@ with package_tab:
         )
 
         reviewer_state_json = build_reviewer_state_export(
-            reviewer_confirmation_rows,
+            all_reviewer_confirmation_rows,
             package_name=package_response.get("package_name", "uploaded_package"),
         )
 
