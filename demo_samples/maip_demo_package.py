@@ -100,7 +100,8 @@ def build_maip_demo_document_reviews() -> list[dict[str, Any]]:
                     label="Maximum allowable injection pressure",
                     text=(
                         "The proposed MAIP is 1,800 psi for injection operations. "
-                        "The operating margin remains below the fracture pressure limit."
+                        "The operating plan documents a reviewer-checkable injection "
+                        "pressure basis."
                     ),
                     document_name="Demo_Site_Operating_Plan.pdf",
                     page_number=8,
