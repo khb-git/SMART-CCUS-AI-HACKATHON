@@ -38,6 +38,8 @@ from ui.reviewer_workflow import (
     reviewer_confirmation_counts,
     reviewer_confirmation_state_key,
     reviewer_note_state_key,
+    append_maip_reviewer_confirmation_export,
+    append_reviewer_confirmation_export,
 )
 
 from ui.api_client import (
@@ -1128,7 +1130,7 @@ with package_tab:
         )
 
         package_markdown_report = build_markdown_package_report(package_response)
-        package_markdown_report = append_reviewer_confirmation_export(
+        package_markdown_report = append_maip_reviewer_confirmation_export(
             package_markdown_report,
             all_reviewer_confirmation_rows,
         )
@@ -1152,7 +1154,7 @@ with package_tab:
         ).rstrip()
                 + "\n"
         )
-        final_review_packet = append_reviewer_confirmation_export(
+        final_review_packet = append_maip_reviewer_confirmation_export(
             final_review_packet,
             all_reviewer_confirmation_rows,
         )
