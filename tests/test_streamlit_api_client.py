@@ -262,3 +262,60 @@ def test_maip_demo_package_api_calls_demo_endpoint(monkeypatch):
     assert calls["raise_for_status"] is True
     assert response["package_name"] == "maip_demo_package"
     assert response["report"]["maip_validation"]["overall_status"] == "pass"
+
+def test_review_narrative_api_posts_package_response(monkeypatch):
+    from ui.api_client import review_narrative_api
+
+    calls = {}
+
+    class FakeResponse:
+        def raise_for_status(self):
+            calls["raise_for_status"] = True
+
+        def json(self):
+            return {
+                "narrative": "Backend decides. Reviewer confirms. LLM explains.",
+                "model_name": "deterministic-template",
+                "used_llm": False,
+                "boundary_notice": "Backend decides. Reviewer confirms. LLM explains.",
+            }
+
+    def fake_post(url, json, timeout):
+        calls["url"] = url
+        calls["json"] = json
+        calls["timeout"] = timeout
+        return FakeResponse()
+
+    monkeypatch.setattr("ui.api_client.requests.post", fake_post)
+
+    package_response = {
+        "package_name": "maip_demo_package",
+        "report": {
+            "maip_validation": {
+                "overall_status": "pass",
+            }
+        },
+    }
+
+    response = review_narrative_api(
+        package_response=package_response,
+        reviewer_confirmations=[
+            {
+                "Required Item": "Maximum allowable injection pressure",
+                "Reviewer Confirmation": "Confirmed",
+            }
+        ],
+        use_llm=True,
+        model_name="fake-model",
+        api_url="http://api.test",
+        timeout=15,
+    )
+
+    assert calls["url"] == "http://api.test/review-narrative"
+    assert calls["timeout"] == 15
+    assert calls["raise_for_status"] is True
+    assert calls["json"]["package_response"] == package_response
+    assert calls["json"]["reviewer_confirmations"][0]["Reviewer Confirmation"] == "Confirmed"
+    assert calls["json"]["use_llm"] is True
+    assert calls["json"]["model_name"] == "fake-model"
+    assert response["model_name"] == "deterministic-template"

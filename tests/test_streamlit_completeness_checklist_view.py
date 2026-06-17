@@ -836,3 +836,8 @@ def test_render_package_review_response_is_importable():
     import ui.app as streamlit_app
 
     assert callable(streamlit_app.render_package_review_response)
+
+def test_render_llm_review_narrative_panel_is_importable():
+    import ui.app as streamlit_app
+
+    assert callable(streamlit_app.render_llm_review_narrative_panel)

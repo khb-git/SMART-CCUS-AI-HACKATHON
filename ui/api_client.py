@@ -160,6 +160,34 @@ def maip_demo_package_api(
 
     return response.json()
 
+def review_narrative_api(
+    package_response: dict[str, Any],
+    reviewer_confirmations: list[dict[str, Any]] | None = None,
+    use_llm: bool = False,
+    model_name: str = "llama3.1",
+    api_url: str = DEFAULT_API_URL,
+    timeout: int = 240,
+) -> dict[str, Any]:
+    """Call the backend /review-narrative endpoint."""
+    endpoint = f"{api_url.rstrip('/')}/review-narrative"
+
+    payload = {
+        "package_response": package_response,
+        "reviewer_confirmations": reviewer_confirmations or [],
+        "use_llm": use_llm,
+        "model_name": model_name,
+    }
+
+    response = requests.post(
+        endpoint,
+        json=payload,
+        timeout=timeout,
+    )
+
+    response.raise_for_status()
+
+    return response.json()
+
 def format_similarity_score(value) -> str:
     """Format a retrieval similarity score for display."""
     if value is None or value == "":
