@@ -361,6 +361,47 @@ This workflow demonstrates the strongest parts of the system: deterministic revi
 
 ---
 
+## MAIP Demo Fixture
+
+A deterministic MAIP demo package is available without uploaded files, RAG, or an LLM.
+
+Run:
+
+```powershell
+python -m demo_samples.maip_demo_package
+```
+
+The fixture exercises the full MAIP workflow:
+
+```text
+conservative MAIP evidence extraction
+MAIP cross-reference validation
+source document and page traceability
+evidence audit trail metadata
+Markdown package report export
+final review packet export
+```
+
+The demo package includes representative in-memory document reviews for:
+
+```text
+Site Operating Plan
+Site Geologic Characterization
+AoR and Corrective Action Plan
+Well Construction Plan
+Testing and Monitoring Plan
+```
+
+The MAIP demo is intended for regression testing, judge review, and quick local demonstration of the deterministic MAIP workflow. It does not require uploaded files, vector indexing, RAG, or LLM services.
+
+Run the demo tests with:
+
+```powershell
+python -m pytest tests/test_maip_demo_sample.py
+```
+
+---
+
 ## Review Status Labels
 
 Checklist findings use four main statuses.
