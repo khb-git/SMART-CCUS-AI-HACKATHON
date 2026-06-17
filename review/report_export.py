@@ -481,6 +481,94 @@ def build_package_review_metrics_section(report: dict[str, Any]) -> list[str]:
         "",
     ]
 
+def build_maip_validation_section(report: dict[str, Any]) -> list[str]:
+    """Build a Markdown section for package-level MAIP validation."""
+    maip_validation = report.get("maip_validation") or {}
+
+    lines = [
+        "## MAIP Cross-Reference Validation",
+        "",
+        (
+            "This section summarizes deterministic Maximum Allowable Injection "
+            "Pressure cross-reference checks. The validator is conservative: "
+            "if structured pressure evidence has not been extracted yet, it reports "
+            "missing evidence rather than inferring values."
+        ),
+        "",
+    ]
+
+    if not maip_validation:
+        return lines + ["No MAIP validation report was returned.", ""]
+
+    overall_status = maip_validation.get("overall_status", "unknown")
+    summary = maip_validation.get("summary", "")
+    findings = maip_validation.get("findings", []) or []
+
+    lines.extend(
+        [
+            f"- **Overall MAIP status:** {status_label(overall_status)}",
+            "",
+            summary or "No MAIP validation summary returned.",
+            "",
+        ]
+    )
+
+    if not findings:
+        return lines + ["No MAIP validation findings were returned.", ""]
+
+    lines.extend(
+        [
+            "| Status | Severity | Finding | Message | Recommended Action | Supporting Values |",
+            "| --- | --- | --- | --- | --- | --- |",
+        ]
+    )
+
+    for finding in findings:
+        supporting_values = finding.get("supporting_values", []) or []
+        value_parts = []
+
+        for value in supporting_values:
+            concept = value.get("concept", "value")
+            numeric_value = value.get("value")
+            unit = value.get("unit", "")
+            source_file = value.get("source_file", "")
+            page_number = value.get("page_number")
+
+            value_text = str(concept)
+
+            if numeric_value is not None:
+                value_text += f": {numeric_value} {unit}".strip()
+
+            if source_file:
+                value_text += f" ({source_file}"
+
+                if page_number not in {"", None}:
+                    value_text += f", page {page_number}"
+
+                value_text += ")"
+
+            value_parts.append(value_text)
+
+        supporting_text = "; ".join(value_parts) if value_parts else "None"
+
+        lines.append(
+            "| "
+            + " | ".join(
+                [
+                    markdown_table_escape(status_label(finding.get("status", ""))),
+                    markdown_table_escape(status_label(finding.get("severity", ""))),
+                    markdown_table_escape(finding.get("finding_id", "")),
+                    markdown_table_escape(finding.get("message", "")),
+                    markdown_table_escape(finding.get("recommended_action", "")),
+                    markdown_table_escape(supporting_text),
+                ]
+            )
+            + " |"
+        )
+
+    lines.append("")
+    return lines
+
 def build_completeness_checklist_section(report: dict[str, Any]) -> list[str]:
     """Build an EPA-style completeness checklist Markdown table."""
     rows = collect_completeness_checklist_rows(report)
@@ -1013,6 +1101,7 @@ def build_final_review_packet(package_response: dict[str, Any]) -> str:
 
     lines.extend(build_package_review_metrics_section(report))
     lines.extend(build_reviewer_action_items_section(report))
+    lines.extend(build_maip_validation_section(report))
     lines.extend(build_deficiency_table_section(report))
     lines.extend(build_completeness_checklist_section(report))
     lines.extend(build_reviewer_signoff_section())
@@ -1078,6 +1167,7 @@ def build_markdown_package_report(package_response: dict[str, Any]) -> str:
     lines.extend(build_package_priority_summary_section(report))
     lines.extend(build_package_review_metrics_section(report))
     lines.extend(build_reviewer_action_items_section(report))
+    lines.extend(build_maip_validation_section(report))
 
     lines.extend(
         [
