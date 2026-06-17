@@ -34,6 +34,7 @@ from review.llm_narrative import (
 from review.report_export import (
     collect_completeness_checklist_rows,
     collect_reviewer_action_items,
+    package_review_metrics,
 )
 
 app = FastAPI(
@@ -348,6 +349,30 @@ def review_package(
         ),
     }
 
+def package_counts_from_report(package_report: dict[str, Any]) -> dict[str, Any]:
+    """Return exact package counts for grounded reviewer narratives."""
+    detected_document_types = package_report.get("detected_plan_types", []) or []
+    missing_required = package_report.get("missing_required_plan_types", []) or []
+    missing_expected = package_report.get("missing_expected_plan_types", []) or []
+    supporting_documents = package_report.get("supporting_documents", []) or []
+    duplicate_plan_types = package_report.get("duplicate_plan_types", []) or []
+    unknown_documents = package_report.get("unknown_documents", []) or []
+
+    return {
+        "detected_document_types_count": len(detected_document_types),
+        "missing_required_document_types_count": len(missing_required),
+        "missing_expected_document_types_count": len(missing_expected),
+        "supporting_documents_count": len(supporting_documents),
+        "duplicate_document_types_count": len(duplicate_plan_types),
+        "unknown_documents_count": len(unknown_documents),
+        "detected_document_types": detected_document_types,
+        "missing_required_document_types": missing_required,
+        "missing_expected_document_types": missing_expected,
+        "supporting_documents": supporting_documents,
+        "duplicate_document_types": duplicate_plan_types,
+        "unknown_documents": unknown_documents,
+    }
+
 def build_narrative_input_from_package_response(
     package_response: dict[str, Any],
     reviewer_confirmations: list[dict[str, Any]] | None = None,
@@ -370,6 +395,8 @@ def build_narrative_input_from_package_response(
         ),
         overall_status=package_report.get("overall_status", "unknown"),
         summary=package_report.get("summary", ""),
+        package_metrics=package_review_metrics(package_report),
+        package_counts=package_counts_from_report(package_report),
         reviewer_action_items=collect_reviewer_action_items(package_report),
         priority_checklist_rows=priority_rows,
         maip_validation=package_report.get("maip_validation") or {},
