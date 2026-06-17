@@ -111,9 +111,9 @@ def ask_question(
     # Detect sections from retrieved evidence
     detected_sections = sorted(
         {
-            str(item.get("schema_section_id"))
+            str(item.schema_section_id)
             for item in evidence_items
-            if item.get("schema_section_id")
+            if item.schema_section_id
         }
     )
 
