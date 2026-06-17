@@ -13,7 +13,9 @@ if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
 # Import backend helpers and API wrappers
-from review.coverage_evidence_display import coverage_evidence_rows_for_display # for displaying coverage evidencefrom review.report_export import (
+from review.coverage_evidence_display import coverage_evidence_rows_for_display # for displaying coverage evidence
+
+from review.report_export import (
     collect_completeness_checklist_rows,
     collect_reviewer_action_items,
     package_review_metrics,
@@ -64,9 +66,11 @@ from ui.api_client import (
 # Get absolute path of current script
 current_dir = os.path.dirname(__file__)
 image_path = os.path.join(current_dir, "NittCarbAISmall.png")
+imageBig_path = os.path.join(current_dir, "Nittcarbai icon.png")
 
 # Get icon saved in ui folder
 icon = Image.open(image_path)
+iconBig = Image.open(imageBig_path)
 
 # Set the page configuration
 st.set_page_config(
@@ -76,11 +80,15 @@ st.set_page_config(
 )
 
 # Set the main title and caption
-st.title("NittCarbAI Assistant for CCUS Class VI Review")
-st.caption(
-    "Ask Class VI permit review questions, inspect evidence-backed answers, "
-    "or temporarily review uploaded documents for completeness."
-)
+col1, col2 = st.columns([1, 14])
+with col1:
+    st.image(iconBig, width=80)
+with col2:
+    st.title("NittCarbAI Assistant for CCUS Class VI Review")
+    st.caption(
+        "Ask Class VI permit review questions, inspect evidence-backed answers, "
+        "or temporarily review uploaded documents for completeness."
+    )
 
 # Define helper functions
 # Helper function to count the status of each finding
