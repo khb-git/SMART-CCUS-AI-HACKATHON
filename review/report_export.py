@@ -481,6 +481,74 @@ def build_package_review_metrics_section(report: dict[str, Any]) -> list[str]:
         "",
     ]
 
+def format_maip_supporting_value(value: dict[str, Any]) -> str:
+    """Format one MAIP supporting value for Markdown export."""
+    concept = value.get("concept", "value")
+    numeric_value = value.get("value")
+    unit = value.get("unit", "")
+    source_file = value.get("source_file", "")
+    page_number = value.get("page_number")
+
+    value_text = str(concept)
+
+    if numeric_value is not None:
+        value_text += f": {numeric_value} {unit}".strip()
+
+    if source_file:
+        value_text += f" ({source_file}"
+
+        if page_number not in {"", None}:
+            value_text += f", page {page_number}"
+
+        value_text += ")"
+
+    return value_text
+
+
+def format_maip_audit_trail(value: dict[str, Any]) -> str:
+    """Format MAIP audit metadata for Markdown export."""
+    audit_parts = [
+        ("concept", value.get("concept", "")),
+        ("finding_id", value.get("source_finding_id", "")),
+        ("label", value.get("source_label", "")),
+        ("matched_term", value.get("matched_term", "")),
+        ("method", value.get("extraction_method", "")),
+        ("confidence", value.get("confidence", "")),
+        ("notes", value.get("extraction_notes", "")),
+    ]
+
+    return "; ".join(
+        f"{key}={value}"
+        for key, value in audit_parts
+        if value not in {"", None}
+    ) or "None"
+
+
+def format_maip_supporting_values(
+    supporting_values: list[dict[str, Any]],
+) -> str:
+    """Format MAIP supporting values for Markdown export."""
+    if not supporting_values:
+        return "None"
+
+    return "; ".join(
+        format_maip_supporting_value(value)
+        for value in supporting_values
+    )
+
+
+def format_maip_audit_trails(
+    supporting_values: list[dict[str, Any]],
+) -> str:
+    """Format MAIP audit trails for Markdown export."""
+    if not supporting_values:
+        return "None"
+
+    return " || ".join(
+        format_maip_audit_trail(value)
+        for value in supporting_values
+    )
+
 def build_maip_validation_section(report: dict[str, Any]) -> list[str]:
     """Build a Markdown section for package-level MAIP validation."""
     maip_validation = report.get("maip_validation") or {}
@@ -518,38 +586,15 @@ def build_maip_validation_section(report: dict[str, Any]) -> list[str]:
 
     lines.extend(
         [
-            "| Status | Severity | Finding | Message | Recommended Action | Supporting Values |",
-            "| --- | --- | --- | --- | --- | --- |",
+            "| Status | Severity | Finding | Message | Recommended Action | Supporting Values | Audit Trail |",
+            "| --- | --- | --- | --- | --- | --- | --- |",
         ]
     )
 
     for finding in findings:
         supporting_values = finding.get("supporting_values", []) or []
-        value_parts = []
-
-        for value in supporting_values:
-            concept = value.get("concept", "value")
-            numeric_value = value.get("value")
-            unit = value.get("unit", "")
-            source_file = value.get("source_file", "")
-            page_number = value.get("page_number")
-
-            value_text = str(concept)
-
-            if numeric_value is not None:
-                value_text += f": {numeric_value} {unit}".strip()
-
-            if source_file:
-                value_text += f" ({source_file}"
-
-                if page_number not in {"", None}:
-                    value_text += f", page {page_number}"
-
-                value_text += ")"
-
-            value_parts.append(value_text)
-
-        supporting_text = "; ".join(value_parts) if value_parts else "None"
+        supporting_text = format_maip_supporting_values(supporting_values)
+        audit_text = format_maip_audit_trails(supporting_values)
 
         lines.append(
             "| "
@@ -561,6 +606,7 @@ def build_maip_validation_section(report: dict[str, Any]) -> list[str]:
                     markdown_table_escape(finding.get("message", "")),
                     markdown_table_escape(finding.get("recommended_action", "")),
                     markdown_table_escape(supporting_text),
+                    markdown_table_escape(audit_text),
                 ]
             )
             + " |"
