@@ -11,9 +11,9 @@ Architecture:
 
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass, field
 from enum import Enum
-
 
 class MaipValidationStatus(str, Enum):
     """Status for one deterministic MAIP validation finding."""
@@ -494,6 +494,334 @@ def build_maip_summary(findings: list[MaipValidationFinding]) -> str:
         f"Next step: {next_step}"
     )
 
+PRESSURE_VALUE_PATTERN = re.compile(
+    r"(?P<value>\d{1,3}(?:,\d{3})*(?:\.\d+)?|\d+(?:\.\d+)?)\s*"
+    r"(?P<unit>psi|psig|pounds per square inch)\b",
+    re.IGNORECASE,
+)
+
+MAIP_CONCEPT_TERMS = {
+    "proposed_maip": [
+        "maip",
+        "maximum allowable injection pressure",
+        "maximum injection pressure",
+        "injection pressure limit",
+        "operating pressure limit",
+    ],
+    "fracture_pressure": [
+        "fracture pressure",
+        "formation fracture pressure",
+        "fracturing pressure",
+        "parting pressure",
+    ],
+    "fracture_gradient": [
+        "fracture gradient",
+    ],
+    "aor_model_max_pressure": [
+        "aor model pressure",
+        "model pressure",
+        "pressure front",
+        "maximum modeled pressure",
+        "maximum pressure represented",
+    ],
+    "casing_pressure_rating": [
+        "casing pressure rating",
+        "casing rating",
+        "burst rating",
+        "pressure rating",
+    ],
+    "annulus_pressure_limit": [
+        "annulus pressure",
+        "annular pressure",
+        "annulus pressure limit",
+    ],
+    "operating_pressure_limit": [
+        "operating pressure",
+        "operating pressure limit",
+        "injection pressure limit",
+    ],
+}
+
+MAIP_TEXT_EVIDENCE_TERMS = {
+    "annulus_management_evidence": [
+        "annulus pressure",
+        "annular pressure",
+        "annulus monitoring",
+        "annulus management",
+        "annular fluid",
+    ],
+    "operating_margin_evidence": [
+        "operating margin",
+        "pressure margin",
+        "safety margin",
+        "below fracture pressure",
+        "below the fracture pressure",
+        "below maip",
+    ],
+}
+
+
+def normalize_maip_text(value: str) -> str:
+    """Normalize text for conservative MAIP evidence matching."""
+    return " ".join(str(value or "").lower().replace("-", " ").split())
+
+
+NEGATED_CONCEPT_PHRASES = [
+    "does not identify",
+    "does not provide",
+    "does not document",
+    "does not list",
+    "not identify",
+    "not provide",
+    "not document",
+    "not list",
+    "no clear",
+    "no proposed",
+    "without identifying",
+    "without documenting",
+]
+
+
+def maip_text_contains_any(text: str, terms: list[str]) -> bool:
+    """Return whether text contains any non-negated normalized concept term."""
+    normalized_text = normalize_maip_text(text)
+
+    for term in terms:
+        normalized_term = normalize_maip_text(term)
+
+        if not normalized_term:
+            continue
+
+        search_start = 0
+
+        while True:
+            term_index = normalized_text.find(normalized_term, search_start)
+
+            if term_index < 0:
+                break
+
+            context_start = max(term_index - 80, 0)
+            context_end = min(
+                term_index + len(normalized_term) + 40,
+                len(normalized_text),
+            )
+            context = normalized_text[context_start:context_end]
+
+            is_negated = any(
+                phrase in context
+                for phrase in NEGATED_CONCEPT_PHRASES
+            )
+
+            if not is_negated:
+                return True
+
+            search_start = term_index + len(normalized_term)
+
+    return False
+
+
+def parse_pressure_value(text: str) -> tuple[float, str] | None:
+    """Return the first clear pressure value from text."""
+    match = PRESSURE_VALUE_PATTERN.search(str(text or ""))
+
+    if not match:
+        return None
+
+    raw_value = match.group("value").replace(",", "")
+
+    try:
+        numeric_value = float(raw_value)
+    except ValueError:
+        return None
+
+    unit = match.group("unit").lower()
+
+    if unit == "pounds per square inch":
+        unit = "psi"
+
+    return numeric_value, unit
+
+
+def finding_candidate_text(finding: dict) -> str:
+    """Collect reviewer-facing text fields from one finding."""
+    parts = [
+        finding.get("item_id", ""),
+        finding.get("label", ""),
+        finding.get("finding", ""),
+        finding.get("recommended_fix", ""),
+    ]
+
+    parts.extend(finding.get("matched_terms", []) or [])
+    parts.extend(finding.get("supporting_excerpts", []) or [])
+
+    for location in finding.get("evidence_locations", []) or []:
+        parts.append(location.get("excerpt", ""))
+
+    return "\n".join(str(part or "") for part in parts)
+
+
+def first_finding_location(finding: dict) -> dict:
+    """Return first evidence location for a finding, if available."""
+    locations = finding.get("evidence_locations", []) or []
+
+    if not locations:
+        return {}
+
+    return locations[0] or {}
+
+
+def maip_evidence_value_from_finding(
+    *,
+    concept: str,
+    finding: dict,
+    document_name: str,
+) -> MaipEvidenceValue | None:
+    """Extract one conservative MAIP evidence value from a finding."""
+    text = finding_candidate_text(finding)
+    concept_terms = MAIP_CONCEPT_TERMS.get(concept, [])
+
+    if not maip_text_contains_any(text, concept_terms):
+        return None
+
+    parsed_pressure = parse_pressure_value(text)
+
+    if parsed_pressure is None:
+        return None
+
+    numeric_value, unit = parsed_pressure
+    location = first_finding_location(finding)
+
+    return MaipEvidenceValue(
+        concept=concept,
+        value=numeric_value,
+        unit=unit,
+        source_file=location.get("file_name") or document_name,
+        page_number=location.get("page_number"),
+        excerpt=location.get("excerpt") or (finding.get("supporting_excerpts", []) or [""])[0],
+        confidence=finding.get("confidence", "Low"),
+    )
+
+
+def maip_text_evidence_from_finding(
+    *,
+    concept: str,
+    finding: dict,
+    document_name: str,
+) -> MaipEvidenceValue | None:
+    """Extract non-numeric MAIP supporting evidence from a finding."""
+    text = finding_candidate_text(finding)
+    concept_terms = MAIP_TEXT_EVIDENCE_TERMS.get(concept, [])
+
+    if not maip_text_contains_any(text, concept_terms):
+        return None
+
+    location = first_finding_location(finding)
+
+    return MaipEvidenceValue(
+        concept=concept,
+        value=None,
+        unit="",
+        source_file=location.get("file_name") or document_name,
+        page_number=location.get("page_number"),
+        excerpt=location.get("excerpt") or (finding.get("supporting_excerpts", []) or [""])[0],
+        confidence=finding.get("confidence", "Low"),
+    )
+
+
+def collect_package_review_findings(
+    document_reviews: list[dict],
+) -> list[tuple[str, dict]]:
+    """Collect findings from package document review dictionaries."""
+    collected: list[tuple[str, dict]] = []
+
+    for document_review in document_reviews:
+        document_name = document_review.get("document_name", "Unknown document")
+        checklist_reports = document_review.get("checklist_reports", {}) or {}
+
+        if not checklist_reports and document_review.get("report"):
+            report = document_review.get("report") or {}
+            plan_type = report.get(
+                "plan_type",
+                document_review.get("document_type", "unknown"),
+            )
+            checklist_reports = {plan_type: report}
+
+        for checklist_report in checklist_reports.values():
+            for finding in checklist_report.get("findings", []) or []:
+                collected.append((document_name, finding))
+
+    return collected
+
+
+def choose_first_maip_value(
+    values: list[MaipEvidenceValue],
+) -> MaipEvidenceValue | None:
+    """Return the first extracted value, preserving deterministic order."""
+    return values[0] if values else None
+
+
+def build_maip_validation_input_from_package_reviews(
+    document_reviews: list[dict],
+) -> MaipValidationInput:
+    """Build MAIP validation input from package review findings.
+
+    This extraction is intentionally conservative. It only creates structured
+    values when a concept term and a clear pressure value appear in the same
+    finding text/evidence.
+    """
+    numeric_values: dict[str, list[MaipEvidenceValue]] = {
+        concept: []
+        for concept in MAIP_CONCEPT_TERMS
+    }
+    text_values: dict[str, list[MaipEvidenceValue]] = {
+        concept: []
+        for concept in MAIP_TEXT_EVIDENCE_TERMS
+    }
+
+    for document_name, finding in collect_package_review_findings(document_reviews):
+        for concept in MAIP_CONCEPT_TERMS:
+            value = maip_evidence_value_from_finding(
+                concept=concept,
+                finding=finding,
+                document_name=document_name,
+            )
+
+            if value is not None:
+                numeric_values[concept].append(value)
+
+        for concept in MAIP_TEXT_EVIDENCE_TERMS:
+            value = maip_text_evidence_from_finding(
+                concept=concept,
+                finding=finding,
+                document_name=document_name,
+            )
+
+            if value is not None:
+                text_values[concept].append(value)
+
+    return MaipValidationInput(
+        proposed_maip=choose_first_maip_value(numeric_values["proposed_maip"]),
+        fracture_pressure=choose_first_maip_value(numeric_values["fracture_pressure"]),
+        fracture_gradient=choose_first_maip_value(numeric_values["fracture_gradient"]),
+        aor_model_max_pressure=choose_first_maip_value(
+            numeric_values["aor_model_max_pressure"]
+        ),
+        casing_pressure_rating=choose_first_maip_value(
+            numeric_values["casing_pressure_rating"]
+        ),
+        annulus_pressure_limit=choose_first_maip_value(
+            numeric_values["annulus_pressure_limit"]
+        ),
+        operating_pressure_limit=choose_first_maip_value(
+            numeric_values["operating_pressure_limit"]
+        ),
+        annulus_management_evidence=choose_first_maip_value(
+            text_values["annulus_management_evidence"]
+        ),
+        operating_margin_evidence=choose_first_maip_value(
+            text_values["operating_margin_evidence"]
+        ),
+    )
 
 def validate_maip_chain(
     validation_input: MaipValidationInput,
