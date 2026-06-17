@@ -164,6 +164,7 @@ def maip_validation_rows_for_display(
     for finding in findings:
         supporting_values = finding.get("supporting_values", []) or []
         value_parts = []
+        audit_parts = []
 
         for value in supporting_values:
             concept = value.get("concept", "value")
@@ -187,6 +188,21 @@ def maip_validation_rows_for_display(
 
             value_parts.append(value_text)
 
+            audit_parts.append(
+                "; ".join(
+                    part
+                    for part in [
+                        f"concept={value.get('concept', '')}",
+                        f"finding_id={value.get('source_finding_id', '')}",
+                        f"label={value.get('source_label', '')}",
+                        f"matched_term={value.get('matched_term', '')}",
+                        f"method={value.get('extraction_method', '')}",
+                        f"confidence={value.get('confidence', '')}",
+                    ]
+                    if part.split("=", 1)[1]
+                )
+            )
+
         rows.append(
             {
                 "Review Key": f"MAIP::{finding.get('finding_id', '')}",
@@ -204,6 +220,7 @@ def maip_validation_rows_for_display(
                 "Message": finding.get("message", ""),
                 "Recommended Action": finding.get("recommended_action", ""),
                 "Supporting Values": "; ".join(value_parts) if value_parts else "None",
+                "Audit Trail": "; ".join(audit_parts) if audit_parts else "None",
                 "Notes": (
                     f"{finding.get('message', '')} "
                     f"Recommended action: {finding.get('recommended_action', '')}"
@@ -302,6 +319,7 @@ def render_maip_validation_panel(package_report: dict) -> list[dict[str, str]]:
                 "Message",
                 "Recommended Action",
                 "Supporting Values",
+                "Audit Trail",
             ],
         )
 

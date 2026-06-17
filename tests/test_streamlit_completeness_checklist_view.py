@@ -537,6 +537,11 @@ def test_maip_validation_rows_for_display_formats_findings():
                             "unit": "psi",
                             "source_file": "Operating_Plan.pdf",
                             "page_number": 8,
+                            "source_finding_id": "maximum_allowable_injection_pressure",
+                            "source_label": "Maximum allowable injection pressure",
+                            "matched_term": "maip",
+                            "extraction_method": "concept_term_plus_pressure_value",
+                            "confidence": "Medium",
                         }
                     ],
                 },
@@ -560,6 +565,7 @@ def test_maip_validation_rows_for_display_formats_findings():
             "Message": "The package does not provide a clear proposed MAIP.",
             "Recommended Action": "Reviewer should locate the proposed MAIP value.",
             "Supporting Values": "None",
+            "Audit Trail": "None",
             "Notes": (
                 "The package does not provide a clear proposed MAIP. "
                 "Recommended action: Reviewer should locate the proposed MAIP value."
@@ -578,6 +584,14 @@ def test_maip_validation_rows_for_display_formats_findings():
             "Message": "The proposed MAIP is below 90% of fracture pressure.",
             "Recommended Action": "Reviewer should confirm cited values.",
             "Supporting Values": "proposed_maip: 1800.0 psi (Operating_Plan.pdf, page 8)",
+            "Audit Trail": (
+                "concept=proposed_maip; "
+                "finding_id=maximum_allowable_injection_pressure; "
+                "label=Maximum allowable injection pressure; "
+                "matched_term=maip; "
+                "method=concept_term_plus_pressure_value; "
+                "confidence=Medium"
+            ),
             "Notes": (
                 "The proposed MAIP is below 90% of fracture pressure. "
                 "Recommended action: Reviewer should confirm cited values."
