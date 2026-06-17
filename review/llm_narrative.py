@@ -33,6 +33,8 @@ class LlmNarrativeInput:
     package_name: str
     overall_status: str
     summary: str
+    package_metrics: dict[str, Any]
+    package_counts: dict[str, Any]
     reviewer_action_items: list[str]
     priority_checklist_rows: list[dict[str, Any]]
     maip_validation: dict[str, Any]
@@ -44,6 +46,8 @@ class LlmNarrativeInput:
             "package_name": self.package_name,
             "overall_status": self.overall_status,
             "summary": self.summary,
+            "package_metrics": self.package_metrics,
+            "package_counts": self.package_counts,
             "reviewer_action_items": self.reviewer_action_items,
             "priority_checklist_rows": self.priority_checklist_rows,
             "maip_validation": self.maip_validation,
@@ -79,6 +83,72 @@ def compact_text(value: Any, max_chars: int = 500) -> str:
 
     return text[: max_chars - 3].rstrip() + "..."
 
+def format_package_metrics_for_prompt(metrics: dict[str, Any]) -> list[str]:
+    """Format exact package metrics for prompt grounding."""
+    if not metrics:
+        return ["- No package metrics were provided."]
+
+    ordered_keys = [
+        "total_checklist_rows",
+        "present_rows",
+        "evidence_found_rows",
+        "missing_rows",
+        "unclear_rows",
+        "required_missing_rows",
+        "critical_missing_rows",
+        "high_confidence_rows",
+        "medium_confidence_rows",
+        "low_confidence_rows",
+        "page_located_rows",
+        "page_located_percent",
+        "resolved_rows",
+        "resolved_percent",
+    ]
+
+    lines = []
+
+    for key in ordered_keys:
+        if key in metrics:
+            lines.append(f"- {key}: {metrics[key]}")
+
+    for key in sorted(metrics):
+        if key not in ordered_keys:
+            lines.append(f"- {key}: {metrics[key]}")
+
+    return lines or ["- No package metrics were provided."]
+
+
+def format_package_counts_for_prompt(counts: dict[str, Any]) -> list[str]:
+    """Format exact package count facts for prompt grounding."""
+    if not counts:
+        return ["- No package counts were provided."]
+
+    ordered_keys = [
+        "detected_document_types_count",
+        "missing_required_document_types_count",
+        "missing_expected_document_types_count",
+        "supporting_documents_count",
+        "duplicate_document_types_count",
+        "unknown_documents_count",
+        "detected_document_types",
+        "missing_required_document_types",
+        "missing_expected_document_types",
+        "supporting_documents",
+        "duplicate_document_types",
+        "unknown_documents",
+    ]
+
+    lines = []
+
+    for key in ordered_keys:
+        if key in counts:
+            lines.append(f"- {key}: {counts[key]}")
+
+    for key in sorted(counts):
+        if key not in ordered_keys:
+            lines.append(f"- {key}: {counts[key]}")
+
+    return lines or ["- No package counts were provided."]
 
 def maip_supporting_value_text(value: dict[str, Any]) -> str:
     """Format one MAIP supporting value for narrative context."""
@@ -162,8 +232,13 @@ def build_llm_narrative_prompt(narrative_input: LlmNarrativeInput) -> str:
         "- Backend decides.",
         "- Reviewer confirms.",
         "- LLM explains.",
-        "- Do not change statuses, severities, citations, page numbers, or evidence.",
+        "- Do not change statuses, severities, citations, page numbers, evidence, or counts.",
         "- Do not invent evidence.",
+        "- Do not infer new counts.",
+        "- Do not round or recompute package metrics.",
+        "- Use the exact package metrics and reviewer action items provided.",
+        "- Do not mention unknown documents unless unknown_documents_count is greater than 0.",
+        "- Do not mention missing required document types unless missing_required_document_types_count is greater than 0.",
         "- Do not state final compliance approval.",
         "",
         "Write a concise reviewer narrative using only the deterministic input below.",
@@ -179,8 +254,26 @@ def build_llm_narrative_prompt(narrative_input: LlmNarrativeInput) -> str:
         f"- Overall status: {narrative_input.overall_status}",
         f"- Summary: {compact_text(narrative_input.summary, max_chars=900)}",
         "",
-        "Reviewer action items:",
+                "Exact package counts. Use these values exactly:",
     ]
+
+    prompt_lines.extend(format_package_counts_for_prompt(narrative_input.package_counts))
+
+    prompt_lines.extend(
+        [
+            "",
+            "Exact package metrics. Use these values exactly:",
+        ]
+    )
+
+    prompt_lines.extend(format_package_metrics_for_prompt(narrative_input.package_metrics))
+
+    prompt_lines.extend(
+        [
+            "",
+            "Reviewer action items. Use this exact list; do not rewrite counts:",
+        ]
+    )
 
     prompt_lines.extend(f"- {compact_text(item)}" for item in action_items)
 
@@ -242,6 +335,8 @@ def build_template_review_narrative(
     maip_validation = narrative_input.maip_validation or {}
     maip_status = maip_validation.get("overall_status", "unknown")
     priority_rows = narrative_input.priority_checklist_rows or []
+    counts = narrative_input.package_counts or {}
+    metrics = narrative_input.package_metrics or {}
 
     lines = [
         LLM_BOUNDARY_NOTICE,
@@ -251,6 +346,23 @@ def build_template_review_narrative(
             f"The package `{narrative_input.package_name}` has backend status "
             f"`{narrative_input.overall_status}`. "
             f"{compact_text(narrative_input.summary, max_chars=900)}"
+        ),
+        (
+            "Exact backend counts: "
+            f"detected document types={counts.get('detected_document_types_count', 'not provided')}; "
+            f"missing required document types={counts.get('missing_required_document_types_count', 'not provided')}; "
+            f"missing expected document types={counts.get('missing_expected_document_types_count', 'not provided')}; "
+            f"supporting documents={counts.get('supporting_documents_count', 'not provided')}; "
+            f"unknown documents={counts.get('unknown_documents_count', 'not provided')}."
+        ),
+        (
+            "Exact backend metrics: "
+            f"total checklist rows={metrics.get('total_checklist_rows', 'not provided')}; "
+            f"missing rows={metrics.get('missing_rows', 'not provided')}; "
+            f"required missing rows={metrics.get('required_missing_rows', 'not provided')}; "
+            f"critical missing rows={metrics.get('critical_missing_rows', 'not provided')}; "
+            f"evidence-found rows={metrics.get('evidence_found_rows', 'not provided')}; "
+            f"page-located evidence={metrics.get('page_located_percent', 'not provided')}."
         ),
         "",
         "### Key reviewer action items",
