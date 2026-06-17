@@ -355,3 +355,35 @@ def test_maip_extraction_ignores_pressure_values_without_concept_terms():
 
     assert validation_input.proposed_maip is None
     assert validation_input.fracture_pressure is None
+
+def test_maip_extraction_records_audit_trail_for_numeric_value():
+    document_reviews = [
+        package_document_review(
+            document_name="Operating_Plan.pdf",
+            document_type="site_operating",
+            findings=[
+                finding(
+                    item_id="maximum_allowable_injection_pressure",
+                    label="Maximum allowable injection pressure",
+                    text="The proposed MAIP is 1,800 psi for injection operations.",
+                    document_name="Operating_Plan.pdf",
+                    page_number=8,
+                )
+            ],
+        )
+    ]
+
+    validation_input = build_maip_validation_input_from_package_reviews(document_reviews)
+    value = validation_input.proposed_maip
+
+    assert value.source_finding_id == "maximum_allowable_injection_pressure"
+    assert value.source_label == "Maximum allowable injection pressure"
+    assert value.matched_term == "maip"
+    assert value.extraction_method == "concept_term_plus_pressure_value"
+    assert "clear pressure value" in value.extraction_notes
+
+    value_dict = value.to_dict()
+
+    assert value_dict["source_finding_id"] == "maximum_allowable_injection_pressure"
+    assert value_dict["matched_term"] == "maip"
+    assert value_dict["extraction_method"] == "concept_term_plus_pressure_value"

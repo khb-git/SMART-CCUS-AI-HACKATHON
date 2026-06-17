@@ -44,6 +44,11 @@ class MaipEvidenceValue:
     page_number: int | None = None
     excerpt: str = ""
     confidence: str = "Low"
+    source_finding_id: str = ""
+    source_label: str = ""
+    matched_term: str = ""
+    extraction_method: str = "manual_structured_input"
+    extraction_notes: str = ""
 
     def to_dict(self) -> dict:
         """Return JSON-serializable evidence value data."""
@@ -55,6 +60,11 @@ class MaipEvidenceValue:
             "page_number": self.page_number,
             "excerpt": self.excerpt,
             "confidence": self.confidence,
+            "source_finding_id": self.source_finding_id,
+            "source_label": self.source_label,
+            "matched_term": self.matched_term,
+            "extraction_method": self.extraction_method,
+            "extraction_notes": self.extraction_notes,
         }
 
 
@@ -619,6 +629,42 @@ def maip_text_contains_any(text: str, terms: list[str]) -> bool:
 
     return False
 
+def first_non_negated_maip_term(text: str, terms: list[str]) -> str:
+    """Return the first non-negated MAIP concept term found in text."""
+    normalized_text = normalize_maip_text(text)
+
+    for term in terms:
+        normalized_term = normalize_maip_text(term)
+
+        if not normalized_term:
+            continue
+
+        search_start = 0
+
+        while True:
+            term_index = normalized_text.find(normalized_term, search_start)
+
+            if term_index < 0:
+                break
+
+            context_start = max(term_index - 80, 0)
+            context_end = min(
+                term_index + len(normalized_term) + 40,
+                len(normalized_text),
+            )
+            context = normalized_text[context_start:context_end]
+
+            is_negated = any(
+                phrase in context
+                for phrase in NEGATED_CONCEPT_PHRASES
+            )
+
+            if not is_negated:
+                return term
+
+            search_start = term_index + len(normalized_term)
+
+    return ""
 
 def parse_pressure_value(text: str) -> tuple[float, str] | None:
     """Return the first clear pressure value from text."""
@@ -691,6 +737,8 @@ def maip_evidence_value_from_finding(
     numeric_value, unit = parsed_pressure
     location = first_finding_location(finding)
 
+    matched_term = first_non_negated_maip_term(text, concept_terms)
+
     return MaipEvidenceValue(
         concept=concept,
         value=numeric_value,
@@ -699,6 +747,14 @@ def maip_evidence_value_from_finding(
         page_number=location.get("page_number"),
         excerpt=location.get("excerpt") or (finding.get("supporting_excerpts", []) or [""])[0],
         confidence=finding.get("confidence", "Low"),
+        source_finding_id=finding.get("item_id", ""),
+        source_label=finding.get("label", ""),
+        matched_term=matched_term,
+        extraction_method="concept_term_plus_pressure_value",
+        extraction_notes=(
+            "Extracted because a MAIP-related concept term and a clear pressure "
+            "value appeared in the same checklist finding or evidence excerpt."
+        ),
     )
 
 
@@ -717,6 +773,8 @@ def maip_text_evidence_from_finding(
 
     location = first_finding_location(finding)
 
+    matched_term = first_non_negated_maip_term(text, concept_terms)
+
     return MaipEvidenceValue(
         concept=concept,
         value=None,
@@ -725,6 +783,14 @@ def maip_text_evidence_from_finding(
         page_number=location.get("page_number"),
         excerpt=location.get("excerpt") or (finding.get("supporting_excerpts", []) or [""])[0],
         confidence=finding.get("confidence", "Low"),
+        source_finding_id=finding.get("item_id", ""),
+        source_label=finding.get("label", ""),
+        matched_term=matched_term,
+        extraction_method="concept_term_text_evidence",
+        extraction_notes=(
+            "Extracted as non-numeric supporting evidence because a MAIP-related "
+            "concept term appeared in the checklist finding or evidence excerpt."
+        ),
     )
 
 
