@@ -19,7 +19,7 @@ $retries = $config.retries
 $backoff = $config.backoff_factor
 
 Write-Host "Running scraper..."
-python scraper.py `
+python ./tools/scraper.py `
     --urls-file $urlsFile `
     --output $manifestPath `
     --delay $delay `

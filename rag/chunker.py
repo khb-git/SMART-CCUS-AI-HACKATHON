@@ -14,7 +14,7 @@ in metadata so the retriever can filter by section.
 import logging
 import re
 
-from rag.types import Chunk, ChunkMetadata, DocumentType
+from rag.rag_types import Chunk, ChunkMetadata, DocumentType
 
 logger = logging.getLogger(__name__)
 

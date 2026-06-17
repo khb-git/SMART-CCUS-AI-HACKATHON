@@ -1,19 +1,20 @@
 """
 Streamlit chatbot UI for the SMART CCUS Class VI Review Assistant.
 """
-
-from __future__ import annotations
-
-import sys
+# Import modules
+import streamlit as st # to build UI
+from PIL import Image # to load self design icon 
+import sys, os
 from pathlib import Path
 
-import streamlit as st
-
+# Project root setup
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
-from review.coverage_evidence_display import coverage_evidence_rows_for_display
+# Import backend helpers and API wrappers
+from review.coverage_evidence_display import coverage_evidence_rows_for_display # for displaying coverage evidence
+
 from review.report_export import (
     collect_completeness_checklist_rows,
     collect_reviewer_action_items,
@@ -60,25 +61,40 @@ from ui.api_client import (
     review_package_api,
     status_icon,
     status_label,
-)
+) # for API interactions
 
+# Get absolute path of current script
+current_dir = os.path.dirname(__file__)
+image_path = os.path.join(current_dir, "NittCarbAISmall.png")
+imageBig_path = os.path.join(current_dir, "Nittcarbai icon.png")
 
+# Get icon saved in ui folder
+icon = Image.open(image_path)
+iconBig = Image.open(imageBig_path)
+
+# Set the page configuration
 st.set_page_config(
-    page_title="SMART CCUS Class VI Review Assistant",
-    page_icon="🧠",
+    page_title="NittCarbAI",
+    page_icon=icon,
     layout="wide",
 )
 
+# Set the main title and caption
+col1, col2 = st.columns([1, 14])
+with col1:
+    st.image(iconBig, width=80)
+with col2:
+    st.title("NittCarbAI Assistant for CCUS Class VI Review")
+    st.caption(
+        "Ask Class VI permit review questions, inspect evidence-backed answers, "
+        "or temporarily review uploaded documents for completeness."
+    )
 
-st.title("SMART CCUS Class VI Review Assistant")
-st.caption(
-    "Ask Class VI permit review questions, inspect evidence-backed answers, "
-    "or temporarily review uploaded documents for completeness."
-)
-
-
-def finding_status_counts(findings: list[dict]) -> dict[str, int]:
+# Define helper functions
+# Helper function to count the status of each finding
+def finding_status_counts(findings: list[dict]) -> dict[str, int]: 
     """Count checklist finding statuses for UI display."""
+    # Initialize the counts for each status
     counts = {
         "present": 0,
         "evidence_found": 0,
@@ -86,30 +102,31 @@ def finding_status_counts(findings: list[dict]) -> dict[str, int]:
         "unclear": 0,
     }
 
-    for finding in findings:
-        status = finding.get("status", "")
+    # Count the status of each finding
+    for finding in findings: 
+        status = finding.get("status", "") # Get the status of the finding
         if status in counts:
-            counts[status] += 1
+            counts[status] += 1 # Increment the count for the finding's status
 
     return counts
 
-
+# Helper function to render a summary of finding metrics
 def render_finding_summary_metrics(findings: list[dict]) -> None:
     """Render compact finding-count metrics."""
     counts = finding_status_counts(findings)
-    metric_cols = st.columns(4)
+    metric_cols = st.columns(4) # Create 4 columns for the metrics
 
     with metric_cols[0]:
-        st.metric("Present", counts["present"])
+        st.metric("Present", counts["present"]) # Display the count of present findings
 
     with metric_cols[1]:
-        st.metric("Evidence found", counts["evidence_found"])
+        st.metric("Evidence found", counts["evidence_found"]) # Display the count of evidence found
 
     with metric_cols[2]:
-        st.metric("Missing", counts["missing"])
+        st.metric("Missing", counts["missing"]) # Display the count of missing findings
 
     with metric_cols[3]:
-        st.metric("Unclear", counts["unclear"])
+        st.metric("Unclear", counts["unclear"]) # Display the count of unclear findings
 
 def render_package_review_metrics(package_report: dict) -> None:
     """Render deterministic package-level review metrics."""
@@ -521,7 +538,7 @@ def render_package_findings(
     default_show: bool = False,
 ) -> None:
     """Render package checklist findings with reviewer-friendly details."""
-    show_findings = st.checkbox(
+    show_findings = st.checkbox( # Toggle to show/hide checklist findings
         "Show checklist findings",
         value=default_show,
         key=f"show_findings_{key_prefix}",
@@ -530,16 +547,20 @@ def render_package_findings(
     if not show_findings:
         return
 
-    for finding in findings:
-        status = finding.get("status", "")
-        label = finding.get("label", finding.get("item_id", "Finding"))
-        matched_groups = finding.get("matched_evidence_group_names", []) or []
-        excerpts = finding.get("supporting_excerpts", []) or []
+    for finding in findings: # Iterate through each finding
+        status = finding.get("status", "") # Get the status of the finding
+        label = finding.get("label", finding.get("item_id", "Finding")) # Get the label of the finding
+        matched_groups = finding.get("matched_evidence_group_names", []) or [] # Get the matched evidence groups
+        excerpts = finding.get("supporting_excerpts", []) or [] # Get the supporting excerpts
 
         st.markdown(
             f"**{status_icon(status)} {status_label(status)} — {label}**"
         )
-        st.write(finding.get("finding", ""))
+        st.write(finding.get("finding", "")) # Display the finding
+
+        confidence = finding.get("confidence", "")
+        if confidence:
+            st.caption(f"Confidence: {confidence}")
 
         confidence = finding.get("confidence", "")
         if confidence:
@@ -548,13 +569,13 @@ def render_package_findings(
         if matched_groups:
             st.caption(
                 "Matched evidence groups: "
-                + ", ".join(f"`{group}`" for group in matched_groups)
+                + ", ".join(f"`{group}`" for group in matched_groups) # Display the matched evidence groups
             )
 
         if excerpts:
             with st.expander("Supporting excerpts", expanded=False):
                 for excerpt in excerpts:
-                    st.write(f"- {excerpt}")
+                    st.write(f"- {excerpt}") # Display each supporting excerpt
 
         related_evidence = finding.get("related_package_evidence", []) or []
         if related_evidence:
@@ -582,9 +603,9 @@ def render_package_findings(
                     location_text = ", ".join(location_parts) or "location not listed"
 
                     st.markdown(
-                        f"- `{related.get('document_name', 'Unknown document')}` "
-                        f"(`{related.get('document_type', 'unknown')}`, {location_text}): "
-                        f"{', '.join(f'`{term}`' for term in matched_terms) or 'No terms listed'}"
+                        f"- `{related.get('document_name', 'Unknown document')}` " # Display the related document name
+                        f"(`{related.get('document_type', 'unknown')}`, {location_text}): " # Display the related document type
+                        f"{', '.join(f'`{term}`' for term in matched_terms) or 'No terms listed'}" # Display the matched terms  
                     )
 
                     if section_heading:
@@ -595,30 +616,25 @@ def render_package_findings(
 
         recommended_fix = finding.get("recommended_fix", "")
         if recommended_fix:
-            st.caption(f"Recommended fix: {recommended_fix}")
+            st.caption(f"Recommended fix: {recommended_fix}") # Display the recommended fix
 
-
+# Sidebar for backend and retrieval settings
 with st.sidebar:
     st.header("Backend Settings")
 
     api_url = st.text_input(
         "FastAPI URL",
-        value=DEFAULT_API_URL,
+        value=DEFAULT_API_URL, 
         help="Run the backend with: python -m uvicorn api.main:app --reload",
     )
 
     persist_directory = st.text_input(
         "Chroma persist directory",
-        value="chroma_data",
+        value="chroma_data", # Default value for the Chroma persist directory
+        help="The directory where Chroma will store its data.",
     )
 
     st.header("Retrieval Settings")
-
-    section_id = st.text_input(
-        "Section ID",
-        value="8",
-        help="Use 8 for Testing and Monitoring Plan.",
-    )
 
     intent = st.selectbox(
         "Intent",
@@ -675,12 +691,12 @@ with st.sidebar:
         "Similarity scores reflect retrieval similarity, not correctness probability."
     )
 
-
+# Set up the main application layout
 ask_tab, review_tab, package_tab = st.tabs(
     ["Ask Assistant", "Review Document", "Review Package"]
 )
 
-
+# Ask tab content
 with ask_tab:
     st.warning(ASK_ASSISTANT_RAG_NOTICE)
 
@@ -695,6 +711,7 @@ with ask_tab:
         height=100,
     )
 
+    # Submit button
     ask_clicked = st.button("Ask review assistant", type="primary")
 
     if ask_clicked:
@@ -705,7 +722,6 @@ with ask_tab:
         payload = build_ask_payload(
             query=query,
             persist_directory=persist_directory,
-            section_id=section_id,
             intent=intent,
             k_reference=k_reference,
             k_permits=k_permits,
@@ -729,6 +745,15 @@ with ask_tab:
 
         st.subheader("Answer")
         st.markdown(response.get("answer", ""))
+        
+        st.subheader("Detected Sections")
+
+        sections = response.get("detected_sections", [])
+
+        if sections:
+            st.write(", ".join(f"`{s}`" for s in sections))
+        else:
+            st.write("No sections detected.")
 
         col1, col2 = st.columns(2)
 
@@ -788,7 +813,7 @@ with ask_tab:
     else:
         st.info("Enter a question and click **Ask review assistant**.")
 
-
+# Review tab
 with review_tab:
     st.subheader("Review uploaded document")
     st.caption(

@@ -5,7 +5,7 @@ Walks one or more docket pages, finds every link to a downloadable file
 (PDF, DOCX, XLSX, etc.), grabs the summary text from the surrounding HTML
 context, and writes a JSON manifest the RAG pipeline can consume.
 
-Output shape (minimal, per teammate's spec):
+Output format:
 
     [
       {
@@ -32,6 +32,7 @@ Usage:
     python scraper.py --urls-file docket_urls.txt -o data/manifest.json
 """
 
+# Import modules
 from __future__ import annotations
 
 import argparse
@@ -49,8 +50,8 @@ from bs4 import BeautifulSoup, Tag
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 
+# Set up logging
 logger = logging.getLogger(__name__)
-
 
 # File extensions we treat as "downloadable documents" worth indexing.
 # Add to this set if you find others in the wild (e.g. .csv, .zip).
@@ -64,7 +65,7 @@ DEFAULT_USER_AGENT = (
     "NittCarb-AI-Scraper/0.1 (research; contact: team@nittcarb.local)"
 )
 
-
+# Data class for representing a downloadable file found on a docket page.
 @dataclass
 class FileEntry:
     """One downloadable file found on a docket page."""
@@ -73,7 +74,7 @@ class FileEntry:
     url: str           # direct, absolute URL to the file
     source_page: str   # URL of the page where the link was found
 
-
+# Helper functions
 def fetch_page(url: str, session: requests.Session, timeout: int) -> str:
     """Fetch the HTML for one page. Raises on HTTP errors."""
     logger.info("Fetching %s", url)
@@ -81,7 +82,7 @@ def fetch_page(url: str, session: requests.Session, timeout: int) -> str:
     response.raise_for_status()
     return response.text
 
-
+# Check if a link is to a downloadable file
 def is_downloadable(href: str) -> bool:
     """True if the href looks like a downloadable document."""
     if not href:
@@ -90,7 +91,7 @@ def is_downloadable(href: str) -> bool:
     path = urlparse(href).path.lower()
     return any(path.endswith(ext) for ext in DOWNLOADABLE_EXTENSIONS)
 
-
+# Extract the summary text from a file link
 def extract_summary(link: Tag) -> str:
     """Get the descriptive text surrounding a file link.
 
@@ -124,7 +125,7 @@ def extract_summary(link: Tag) -> str:
         return parent_text
     return link_text
 
-
+# Scrape a single page for downloadable files.
 def scrape_page(
     url: str,
     session: requests.Session,
@@ -160,7 +161,7 @@ def scrape_page(
     logger.info("Found %d downloadable files on %s", len(entries), url)
     return entries
 
-
+# Scrape multiple pages for downloadable files.
 def scrape_pages(
     urls: list[str],
     output_path: Path,
@@ -199,7 +200,7 @@ def scrape_pages(
     logger.info("Wrote %d entries to %s", len(all_entries), output_path)
     return len(all_entries)
 
-
+# Parse command-line arguments.
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description="Scrape EPA Class VI docket pages into a JSON manifest.",
@@ -256,7 +257,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     )
     return parser.parse_args(argv)
 
-
+# Main entry point for the scraper.
 def main(argv: list[str] | None = None) -> int:
     args = parse_args(argv)
 
@@ -298,6 +299,7 @@ def main(argv: list[str] | None = None) -> int:
     print(f"Wrote {count} file entries to {args.output}")
     return 0
 
+# Build a requests session with retry logic.
 def build_retry_session(
     retries: int = 3,
     backoff_factor: float = 0.5,

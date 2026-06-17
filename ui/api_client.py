@@ -17,14 +17,14 @@ from review.report_export import (
     default_report_filename,
 )
 
-
+# Default API URL
 DEFAULT_API_URL = os.getenv("SMART_CCUS_API_URL", "http://127.0.0.1:8000")
 
-
+# API Client Functions
+# Build the request payload for the /ask endpoint
 def build_ask_payload(
     query: str,
     persist_directory: str = "chroma_data",
-    section_id: str = "",
     intent: str = "auto",
     k_reference: int = 3,
     k_permits: int = 5,
@@ -37,7 +37,6 @@ def build_ask_payload(
     return {
         "query": query,
         "persist_directory": persist_directory,
-        "section_id": section_id,
         "intent": intent,
         "k_reference": k_reference,
         "k_permits": k_permits,
@@ -47,7 +46,7 @@ def build_ask_payload(
         "use_reranking": use_reranking,
     }
 
-
+# Call the backend /ask endpoint
 def ask_api(
     payload: dict[str, Any],
     api_url: str = DEFAULT_API_URL,
@@ -66,7 +65,7 @@ def ask_api(
 
     return response.json()
 
-
+# Call the backend /review-document endpoint
 def review_document_api(
     file_bytes: bytes,
     filename: str,
@@ -104,6 +103,7 @@ def review_document_api(
 
     return response.json()
 
+# Call the backend /review-package endpoint
 def review_package_api(
     files: list[tuple[str, bytes]],
     package_name: str = "uploaded_package",
@@ -198,7 +198,7 @@ def format_similarity_score(value) -> str:
     except (TypeError, ValueError):
         return str(value)
 
-
+# Format evidence heading
 def format_evidence_heading(item: dict[str, Any]) -> str:
     """Create a compact evidence card heading."""
     evidence_id = item.get("evidence_id", "E?")
@@ -210,6 +210,7 @@ def format_evidence_heading(item: dict[str, Any]) -> str:
 
     return f"[{evidence_id}] {source_label}: {source_document}{page_text}"
 
+# Format review status
 def status_label(status: str) -> str:
     """Format review status labels for display."""
     labels = {
@@ -225,7 +226,7 @@ def status_label(status: str) -> str:
 
     return labels.get(str(status or ""), str(status or "Unknown").replace("_", " ").title())
 
-
+# Return a compact icon for review status
 def status_icon(status: str) -> str:
     """Return a compact icon for review status."""
     icons = {
