@@ -236,6 +236,9 @@ GET  /health
 POST /ask
 POST /review-document
 POST /review-package
+GET  /demo/maip-package
+GET  /demo/maip-package/report
+GET  /demo/maip-package/final-packet
 ```
 
 ### Streamlit UI
@@ -371,6 +374,22 @@ Run:
 python -m demo_samples.maip_demo_package
 ```
 
+The same deterministic fixture is also available through FastAPI.
+
+Start the backend:
+
+```powershell
+python -m uvicorn api.main:app --reload
+```
+
+Then open:
+
+```text
+http://127.0.0.1:8000/demo/maip-package
+http://127.0.0.1:8000/demo/maip-package/report
+http://127.0.0.1:8000/demo/maip-package/final-packet
+```
+
 The fixture exercises the full MAIP workflow:
 
 ```text
@@ -398,6 +417,7 @@ Run the demo tests with:
 
 ```powershell
 python -m pytest tests/test_maip_demo_sample.py
+python -m pytest tests/test_maip_demo_api.py
 ```
 
 ---
