@@ -831,3 +831,8 @@ def test_build_maip_deficiency_csv_includes_unresolved_maip_rows_only():
     assert "Applicant must provide proposed MAIP." in csv_text
     assert "maip_below_90_percent_fracture_pressure" not in csv_text
     assert "Coverage amount" not in csv_text
+
+def test_render_package_review_response_is_importable():
+    import ui.app as streamlit_app
+
+    assert callable(streamlit_app.render_package_review_response)

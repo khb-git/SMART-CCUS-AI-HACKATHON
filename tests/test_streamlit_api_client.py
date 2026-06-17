@@ -224,3 +224,41 @@ def test_package_report_export_helpers_are_available_from_ui_client():
         default_package_report_filename("test package")
         == "test_package_package_review_report.md"
     )
+
+def test_maip_demo_package_api_calls_demo_endpoint(monkeypatch):
+    from ui.api_client import maip_demo_package_api
+
+    calls = {}
+
+    class FakeResponse:
+        def raise_for_status(self):
+            calls["raise_for_status"] = True
+
+        def json(self):
+            return {
+                "package_name": "maip_demo_package",
+                "report": {
+                    "maip_validation": {
+                        "overall_status": "pass",
+                    }
+                },
+                "storage_policy": "Demo fixture only. No uploaded files are processed.",
+            }
+
+    def fake_get(url, timeout):
+        calls["url"] = url
+        calls["timeout"] = timeout
+        return FakeResponse()
+
+    monkeypatch.setattr("ui.api_client.requests.get", fake_get)
+
+    response = maip_demo_package_api(
+        api_url="http://api.test",
+        timeout=12,
+    )
+
+    assert calls["url"] == "http://api.test/demo/maip-package"
+    assert calls["timeout"] == 12
+    assert calls["raise_for_status"] is True
+    assert response["package_name"] == "maip_demo_package"
+    assert response["report"]["maip_validation"]["overall_status"] == "pass"

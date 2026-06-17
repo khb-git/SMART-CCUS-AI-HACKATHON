@@ -144,6 +144,22 @@ def review_package_api(
 
     return response.json()
 
+def maip_demo_package_api(
+    api_url: str = DEFAULT_API_URL,
+    timeout: int = 120,
+) -> dict[str, Any]:
+    """Call the backend deterministic MAIP demo package endpoint."""
+    endpoint = f"{api_url.rstrip('/')}/demo/maip-package"
+
+    response = requests.get(
+        endpoint,
+        timeout=timeout,
+    )
+
+    response.raise_for_status()
+
+    return response.json()
+
 def format_similarity_score(value) -> str:
     """Format a retrieval similarity score for display."""
     if value is None or value == "":
