@@ -342,10 +342,12 @@ items:
   - item_id: anomaly_response
     label: Response to anomalous monitoring results
     description: >
-      The plan should explain how abnormal pressure, flow, or monitoring results
-      will be investigated or addressed.
-    requirement_level: recommended
-    severity: moderate
+      Per 40 CFR 146.91(c), if monitoring results indicate unexpected movement of
+      CO2 or formation fluids outside the injection zone or AoR, or pressure
+      exceedance, the owner/operator must immediately notify the Director within
+      24 hours and take corrective action.
+    requirement_level: required
+    severity: critical
     expected_evidence_terms:
       - anomaly
       - anomalous pressure
@@ -354,20 +356,41 @@ items:
       - abnormal
       - loss of mechanical integrity
       - blockage
+      - notify Director within 24 hours
+      - unexpected movement
+      - pressure exceedance
+    evidence_groups:
+      trigger_conditions:
+        - anomaly
+        - anomalous pressure
+        - abnormal
+        - loss of mechanical integrity
+        - blockage
+      emergency_triggers:
+        - unexpected movement
+        - pressure exceedance
+      response_actions:
+        - investigation
+        - trigger
+        - notify Director within 24 hours
     reference_queries:
+      - What does 40 CFR 146.91(c) require for response to anomalous monitoring results?
       - What does EPA guidance say about responding to anomalous monitoring results?
     permit_precedent_queries:
       - How do applicants respond to anomalous pressure or flow readings?
     recommended_fix: >
-      Add trigger conditions and response actions for anomalous monitoring results.
+      Add trigger conditions including unexpected movement, pressure exceedance, and
+      loss of MI, with 24-hour Director notification and corrective action procedures
+      per 40 CFR 146.91(c).
 
   - item_id: reporting_procedure
     label: Reporting procedure
     description: >
-      The plan should describe how monitoring results will be reported or used in
-      compliance documentation.
-    requirement_level: recommended
-    severity: minor
+      Per 40 CFR 146.91(a), the owner/operator must submit semi-annual reports
+      including monthly average, maximum, and minimum values for operating
+      parameters. Reports must be submitted within 30 days of each six-month period.
+    requirement_level: required
+    severity: moderate
     expected_evidence_terms:
       - report
       - reporting
@@ -375,13 +398,33 @@ items:
       - compliance
       - submitted
       - records
+      - semi-annual report
+      - monthly average
+      - monthly maximum
+      - monthly minimum
+      - within 30 days
+    evidence_groups:
+      report_type:
+        - semi-annual report
+        - report
+        - reporting
+      content:
+        - monthly average
+        - monthly maximum
+        - monthly minimum
+        - records
+        - compliance
+      submission:
+        - submitted
+        - within 30 days
     reference_queries:
+      - What does 40 CFR 146.91(a) require for reporting monitoring data?
       - What reporting is required for Class VI monitoring data?
     permit_precedent_queries:
       - How do applicants report testing and monitoring results?
     recommended_fix: >
-      Add reporting frequency, reporting destination, and which monitoring data
-      will be included in compliance records.
+      Add semi-annual reporting with monthly averages, maximums, and minimums for
+      operating parameters, submitted within 30 days per 40 CFR 146.91(a).
       
   - item_id: co2_stream_analysis
     label: CO2 stream analysis
@@ -515,8 +558,9 @@ items:
   - item_id: mechanical_integrity_testing
     label: Mechanical integrity testing
     description: >
-      The plan should describe internal and external mechanical integrity tests,
-      including test methods, frequency, acceptance criteria, and response to
+      Per 40 CFR 146.89(a), the owner/operator must conduct internal and external
+      mechanical integrity tests at least once every five years. The plan should
+      describe test methods, frequency, acceptance criteria, and response to
       loss of mechanical integrity.
     requirement_level: required
     severity: critical
@@ -532,6 +576,8 @@ items:
       - noise log
       - oxygen activation log
       - loss of mechanical integrity
+      - at least once every 5 years
+      - five year frequency
     evidence_groups:
       mit_scope:
         - mechanical integrity test
@@ -546,6 +592,9 @@ items:
         - temperature log
         - noise log
         - oxygen activation log
+      frequency:
+        - at least once every 5 years
+        - five year frequency
       response:
         - loss of mechanical integrity
     reference_queries:

@@ -6,7 +6,7 @@ description: Review checklist for Class VI Site Operating Plans.
 items:
 - item_id: operating_parameters
   label: Operating parameters
-  description: The plan should define approved operating parameters.
+  description: Per 40 CFR 146.88(d) and (e)(1), the plan should define approved operating parameters and require continuous recording of injection pressure, rate, volume, mass, temperature, annulus pressure, and annulus fluid volume.
   requirement_level: required
   severity: critical
   expected_evidence_terms:
@@ -15,16 +15,35 @@ items:
   - injection rate
   - temperature
   - annulus pressure
+  - continuous recording
+  - rate
+  - volume
+  - mass
+  - annulus fluid volume
+  evidence_groups:
+    injection_parameters:
+    - maximum injection pressure
+    - injection rate
+    - temperature
+    - volume
+    - mass
+    - rate
+    annulus_parameters:
+    - annulus pressure
+    - annulus fluid volume
+    monitoring:
+    - operating parameters
+    - continuous recording
   reference_queries:
-  - What does Class VI require for operating parameters?
+  - What does 40 CFR 146.88(d) and (e)(1) require for operating parameters?
   - What does EPA guidance say about operating parameters?
   permit_precedent_queries:
   - How do applicants describe operating parameters?
   - What permit precedent exists for operating parameters?
-  recommended_fix: Add operating limits for pressure, rate, temperature, and annular pressure.
+  recommended_fix: Add operating limits for pressure, rate, temperature, volume, mass, annulus pressure, and annulus fluid volume with continuous recording per 40 CFR 146.88(d) and (e)(1).
 - item_id: injection_pressure_limit
   label: Injection pressure limit
-  description: The plan should define maximum injection pressure.
+  description: Per 40 CFR 146.88(a), injection pressure must not exceed 90 percent of the fracture pressure of the injection zone and must not initiate or propagate fractures in the confining zone.
   requirement_level: required
   severity: critical
   expected_evidence_terms:
@@ -32,34 +51,62 @@ items:
   - fracture pressure
   - pressure limit
   - MAIP
+  - 90 percent of fracture pressure
+  - 90 percent
+  - does not initiate fractures
+  - confining zone
+  evidence_groups:
+    pressure_limit:
+    - maximum injection pressure
+    - MAIP
+    - pressure limit
+    - 90 percent
+    - 90 percent of fracture pressure
+    fracture_protection:
+    - fracture pressure
+    - does not initiate fractures
+    - confining zone
   reference_queries:
-  - What does Class VI require for injection pressure limit?
-  - What does EPA guidance say about injection pressure limit?
+  - What does 40 CFR 146.88(a) require for injection pressure limits?
+  - What does EPA guidance say about the 90 percent fracture pressure rule?
   permit_precedent_queries:
-  - How do applicants describe injection pressure limit?
-  - What permit precedent exists for injection pressure limit?
-  recommended_fix: Add maximum injection pressure and technical basis.
+  - How do applicants describe injection pressure limit and MAIP?
+  - What permit precedent exists for injection pressure limits in Class VI wells?
+  recommended_fix: Add maximum injection pressure not to exceed 90 percent of fracture pressure and technical basis showing it will not initiate or propagate fractures in the confining zone per 40 CFR 146.88(a).
 - item_id: injection_fluid_characterization
   label: Injection fluid characterization
-  description: The plan should describe the injected CO2 stream.
+  description: Per 40 CFR 146.82(a)(7)(iv), the plan should describe the chemical and physical characteristics of the injected CO2 stream including composition, impurities, and expected variation.
   requirement_level: required
-  severity: moderate
+  severity: critical
   expected_evidence_terms:
   - CO2 stream
   - carbon dioxide stream
   - chemical characteristics
+  - physical characteristics
   - composition
   - impurities
+  - carbon dioxide stream analysis
+  evidence_groups:
+    stream_identity:
+    - CO2 stream
+    - carbon dioxide stream
+    chemical_properties:
+    - chemical characteristics
+    - composition
+    - impurities
+    - carbon dioxide stream analysis
+    physical_properties:
+    - physical characteristics
   reference_queries:
-  - What does Class VI require for injection fluid characterization?
+  - What does 40 CFR 146.82(a)(7)(iv) require for CO2 stream characterization?
   - What does EPA guidance say about injection fluid characterization?
   permit_precedent_queries:
   - How do applicants describe injection fluid characterization?
-  - What permit precedent exists for injection fluid characterization?
-  recommended_fix: Add CO2 stream composition, expected variation, and monitoring approach.
+  - What permit precedent exists for CO2 stream characterization?
+  recommended_fix: Add complete chemical and physical characterization of the CO2 stream including composition, impurities, and expected variation per 40 CFR 146.82(a)(7)(iv).
 - item_id: alarm_shutoff
   label: Alarm and shutoff systems
-  description: The plan should describe alarms and shutoff controls.
+  description: Per 40 CFR 146.88(e)(2), the plan must describe alarms and automatic surface shut-off systems, or at the Director's discretion down-hole shut-off systems, to protect USDWs when operating limits are exceeded.
   requirement_level: required
   severity: critical
   expected_evidence_terms:
@@ -68,28 +115,129 @@ items:
   - shutoff
   - setpoint
   - automatic
+  - automatic surface shut-off
+  - down-hole shut-off
+  - check valves
+  - alarm setpoints
+  evidence_groups:
+    shutoff_systems:
+    - shut-off
+    - shutoff
+    - automatic surface shut-off
+    - down-hole shut-off
+    - check valves
+    alarms:
+    - alarm
+    - alarm setpoints
+    triggers:
+    - setpoint
+    - automatic
   reference_queries:
-  - What does Class VI require for alarm and shutoff systems?
+  - What does 40 CFR 146.88(e)(2) require for alarm and automatic shutoff systems?
   - What does EPA guidance say about alarm and shutoff systems?
   permit_precedent_queries:
   - How do applicants describe alarm and shutoff systems?
   - What permit precedent exists for alarm and shutoff systems?
-  recommended_fix: Add alarm setpoints, shutoff logic, and response procedure.
+  recommended_fix: Add alarm setpoints, automatic surface shut-off systems (or down-hole shut-off at Director's discretion), check valves, and shutoff logic per 40 CFR 146.88(e)(2).
 - item_id: operations_recordkeeping
   label: Operations recordkeeping
-  description: The plan should describe operating records and reporting.
-  requirement_level: recommended
-  severity: minor
+  description: Per 40 CFR 146.88(e)(1) and 146.91, the plan must describe continuous recording of injection parameters and semi-annual reporting to the Director with monthly average, maximum, and minimum values.
+  requirement_level: required
+  severity: moderate
   expected_evidence_terms:
   - records
   - reporting
   - daily
   - monthly
   - operating data
+  - continuous recording devices
+  - semi-annual report
+  - monthly average
+  - monthly maximum
+  - monthly minimum
+  evidence_groups:
+    recordkeeping:
+    - records
+    - operating data
+    - continuous recording devices
+    - daily
+    reporting:
+    - reporting
+    - semi-annual report
+    reporting_values:
+    - monthly average
+    - monthly maximum
+    - monthly minimum
+    - monthly
   reference_queries:
-  - What does Class VI require for operations recordkeeping?
+  - What does 40 CFR 146.88(e)(1) and 146.91 require for operations recordkeeping?
   - What does EPA guidance say about operations recordkeeping?
   permit_precedent_queries:
   - How do applicants describe operations recordkeeping?
   - What permit precedent exists for operations recordkeeping?
-  recommended_fix: Add recordkeeping parameters, frequency, and reporting procedure.
+  recommended_fix: Add continuous recording devices, semi-annual reporting with monthly average/maximum/minimum values per 40 CFR 146.88(e)(1) and 146.91.
+- item_id: annulus_fluid_management
+  label: Annulus fluid management
+  description: Per 40 CFR 146.88(c), the owner or operator must fill the annulus with a non-corrosive fluid and maintain annulus pressure exceeding the operating injection pressure at all times. Injection between the outermost casing and wellbore is prohibited per 40 CFR 146.88(b).
+  requirement_level: required
+  severity: critical
+  expected_evidence_terms:
+  - annulus fluid
+  - non-corrosive fluid
+  - annulus pressure
+  - exceeds injection pressure
+  - annular pressure
+  - non-corrosive
+  - corrosion inhibitor
+  evidence_groups:
+    fluid_requirement:
+    - annulus fluid
+    - non-corrosive fluid
+    - non-corrosive
+    - corrosion inhibitor
+    pressure_requirement:
+    - annulus pressure
+    - exceeds injection pressure
+    - annular pressure
+  reference_queries:
+  - What does 40 CFR 146.88(c) require for annulus fluid management in Class VI wells?
+  - What does EPA guidance say about maintaining annulus pressure above injection pressure?
+  permit_precedent_queries:
+  - How do Class VI applicants describe annulus fluid management?
+  - What permit precedent exists for annulus pressure maintenance requirements?
+  recommended_fix: Add annulus fluid management plan specifying non-corrosive fluid, annulus pressure exceeding injection pressure, and prohibition on injection outside tubing per 40 CFR 146.88(b) and (c).
+- item_id: shutdown_response_procedure
+  label: Shutdown response procedure
+  description: Per 40 CFR 146.88(f), if a shutdown is triggered or mechanical integrity is lost, the owner or operator must immediately cease injection, notify the Director within 24 hours, investigate the cause, and demonstrate mechanical integrity before resuming injection.
+  requirement_level: required
+  severity: critical
+  expected_evidence_terms:
+  - shutdown
+  - cease injection
+  - notify Director
+  - 24 hours
+  - mechanical integrity
+  - loss of mechanical integrity
+  - resume injection
+  - shutdown response
+  - emergency response
+  evidence_groups:
+    immediate_response:
+    - shutdown
+    - cease injection
+    - emergency response
+    - shutdown response
+    notification:
+    - notify Director
+    - 24 hours
+    restoration:
+    - mechanical integrity
+    - loss of mechanical integrity
+    - resume injection
+  reference_queries:
+  - What does 40 CFR 146.88(f) require for shutdown response procedures?
+  - What does EPA guidance say about loss of mechanical integrity response?
+  permit_precedent_queries:
+  - How do Class VI applicants describe shutdown response procedures?
+  - What permit precedent exists for loss of mechanical integrity response plans?
+  recommended_fix: Add shutdown response procedure including immediate cessation of injection, Director notification within 24 hours, investigation, and demonstration of mechanical integrity before resuming per 40 CFR 146.88(f).

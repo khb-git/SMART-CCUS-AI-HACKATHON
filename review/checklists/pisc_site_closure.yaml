@@ -6,7 +6,7 @@ description: Review checklist for Post-Injection Site Care and Site Closure Plan
 items:
 - item_id: pisc_duration
   label: PISC duration
-  description: The plan should define the post-injection site care period.
+  description: Per 40 CFR 146.93(b), post-injection site care must last not less than 50 years unless the Director approves an alternative timeframe based on a technical demonstration that USDWs are not endangered.
   requirement_level: required
   severity: critical
   expected_evidence_terms:
@@ -15,16 +15,29 @@ items:
   - site care period
   - duration
   - 50 years
+  - not less than 50 years
+  - alternative timeframe
+  evidence_groups:
+    duration:
+    - PISC
+    - post-injection site care
+    - site care period
+    - duration
+    regulatory_standard:
+    - 50 years
+    - not less than 50 years
+    alternative:
+    - alternative timeframe
   reference_queries:
-  - What does Class VI require for pisc duration?
-  - What does EPA guidance say about pisc duration?
+  - What does 40 CFR 146.93(b) require for PISC duration?
+  - What does EPA guidance say about the default 50-year PISC period?
   permit_precedent_queries:
-  - How do applicants describe pisc duration?
-  - What permit precedent exists for pisc duration?
-  recommended_fix: Add the proposed PISC duration and technical basis.
+  - How do applicants describe PISC duration?
+  - What permit precedent exists for PISC duration?
+  recommended_fix: Add the proposed PISC duration and technical basis, referencing the 50-year default per 40 CFR 146.93(b).
 - item_id: plume_pressure_monitoring
   label: Plume and pressure monitoring
-  description: The plan should describe post-injection plume and pressure-front monitoring.
+  description: Per 40 CFR 146.93(a)(1), after cessation of injection the owner/operator must monitor the injection zone pressure and the CO2 plume to confirm movement is consistent with the permit, and notify the Director within 24 hours if data suggest migration is inconsistent with predictions.
   requirement_level: required
   severity: critical
   expected_evidence_terms:
@@ -33,16 +46,33 @@ items:
   - monitoring
   - post-injection
   - modeling
+  - injection zone pressure
+  - notify Director within 24 hours
+  - inconsistent with permit
+  - migration
+  evidence_groups:
+    monitoring_targets:
+    - plume
+    - pressure front
+    - injection zone pressure
+    - migration
+    comparison:
+    - modeling
+    - inconsistent with permit
+    notification:
+    - notify Director within 24 hours
+    - post-injection
+    - monitoring
   reference_queries:
-  - What does Class VI require for plume and pressure monitoring?
-  - What does EPA guidance say about plume and pressure monitoring?
+  - What does 40 CFR 146.93(a)(1) require for post-injection plume and pressure monitoring?
+  - What does EPA guidance say about monitoring after cessation of injection?
   permit_precedent_queries:
-  - How do applicants describe plume and pressure monitoring?
-  - What permit precedent exists for plume and pressure monitoring?
-  recommended_fix: Add post-injection plume and pressure-front monitoring methods and frequency.
+  - How do applicants describe plume and pressure monitoring after injection?
+  - What permit precedent exists for post-injection monitoring?
+  recommended_fix: Add post-injection plume and pressure-front monitoring methods, frequency, and 24-hour notification procedure if migration is inconsistent with the permit per 40 CFR 146.93(a)(1).
 - item_id: non_endangerment_demonstration
   label: Non-endangerment demonstration
-  description: The plan should describe how non-endangerment will be demonstrated.
+  description: Per 40 CFR 146.93(d), site closure requires a demonstration that CO2 injection has not caused and is not likely to cause movement of CO2 or formation fluids into a USDW, and that pressure buildup from injection does not pose a risk to USDWs.
   requirement_level: required
   severity: critical
   expected_evidence_terms:
@@ -51,52 +81,95 @@ items:
   - endangerment
   - demonstration
   - stabilization
+  - not caused movement
+  - not likely to cause
+  - formation fluid migration
+  - pressure buildup
+  evidence_groups:
+    protection_standard:
+    - non-endangerment
+    - USDW
+    - endangerment
+    demonstration_basis:
+    - demonstration
+    - stabilization
+    - not caused movement
+    - not likely to cause
+    migration_assessment:
+    - formation fluid migration
+    - pressure buildup
   reference_queries:
-  - What does Class VI require for non-endangerment demonstration?
-  - What does EPA guidance say about non-endangerment demonstration?
+  - What does 40 CFR 146.93(d) require for non-endangerment demonstration?
+  - What evidence is needed to demonstrate non-endangerment for site closure?
   permit_precedent_queries:
   - How do applicants describe non-endangerment demonstration?
   - What permit precedent exists for non-endangerment demonstration?
-  recommended_fix: Add criteria and evidence needed to demonstrate non-endangerment.
+  recommended_fix: Add non-endangerment criteria and evidence showing CO2 injection has not caused and is not likely to cause movement into a USDW, and that pressure buildup does not pose a risk per 40 CFR 146.93(d).
 - item_id: site_closure_activities
   label: Site closure activities
-  description: The plan should describe closure activities after PISC.
+  description: Per 40 CFR 146.93(e), upon Director approval of site closure the owner/operator must notify the Director within 60 days, submit a site closure report, and decommission surface equipment.
   requirement_level: required
-  severity: moderate
+  severity: critical
   expected_evidence_terms:
   - site closure
   - plugging
   - closure report
   - decommission
   - surface equipment
+  - notify Director within 60 days
+  - Director approval
+  evidence_groups:
+    closure_activities:
+    - site closure
+    - plugging
+    - decommission
+    - surface equipment
+    regulatory_steps:
+    - notify Director within 60 days
+    - Director approval
+    documentation:
+    - closure report
   reference_queries:
-  - What does Class VI require for site closure activities?
-  - What does EPA guidance say about site closure activities?
+  - What does 40 CFR 146.93(e) require for site closure activities?
+  - What does EPA guidance say about site closure?
   permit_precedent_queries:
   - How do applicants describe site closure activities?
   - What permit precedent exists for site closure activities?
-  recommended_fix: Add planned site closure actions, timing, and documentation.
+  recommended_fix: Add planned site closure actions including notification to Director within 60 days, site closure report, and decommissioning of surface equipment per 40 CFR 146.93(e).
 - item_id: record_retention
   label: Record retention
-  description: The plan should describe long-term recordkeeping after closure.
-  requirement_level: recommended
-  severity: minor
+  description: Per 40 CFR 146.93(c), the owner/operator must retain records for a period of 10 years following site closure and make them available to the Director upon request.
+  requirement_level: required
+  severity: moderate
   expected_evidence_terms:
   - records
   - retention
   - archive
   - closure report
   - documentation
+  - 10 years following site closure
+  - made available
+  evidence_groups:
+    retention_period:
+    - 10 years following site closure
+    - retention
+    record_types:
+    - records
+    - archive
+    - closure report
+    - documentation
+    accessibility:
+    - made available
   reference_queries:
-  - What does Class VI require for record retention?
+  - What does 40 CFR 146.93(c) require for record retention after site closure?
   - What does EPA guidance say about record retention?
   permit_precedent_queries:
   - How do applicants describe record retention?
   - What permit precedent exists for record retention?
-  recommended_fix: Add record retention responsibilities, duration, and storage location.
+  recommended_fix: Add 10-year record retention requirement following site closure and procedures for making records available to the Director per 40 CFR 146.93(c).
 - item_id: pisc_monitoring_program
   label: PISC monitoring program
-  description: The plan should describe the post-injection monitoring program, including monitoring parameters, locations, frequency, duration, and how results will be evaluated.
+  description: Per 40 CFR 146.93(a)(2)-(3), the plan should describe the post-injection monitoring program, including monitoring parameters, locations, frequency, duration, and how results will be evaluated.
   requirement_level: required
   severity: critical
   expected_evidence_terms:
@@ -123,16 +196,15 @@ items:
     - plume monitoring
     - geochemical monitoring
   reference_queries:
-  - What does Class VI require for post-injection site care monitoring?
+  - What does 40 CFR 146.93(a) require for post-injection site care monitoring?
   - What monitoring program information is expected in a PISC and Site Closure Plan?
   permit_precedent_queries:
   - How do Class VI applicants describe PISC monitoring programs?
   - What permit precedent exists for post-injection monitoring parameters and frequency?
-  recommended_fix: Add post-injection monitoring parameters, locations, frequency, duration, and evaluation procedures.
-
+  recommended_fix: Add post-injection monitoring parameters, locations, frequency, duration, and evaluation procedures per 40 CFR 146.93(a).
 - item_id: alternative_pisc_timeframe
   label: Alternative PISC timeframe
-  description: The plan should justify any alternative post-injection site care timeframe using site-specific monitoring, modeling, plume stabilization, pressure decline, and non-endangerment evidence.
+  description: Per 40 CFR 146.93(b), the Director may approve an alternative PISC timeframe based on a technical demonstration that no USDWs are endangered. The plan should justify any alternative timeframe using monitoring, modeling, plume stabilization, pressure decline, and non-endangerment evidence.
   requirement_level: recommended
   severity: moderate
   expected_evidence_terms:
@@ -159,16 +231,15 @@ items:
     protection_basis:
     - non-endangerment
   reference_queries:
-  - What does Class VI require for an alternative PISC timeframe?
+  - What does 40 CFR 146.93(b) allow for an alternative PISC timeframe?
   - What evidence supports reducing the default post-injection site care period?
   permit_precedent_queries:
   - How do Class VI applicants justify alternative PISC timeframes?
   - What permit precedent exists for alternative post-injection site care timelines?
-  recommended_fix: Add the proposed alternative PISC timeframe and technical justification based on monitoring, modeling, plume stabilization, pressure decline, and non-endangerment.
-
+  recommended_fix: Add the proposed alternative PISC timeframe and technical justification based on monitoring, modeling, plume stabilization, pressure decline, and non-endangerment per 40 CFR 146.93(b).
 - item_id: site_closure_report_contents
   label: Site closure report contents
-  description: The plan should describe the contents of the site closure report, including documentation of plugging, monitoring, non-endangerment, surface restoration, and final status.
+  description: Per 40 CFR 146.93(e), the site closure report should document plugging, monitoring, non-endangerment demonstration, surface restoration, and final site status.
   requirement_level: required
   severity: moderate
   expected_evidence_terms:
@@ -193,16 +264,15 @@ items:
     - surface restoration
     - decommissioning
   reference_queries:
-  - What information should be included in a Class VI site closure report?
+  - What does 40 CFR 146.93(e) require for site closure report contents?
   - What does EPA guidance say about site closure reporting after PISC?
   permit_precedent_queries:
   - How do Class VI applicants describe site closure report contents?
   - What permit precedent exists for site closure reporting?
-  recommended_fix: Add site closure report contents, including plugging documentation, monitoring results, non-endangerment evidence, surface restoration, and final site status.
-
+  recommended_fix: Add site closure report contents, including plugging documentation, monitoring results, non-endangerment evidence, surface restoration, and final site status per 40 CFR 146.93(e).
 - item_id: pisc_financial_responsibility_linkage
   label: PISC financial responsibility linkage
-  description: The plan should connect PISC and site closure activities to financial responsibility cost estimates and coverage.
+  description: Per 40 CFR 146.85(a)(2)-(3), the plan should connect PISC and site closure activities to financial responsibility cost estimates and coverage.
   requirement_level: recommended
   severity: moderate
   expected_evidence_terms:
@@ -231,11 +301,10 @@ items:
   permit_precedent_queries:
   - How do Class VI applicants connect PISC plans to financial responsibility cost estimates?
   - What permit precedent exists for PISC and site closure cost coverage?
-  recommended_fix: Add a cross-reference between PISC/site closure activities and financial responsibility cost estimates and coverage.
-
+  recommended_fix: Add a cross-reference between PISC/site closure activities and financial responsibility cost estimates and coverage per 40 CFR 146.85(a)(2)-(3).
 - item_id: post_closure_notice_records
   label: Post-closure notice and records
-  description: The plan should describe post-closure notifications, records, and documentation needed to preserve long-term information about the injection project and closed site.
+  description: Per 40 CFR 146.93(c), the plan should describe post-closure notifications, records, and documentation needed to preserve long-term information about the injection project and closed site.
   requirement_level: recommended
   severity: moderate
   expected_evidence_terms:
@@ -269,4 +338,4 @@ items:
   permit_precedent_queries:
   - How do Class VI applicants describe post-closure records and notifications?
   - What permit precedent exists for long-term records after site closure?
-  recommended_fix: Add post-closure notification procedures, recordkeeping responsibilities, and long-term document storage or property-record notice requirements.
+  recommended_fix: Add post-closure notification procedures, recordkeeping responsibilities, and long-term document storage or property-record notice requirements per 40 CFR 146.93(c).

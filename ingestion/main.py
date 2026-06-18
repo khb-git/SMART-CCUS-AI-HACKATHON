@@ -139,7 +139,7 @@ def infer_plan_type(file_path, metadata=None):
     if any(term in combined for term in ["site geologic", "geologic characterization", "site characterization"]):
         return "site_geologic_characterization"
 
-    if any(term in combined for term in ["project narrative", "application narrative", "narrative"]):
+    if any(term in combined for term in ["project narrative", "application narrative"]):
         return "project_narrative"
 
     return "unknown"
@@ -208,6 +208,26 @@ def looks_like_section_heading(line):
         "corrective action",
         "site closure",
         "emergency and remedial response",
+        "well plugging",
+        "plugging plan",
+        "injection well plugging",
+        "plugging schedule",
+        "fluid displacement",
+        "post-plugging",
+        "post plugging",
+        "post-injection site care",
+        "post injection site care",
+        "pisc",
+        "site operating",
+        "operating parameters",
+        "injection pressure",
+        "pre-operational testing",
+        "pre operational testing",
+        "formation testing",
+        "baseline monitoring",
+        "geologic characterization",
+        "confining zone",
+        "injection zone",
     ]
 
     return any(keyword in lowered for keyword in heading_keywords)
@@ -432,29 +452,51 @@ def extract_pdf_table_documents(file_path):
     return table_docs
 
 
-def extract_docx_documents(file_path):
-    """Extract DOCX paragraphs and tables as ingestion documents."""
+def extract_docx_documents(file_path, paragraphs_per_group=30):
+    """Extract DOCX paragraphs and tables as ingestion documents.
+
+    Paragraphs are grouped into logical sections rather than joined into a
+    single blob. Groups split at Word heading-style boundaries so that each
+    IngestionDocument maps to one section of the document. This lets
+    annotate_documents_with_section_context assign the correct heading to
+    each group's chunks instead of stamping the entire document with the
+    first heading it finds.
+    """
     from docx import Document
 
     doc = Document(str(file_path))
     documents = []
 
-    paragraph_text = "\n".join(
-        paragraph.text.strip()
-        for paragraph in doc.paragraphs
-        if paragraph.text.strip()
-    )
+    current_paragraphs: list[str] = []
+    page_index = 0
 
-    if paragraph_text:
-        documents.append(
-            IngestionDocument(
-                page_content=paragraph_text,
-                metadata={
-                    "page": 0,
-                    "content_type": "text",
-                },
+    def flush_group():
+        nonlocal page_index
+        if current_paragraphs:
+            documents.append(
+                IngestionDocument(
+                    page_content="\n".join(current_paragraphs),
+                    metadata={"page": page_index, "content_type": "text"},
+                )
             )
-        )
+            page_index += 1
+            current_paragraphs.clear()
+
+    for paragraph in doc.paragraphs:
+        text = paragraph.text.strip()
+        if not text:
+            continue
+
+        is_heading = paragraph.style.name.lower().startswith("heading")
+
+        if is_heading and current_paragraphs:
+            flush_group()
+        elif len(current_paragraphs) >= paragraphs_per_group:
+            flush_group()
+
+        current_paragraphs.append(text)
+
+    flush_group()
 
     for table_index, table in enumerate(doc.tables):
         rows = [
@@ -641,7 +683,7 @@ def process_file(file_path, output_root, metadata=None, chunk_size=1000, chunk_o
 
     raise ValueError(f"Unsupported file type: {suffix}")
 
-def chunk_with_langchain(source_dir, output_root, chunk_size=1000, chunk_overlap=100):
+def chunk_with_langchain(source_dir, output_root, chunk_size=1000, chunk_overlap=100, skip_existing=False):
     """Process all supported files in a raw data directory."""
     source_dir = Path(source_dir)
     output_root = Path(output_root)
@@ -663,6 +705,11 @@ def chunk_with_langchain(source_dir, output_root, chunk_size=1000, chunk_overlap
     for file_path in source_dir.iterdir():
         if file_path.suffix.lower() not in SUPPORTED_EXTENSIONS:
             stats["skipped"] += 1
+            continue
+
+        if skip_existing and (Path(output_root) / file_path.stem).exists():
+            stats["skipped"] += 1
+            print(f"Skipping already-ingested file: {file_path.name}")
             continue
 
         try:
@@ -687,7 +734,7 @@ def chunk_with_langchain(source_dir, output_root, chunk_size=1000, chunk_overlap
     return stats
 
 
-def chunk_from_manifest(manifest_path, output_root, chunk_size=1000, chunk_overlap=100):
+def chunk_from_manifest(manifest_path, output_root, chunk_size=1000, chunk_overlap=100, skip_existing=False):
     """Process downloaded files listed in a scraper manifest.
 
     Uses each manifest entry's local_path field, which is written by
@@ -700,6 +747,7 @@ def chunk_from_manifest(manifest_path, output_root, chunk_size=1000, chunk_overl
         "skipped_missing_local_path": 0,
         "skipped_missing_file": 0,
         "skipped_unsupported_type": 0,
+        "skipped_existing": 0,
         "failed": 0,
     }
 
@@ -719,6 +767,11 @@ def chunk_from_manifest(manifest_path, output_root, chunk_size=1000, chunk_overl
         if file_path.suffix.lower() not in SUPPORTED_EXTENSIONS:
             stats["skipped_unsupported_type"] += 1
             print(f"Skipping unsupported file type: {file_path}")
+            continue
+
+        if skip_existing and (Path(output_root) / file_path.stem).exists():
+            stats["skipped_existing"] += 1
+            print(f"Skipping already-ingested file: {file_path.name}")
             continue
 
         try:
@@ -777,6 +830,14 @@ def parse_args():
         default=100,
         help="LangChain splitter chunk overlap. Default: 100.",
     )
+    parser.add_argument(
+        "--skip-existing",
+        action="store_true",
+        help=(
+            "Skip files whose output folder already exists under --output. "
+            "Useful for incremental re-runs without creating duplicate chunks."
+        ),
+    )
     return parser.parse_args()
 
 
@@ -798,6 +859,7 @@ def main():
             output_root=selected_output,
             chunk_size=args.chunk_size,
             chunk_overlap=args.chunk_overlap,
+            skip_existing=args.skip_existing,
         )
     elif selected_source_dir:
         stats = chunk_with_langchain(
@@ -805,6 +867,7 @@ def main():
             output_root=selected_output,
             chunk_size=args.chunk_size,
             chunk_overlap=args.chunk_overlap,
+            skip_existing=args.skip_existing,
         )
     else:
         raise ValueError(

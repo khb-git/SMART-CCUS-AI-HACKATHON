@@ -6,7 +6,7 @@ description: Review checklist for Financial Responsibility demonstrations.
 items:
 - item_id: cost_estimate
   label: Cost estimate
-  description: The document should provide cost estimates for required Class VI activities.
+  description: Per 40 CFR 146.85(a)(1), financial responsibility must cover the estimated costs of plugging and abandonment, post-injection site care, and corrective action, all expressed in current dollars.
   requirement_level: required
   severity: critical
   expected_evidence_terms:
@@ -15,14 +15,20 @@ items:
   - closure cost
   - corrective action cost
   - PISC cost
+  - current dollars
+  - plugging and abandonment
+  - post-injection site care
   evidence_groups:
     estimate:
       - cost estimate
       - estimated cost
+      - current dollars
     activity_costs:
       - closure cost
       - corrective action cost
       - PISC cost
+      - plugging and abandonment
+      - post-injection site care
   reference_queries:
   - What does Class VI require for cost estimate?
   - What does EPA guidance say about cost estimate?
@@ -33,7 +39,7 @@ items:
     response.
 - item_id: financial_instrument
   label: Financial instrument
-  description: The document should identify the financial instrument used.
+  description: Per 40 CFR 146.85(b), acceptable financial instruments include trust funds, surety bonds, letters of credit, insurance, self-insurance, financial tests, and corporate guarantees. The instrument must be payable to the Director.
   requirement_level: required
   severity: critical
   expected_evidence_terms:
@@ -42,6 +48,10 @@ items:
   - surety bond
   - trust fund
   - insurance
+  - self-insurance
+  - financial test
+  - corporate guarantee
+  - payable to the Director
   evidence_groups:
     instrument_type:
       - financial instrument
@@ -49,6 +59,11 @@ items:
       - surety bond
       - trust fund
       - insurance
+      - self-insurance
+      - financial test
+      - corporate guarantee
+    payable_to:
+      - payable to the Director
   reference_queries:
   - What does Class VI require for financial instrument?
   - What does EPA guidance say about financial instrument?
@@ -58,7 +73,7 @@ items:
   recommended_fix: Add the financial instrument type, provider, amount, and coverage period.
 - item_id: coverage_amount
   label: Coverage amount
-  description: The document should show that financial coverage equals or exceeds estimated costs.
+  description: Per 40 CFR 146.85(a), financial coverage must equal or exceed the estimated costs in current dollars and must be maintained throughout the life of the project.
   requirement_level: required
   severity: critical
   expected_evidence_terms:
@@ -67,14 +82,21 @@ items:
   - face value
   - cost estimate
   - financial assurance
+  - current dollars
+  - maintained throughout
+  - life of the project
   evidence_groups:
     coverage:
       - coverage amount
       - amount
       - face value
+      - current dollars
     cost_basis:
       - cost estimate
       - financial assurance
+    continuity:
+      - maintained throughout
+      - life of the project
   reference_queries:
   - What does Class VI require for coverage amount?
   - What does EPA guidance say about coverage amount?
@@ -84,8 +106,8 @@ items:
   recommended_fix: Add coverage amount and comparison to estimated costs.
 - item_id: inflation_adjustment
   label: Inflation adjustment
-  description: The document should address cost updates or inflation adjustment.
-  requirement_level: recommended
+  description: Per 40 CFR 146.85(c), the owner/operator must annually adjust cost estimates to reflect inflation and notify the Director within 30 days if the financial instrument must be revised to cover adjusted costs.
+  requirement_level: required
   severity: moderate
   expected_evidence_terms:
   - inflation
@@ -93,14 +115,23 @@ items:
   - annual update
   - cost update
   - recalculation
+  - annually
+  - within 30 days
+  - notify Director
+  - current dollars
   evidence_groups:
     adjustment:
       - inflation
       - adjustment
+      - current dollars
     update_frequency:
       - annual update
       - cost update
       - recalculation
+      - annually
+    notification:
+      - within 30 days
+      - notify Director
   reference_queries:
   - What does Class VI require for inflation adjustment?
   - What does EPA guidance say about inflation adjustment?
@@ -110,8 +141,8 @@ items:
   recommended_fix: Add update frequency and inflation/cost adjustment method.
 - item_id: instrument_validity
   label: Instrument validity
-  description: The document should show instrument validity and enforceability.
-  requirement_level: recommended
+  description: Per 40 CFR 146.85(e), the financial instrument must remain valid and in effect throughout the life of the project and must be continuously maintained.
+  requirement_level: required
   severity: moderate
   expected_evidence_terms:
   - effective date
@@ -119,6 +150,8 @@ items:
   - issuer
   - beneficiary
   - terms and conditions
+  - life of the project
+  - continuously maintained
   evidence_groups:
     dates:
       - effective date
@@ -128,6 +161,9 @@ items:
       - beneficiary
     enforceability:
       - terms and conditions
+    continuity:
+      - life of the project
+      - continuously maintained
   reference_queries:
   - What does Class VI require for instrument validity?
   - What does EPA guidance say about instrument validity?
@@ -268,8 +304,8 @@ items:
 
 - item_id: instrument_update_replacement
   label: Instrument update and replacement process
-  description: The demonstration should explain how financial instruments will be updated, replaced, or replenished if costs change, coverage is drawn down, or the instrument is cancelled or expires.
-  requirement_level: recommended
+  description: Per 40 CFR 146.85(c), the owner/operator must update or replace financial instruments when costs change, coverage is drawn down, or an instrument is cancelled or expires, to ensure continuous coverage.
+  requirement_level: required
   severity: moderate
   expected_evidence_terms:
   - update

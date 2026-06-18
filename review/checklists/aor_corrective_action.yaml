@@ -84,7 +84,7 @@ items:
   recommended_fix: Add a complete inventory and evaluation of wells and artificial penetrations.
 - item_id: corrective_action_plan
   label: Corrective action plan
-  description: The plan should describe corrective action for deficient wells or penetrations.
+  description: Per 40 CFR 146.84(d), corrective action must be performed on all wells within the AoR using materials compatible with long-term contact with the CO2 stream. The plan should describe corrective action methods for deficient wells or penetrations.
   requirement_level: required
   severity: critical
   expected_evidence_terms:
@@ -93,49 +93,62 @@ items:
   - remediation
   - deficient wells
   - wellbore
+  - CO2-compatible materials
+  - compatible with carbon dioxide
   evidence_groups:
     action:
       - corrective action
       - remediation
     method:
       - plugging
+      - CO2-compatible materials
+      - compatible with carbon dioxide
     target:
       - deficient wells
       - wellbore
   reference_queries:
-  - What does Class VI require for corrective action plan?
+  - What does 40 CFR 146.84(d) require for corrective action plan?
   - What does EPA guidance say about corrective action plan?
   permit_precedent_queries:
   - How do applicants describe corrective action plan?
   - What permit precedent exists for corrective action plan?
-  recommended_fix: Add corrective action methods, schedule, and verification requirements.
+  recommended_fix: Add corrective action methods, schedule, and verification requirements using CO2-compatible materials per 40 CFR 146.84(d).
 - item_id: aor_reevaluation
   label: AoR reevaluation
-  description: The plan should describe when AoR reevaluation occurs.
-  requirement_level: recommended
-  severity: moderate
+  description: Per 40 CFR 146.84(e), the owner or operator must reevaluate the area of review at a minimum fixed frequency not to exceed five years, and whenever monitoring or operational data indicate CO2 or brine may have migrated outside the predicted plume.
+  requirement_level: required
+  severity: critical
   expected_evidence_terms:
   - reevaluation
   - re-evaluation
   - model update
   - monitoring data
   - AoR update
+  - five years
+  - not to exceed five years
+  - minimum fixed frequency
+  - reevaluation frequency
   evidence_groups:
     reevaluation:
       - reevaluation
       - re-evaluation
+      - reevaluation frequency
+    frequency:
+      - five years
+      - not to exceed five years
+      - minimum fixed frequency
     triggers:
       - monitoring data
     updates:
       - model update
       - AoR update
   reference_queries:
-  - What does Class VI require for aor reevaluation?
+  - What does 40 CFR 146.84(e) require for AoR reevaluation frequency?
   - What does EPA guidance say about aor reevaluation?
   permit_precedent_queries:
   - How do applicants describe aor reevaluation?
   - What permit precedent exists for aor reevaluation?
-  recommended_fix: Add reevaluation triggers, frequency, and update procedure.
+  recommended_fix: Add AoR reevaluation at a minimum fixed frequency not to exceed five years per 40 CFR 146.84(e), and describe triggers for unscheduled reevaluation.
 - item_id: model_input_parameters
   label: Model input parameters
   description: The plan should identify the model input parameters used to delineate the AoR, including geologic, hydrogeologic, operational, and fluid-property inputs.

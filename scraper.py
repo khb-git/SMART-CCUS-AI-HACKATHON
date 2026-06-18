@@ -37,6 +37,7 @@ from __future__ import annotations
 import argparse
 import json
 import logging
+import re
 import sys
 import time
 from dataclasses import asdict, dataclass
@@ -63,6 +64,20 @@ DEFAULT_TIMEOUT_SECONDS = 30
 DEFAULT_USER_AGENT = (
     "NittCarb-AI-Scraper/0.1 (research; contact: team@nittcarb.local)"
 )
+
+# Matches EPA-style file metadata noise in summary text, e.g.:
+#   (PDF)  (PDF)(5 pp, 2.3 MB, January 2024)  (2.3 MB)
+_FILE_META_NOISE = re.compile(
+    r"\(\s*(?:PDF|DOCX?|XLSX?|XLS)\s*\)"
+    r"|\(\s*\d+\s*pp[.,\s][^)]*\)"
+    r"|\(\s*[\d.,]+\s*(?:KB|MB|GB)\s*\)",
+    re.IGNORECASE,
+)
+
+
+def clean_summary(text: str) -> str:
+    """Strip file-metadata noise from a summary string."""
+    return " ".join(_FILE_META_NOISE.sub("", text).split())
 
 
 @dataclass
@@ -121,21 +136,27 @@ def extract_summary(link: Tag) -> str:
     # If the parent text is much longer than the link text, the extra is
     # probably the summary. If they're roughly equal, the link IS the summary.
     if len(parent_text) > len(link_text) + 10:
-        return parent_text
-    return link_text
+        return clean_summary(parent_text)
+    return clean_summary(link_text)
 
 
 def scrape_page(
     url: str,
     session: requests.Session,
     timeout: int = DEFAULT_TIMEOUT_SECONDS,
+    seen_urls: set[str] | None = None,
 ) -> list[FileEntry]:
-    """Scrape one docket page and return all downloadable file entries."""
+    """Scrape one docket page and return all downloadable file entries.
+
+    Pass a shared ``seen_urls`` set across multiple pages to deduplicate
+    the same file appearing on more than one docket page.
+    """
     html = fetch_page(url, session, timeout)
     soup = BeautifulSoup(html, "html.parser")
 
     entries: list[FileEntry] = []
-    seen_urls: set[str] = set()
+    if seen_urls is None:
+        seen_urls = set()
 
     for link in soup.find_all("a", href=True):
         href = link["href"]
@@ -144,8 +165,8 @@ def scrape_page(
 
         absolute_url = urljoin(url, href)
 
-        # Deduplicate within a single page — sometimes the same file is
-        # linked multiple times (e.g., in a sidebar AND in the body).
+        # Deduplicate across all scraped pages so the same file linked
+        # on multiple docket pages only appears once in the manifest.
         if absolute_url in seen_urls:
             continue
         seen_urls.add(absolute_url)
@@ -169,10 +190,15 @@ def scrape_pages(
     user_agent: str = DEFAULT_USER_AGENT,
     retries: int = 3,
     backoff_factor: float = 0.5,
+    append: bool = False,
 ) -> int:
     """Scrape multiple pages and write a combined JSON manifest.
 
-    Returns the number of file entries written.
+    When ``append=True`` and the output file already exists, new entries are
+    merged into it rather than replacing it. URLs already in the manifest are
+    skipped so the manifest stays deduplicated.
+
+    Returns the number of file entries written to the manifest.
     """
     session = build_retry_session(
         retries=retries,
@@ -180,16 +206,32 @@ def scrape_pages(
         user_agent=user_agent,
     )
 
-    all_entries: list[FileEntry] = []
+    # Shared set prevents the same URL from appearing twice whether it is
+    # linked on multiple pages in this run or already in an existing manifest.
+    seen_urls: set[str] = set()
+    existing_entries: list[FileEntry] = []
+
+    if append and output_path.exists():
+        try:
+            existing_data = json.loads(output_path.read_text(encoding="utf-8"))
+            existing_entries = [FileEntry(**e) for e in existing_data]
+            seen_urls.update(e.url for e in existing_entries)
+            logger.info("Loaded %d existing entries for append", len(existing_entries))
+        except Exception as exc:
+            logger.warning("Could not load existing manifest for append: %s", exc)
+
+    new_entries: list[FileEntry] = []
     for i, url in enumerate(urls):
         if i > 0:
             time.sleep(request_delay)  # politeness between requests
         try:
-            all_entries.extend(scrape_page(url, session, timeout))
+            new_entries.extend(scrape_page(url, session, timeout, seen_urls=seen_urls))
         except requests.RequestException as exc:
             logger.error("Failed to scrape %s: %s", url, exc)
             # Continue with remaining pages — one broken URL shouldn't
             # nuke the whole manifest.
+
+    all_entries = existing_entries + new_entries
 
     output_path.parent.mkdir(parents=True, exist_ok=True)
     output_path.write_text(
@@ -250,6 +292,14 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         help="Retry backoff factor. Default: 0.5",
     )
     parser.add_argument(
+        "--append",
+        action="store_true",
+        help=(
+            "Merge new entries into an existing manifest instead of overwriting it. "
+            "URLs already in the manifest are skipped."
+        ),
+    )
+    parser.add_argument(
         "--render-js",
         action="store_true",
         help="Reserved for future JavaScript-rendered pages. Not implemented yet.",
@@ -294,6 +344,7 @@ def main(argv: list[str] | None = None) -> int:
         timeout=args.timeout,
         retries=args.retries,
         backoff_factor=args.backoff,
+        append=args.append,
     )
     print(f"Wrote {count} file entries to {args.output}")
     return 0

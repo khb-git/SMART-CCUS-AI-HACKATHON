@@ -6,7 +6,7 @@ description: Review checklist for Site Geologic Characterization documents.
 items:
 - item_id: injection_zone
   label: Injection zone characterization
-  description: The document should characterize the injection zone.
+  description: Per 40 CFR 146.82(a)(3)(iii) and 146.83(a)(1), the document should characterize the injection zone including depth, areal extent, thickness, mineralogy, porosity, permeability, and capillary pressure.
   requirement_level: required
   severity: critical
   expected_evidence_terms:
@@ -15,16 +15,35 @@ items:
   - permeability
   - thickness
   - formation
+  - areal extent
+  - mineralogy
+  - capillary pressure
+  - lithology
+  - depth
+  evidence_groups:
+    zone_definition:
+    - injection zone
+    - formation
+    - depth
+    - lithology
+    physical_properties:
+    - porosity
+    - permeability
+    - thickness
+    - areal extent
+    - capillary pressure
+    mineralogy:
+    - mineralogy
   reference_queries:
-  - What does Class VI require for injection zone characterization?
+  - What does 40 CFR 146.82(a)(3)(iii) require for injection zone characterization?
   - What does EPA guidance say about injection zone characterization?
   permit_precedent_queries:
   - How do applicants describe injection zone characterization?
   - What permit precedent exists for injection zone characterization?
-  recommended_fix: Add injection-zone lithology, thickness, porosity, permeability, and pressure data.
+  recommended_fix: Add injection zone depth, areal extent, thickness, mineralogy, porosity, permeability, and capillary pressure per 40 CFR 146.82(a)(3)(iii) and 146.83(a)(1).
 - item_id: confining_zone
   label: Confining zone characterization
-  description: The document should characterize confining zones.
+  description: Per 40 CFR 146.82(a)(3)(iii) and 146.83(a)(2), the document should characterize confining zones including absence of transmissive faults or fractures, areal extent, integrity, and capillary pressure.
   requirement_level: required
   severity: critical
   expected_evidence_terms:
@@ -33,16 +52,36 @@ items:
   - seal
   - shale
   - confinement
+  - transmissive faults
+  - transmissive fractures
+  - capillary pressure
+  - areal extent
+  - integrity
+  evidence_groups:
+    zone_definition:
+    - confining zone
+    - caprock
+    - seal
+    - shale
+    containment:
+    - confinement
+    - integrity
+    - areal extent
+    fault_fracture_assessment:
+    - transmissive faults
+    - transmissive fractures
+    properties:
+    - capillary pressure
   reference_queries:
-  - What does Class VI require for confining zone characterization?
+  - What does 40 CFR 146.83(a)(2) require for confining zone characterization?
   - What does EPA guidance say about confining zone characterization?
   permit_precedent_queries:
   - How do applicants describe confining zone characterization?
   - What permit precedent exists for confining zone characterization?
-  recommended_fix: Add confining-zone thickness, lithology, integrity, and lateral continuity.
+  recommended_fix: Add confining zone thickness, lithology, integrity, lateral continuity, absence of transmissive faults or fractures, and capillary pressure per 40 CFR 146.82(a)(3)(iii) and 146.83(a)(2).
 - item_id: geologic_structure
   label: Geologic structure
-  description: The document should describe faults, fractures, and structural features.
+  description: Per 40 CFR 146.82(a)(3)(ii), the document should describe the location, orientation, and properties of known or suspected faults and fractures that may transect the confining zone.
   requirement_level: required
   severity: critical
   expected_evidence_terms:
@@ -51,16 +90,34 @@ items:
   - structure
   - seismic
   - trap
+  - orientation
+  - location of faults
+  - transect
+  - geologic heterogeneities
+  evidence_groups:
+    structural_features:
+    - fault
+    - fracture
+    - structure
+    - trap
+    fault_characterization:
+    - orientation
+    - location of faults
+    - transect
+    containment_assessment:
+    - geologic heterogeneities
+    data_sources:
+    - seismic
   reference_queries:
-  - What does Class VI require for geologic structure?
+  - What does 40 CFR 146.82(a)(3)(ii) require for fault and fracture characterization?
   - What does EPA guidance say about geologic structure?
   permit_precedent_queries:
   - How do applicants describe geologic structure?
   - What permit precedent exists for geologic structure?
-  recommended_fix: Add structural interpretation and implications for containment.
+  recommended_fix: Add location, orientation, and properties of known or suspected faults and fractures that may transect the confining zone, and determination that they would not interfere with containment per 40 CFR 146.82(a)(3)(ii).
 - item_id: hydrogeology
   label: Hydrogeology
-  description: The document should describe groundwater and USDW context.
+  description: Per 40 CFR 146.82(a)(5), the document should describe groundwater and USDW context including the vertical and lateral limits of all USDWs, direction of water movement, and stratigraphic cross sections.
   requirement_level: required
   severity: critical
   expected_evidence_terms:
@@ -69,28 +126,133 @@ items:
   - aquifer
   - hydraulic gradient
   - water quality
+  - direction of water movement
+  - vertical limits
+  - lateral limits
+  - stratigraphic cross sections
+  evidence_groups:
+    usdw_description:
+    - USDW
+    - aquifer
+    - water quality
+    groundwater_context:
+    - groundwater
+    - hydraulic gradient
+    - direction of water movement
+    spatial_context:
+    - vertical limits
+    - lateral limits
+    - stratigraphic cross sections
   reference_queries:
-  - What does Class VI require for hydrogeology?
+  - What does 40 CFR 146.82(a)(5) require for hydrogeology?
   - What does EPA guidance say about hydrogeology?
   permit_precedent_queries:
   - How do applicants describe hydrogeology?
   - What permit precedent exists for hydrogeology?
-  recommended_fix: Add hydrogeologic context, USDWs, groundwater quality, and flow direction.
+  recommended_fix: Add hydrogeologic context including vertical and lateral limits of USDWs, groundwater quality, direction of water movement, and stratigraphic cross sections per 40 CFR 146.82(a)(5).
 - item_id: geochemical_data
   label: Geochemical data
-  description: The document should include fluid and rock chemistry information.
-  requirement_level: recommended
-  severity: moderate
+  description: Per 40 CFR 146.82(a)(6), baseline geochemical data on subsurface formations including all USDWs in the area of review is a required element, not optional.
+  requirement_level: required
+  severity: critical
   expected_evidence_terms:
   - geochemical
   - brine
   - fluid chemistry
   - mineralogy
   - compatibility
+  - baseline geochemical data
+  - subsurface formations
+  - formation fluids
+  - geochemical baseline
+  evidence_groups:
+    baseline_data:
+    - baseline geochemical data
+    - geochemical baseline
+    - geochemical
+    fluid_chemistry:
+    - brine
+    - fluid chemistry
+    - formation fluids
+    rock_chemistry:
+    - mineralogy
+    compatibility_assessment:
+    - compatibility
+    - subsurface formations
   reference_queries:
-  - What does Class VI require for geochemical data?
+  - What does 40 CFR 146.82(a)(6) require for baseline geochemical data?
   - What does EPA guidance say about geochemical data?
   permit_precedent_queries:
   - How do applicants describe geochemical data?
   - What permit precedent exists for geochemical data?
-  recommended_fix: Add geochemical data relevant to injectivity, corrosion, and containment.
+  recommended_fix: Add baseline geochemical data on subsurface formations including all USDWs in the area of review, relevant to injectivity, corrosion, and containment per 40 CFR 146.82(a)(6).
+- item_id: geomechanical_data
+  label: Geomechanical data
+  description: Per 40 CFR 146.82(a)(3)(iv), the document must include geomechanical information on fractures, stress, ductility, rock strength, and in situ fluid pressures within the confining zone(s).
+  requirement_level: required
+  severity: critical
+  expected_evidence_terms:
+  - geomechanical
+  - stress
+  - rock strength
+  - ductility
+  - in situ pressure
+  - in situ fluid pressure
+  - fracture properties
+  - geomechanical information
+  - confining zone strength
+  evidence_groups:
+    mechanical_properties:
+    - rock strength
+    - ductility
+    - geomechanical
+    - geomechanical information
+    - confining zone strength
+    stress_conditions:
+    - stress
+    - in situ pressure
+    - in situ fluid pressure
+    fracture_characterization:
+    - fracture properties
+  reference_queries:
+  - What does 40 CFR 146.82(a)(3)(iv) require for geomechanical information in confining zones?
+  - What does EPA guidance say about geomechanical data for Class VI wells?
+  permit_precedent_queries:
+  - How do Class VI applicants describe geomechanical data for confining zones?
+  - What permit precedent exists for geomechanical characterization?
+  recommended_fix: Add geomechanical information on fractures, stress, ductility, rock strength, and in situ fluid pressures within the confining zone(s) per 40 CFR 146.82(a)(3)(iv).
+- item_id: seismic_assessment
+  label: Seismic hazard assessment
+  description: Per 40 CFR 146.82(a)(3)(v), the document must include information on seismic history including the presence and depth of seismic sources and a determination that seismicity would not interfere with containment.
+  requirement_level: required
+  severity: critical
+  expected_evidence_terms:
+  - seismic history
+  - seismic sources
+  - seismicity
+  - seismic hazard
+  - induced seismicity
+  - containment interference
+  - seismic risk
+  - earthquake
+  - tectonic
+  evidence_groups:
+    seismic_characterization:
+    - seismic history
+    - seismic sources
+    - seismicity
+    - tectonic
+    hazard_assessment:
+    - seismic hazard
+    - induced seismicity
+    - seismic risk
+    - earthquake
+    containment_determination:
+    - containment interference
+  reference_queries:
+  - What does 40 CFR 146.82(a)(3)(v) require for seismic history and containment determination?
+  - What does EPA guidance say about seismic assessment for Class VI wells?
+  permit_precedent_queries:
+  - How do Class VI applicants describe seismic history and risk?
+  - What permit precedent exists for seismic hazard assessment?
+  recommended_fix: Add seismic history including the presence and depth of seismic sources and a determination that seismicity would not interfere with containment per 40 CFR 146.82(a)(3)(v).

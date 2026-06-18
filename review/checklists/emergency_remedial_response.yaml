@@ -6,7 +6,7 @@ description: Review checklist for Emergency and Remedial Response Plans.
 items:
 - item_id: emergency_triggers
   label: Emergency response triggers
-  description: The plan should identify events that trigger emergency or remedial response.
+  description: Per 40 CFR 146.91(c) and 146.94(a), the plan should identify triggering events including loss of mechanical integrity, unexpected movement of CO2 or formation fluids out of the injection zone, injection pressure exceeding MAIP, and monitoring results indicating migration outside the AoR.
   requirement_level: required
   severity: critical
   expected_evidence_terms:
@@ -16,16 +16,35 @@ items:
   - excursion
   - loss of mechanical integrity
   - USDW
+  - pressure exceedance
+  - migration outside AoR
+  - unexpected movement
+  - monitoring trigger
+  evidence_groups:
+    trigger_types:
+    - trigger
+    - emergency
+    - excursion
+    - release
+    integrity_triggers:
+    - loss of mechanical integrity
+    - unexpected movement
+    migration_triggers:
+    - migration outside AoR
+    - pressure exceedance
+    - monitoring trigger
+    protected_resource:
+    - USDW
   reference_queries:
-  - What does Class VI require for emergency response triggers?
-  - What does EPA guidance say about emergency response triggers?
+  - What does 40 CFR 146.91(c) and 146.94(a) require for emergency response triggers?
+  - What events trigger emergency notification under Class VI requirements?
   permit_precedent_queries:
   - How do applicants describe emergency response triggers?
   - What permit precedent exists for emergency response triggers?
-  recommended_fix: Add clear trigger conditions for emergency and remedial response.
+  recommended_fix: Add specific trigger conditions per 40 CFR 146.91(c) including loss of MI, unexpected fluid movement, pressure exceedance, and monitoring results indicating migration outside the AoR.
 - item_id: notification_procedure
   label: Notification procedure
-  description: The plan should describe required notifications and reporting timelines.
+  description: Per 40 CFR 146.94(a)(2) and 146.91(c), the owner/operator must notify the Director within 24 hours of a triggering event and submit a written report within 30 days.
   requirement_level: required
   severity: critical
   expected_evidence_terms:
@@ -35,16 +54,32 @@ items:
   - EPA
   - report
   - emergency contact
+  - within 24 hours
+  - written report within 30 days
+  - 30-day report
+  evidence_groups:
+    timing:
+    - 24-hour
+    - within 24 hours
+    notification_content:
+    - notification
+    - report
+    - written report within 30 days
+    - 30-day report
+    recipients:
+    - Director
+    - EPA
+    - emergency contact
   reference_queries:
-  - What does Class VI require for notification procedure?
-  - What does EPA guidance say about notification procedure?
+  - What does 40 CFR 146.94(a)(2) and 146.91(c) require for emergency notification procedures?
+  - What notification timelines apply under Class VI emergency requirements?
   permit_precedent_queries:
   - How do applicants describe notification procedure?
   - What permit precedent exists for notification procedure?
-  recommended_fix: Add notification contacts, timelines, and responsible personnel.
+  recommended_fix: Add notification contacts, 24-hour notification timeline, and 30-day written report requirement per 40 CFR 146.94(a)(2) and 146.91(c).
 - item_id: shut_in_procedure
   label: Shut-in procedure
-  description: The plan should describe when and how injection will be shut in.
+  description: Per 40 CFR 146.94(a)(1), if a triggering event occurs the owner/operator must immediately cease injection. The plan should describe shut-in criteria, responsible personnel, and the requirement to obtain Director approval before resuming injection per 40 CFR 146.94(a)(4).
   requirement_level: required
   severity: critical
   expected_evidence_terms:
@@ -53,16 +88,29 @@ items:
   - cease injection
   - automatic
   - manual
+  - immediately cease injection
+  - Director approval before resuming
+  evidence_groups:
+    shutdown_action:
+    - shut-in
+    - shut off
+    - cease injection
+    - immediately cease injection
+    method:
+    - automatic
+    - manual
+    resumption:
+    - Director approval before resuming
   reference_queries:
-  - What does Class VI require for shut-in procedure?
-  - What does EPA guidance say about shut-in procedure?
+  - What does 40 CFR 146.94(a)(1) require for shut-in procedures?
+  - What does EPA guidance say about ceasing injection during emergencies?
   permit_precedent_queries:
   - How do applicants describe shut-in procedure?
   - What permit precedent exists for shut-in procedure?
-  recommended_fix: Add shut-in criteria, responsible personnel, and restart conditions.
+  recommended_fix: Add shut-in criteria, immediate cessation requirement, responsible personnel, and Director approval condition for resumption per 40 CFR 146.94(a)(1) and (a)(4).
 - item_id: remedial_actions
   label: Remedial actions
-  description: The plan should describe actions to address releases or endangerment.
+  description: Per 40 CFR 146.94(b)(3)-(4), the plan should describe procedures for controlling any release and for remediation. Per 40 CFR 146.94(b)(6), the plan must include steps to replace domestic water supplies adversely affected by the release.
   requirement_level: required
   severity: critical
   expected_evidence_terms:
@@ -71,17 +119,36 @@ items:
   - mitigation
   - containment
   - response action
+  - procedures for controlling
+  - remediation procedures
+  - replace domestic water supply
+  - source location procedures
+  evidence_groups:
+    response_actions:
+    - remedial action
+    - corrective action
+    - response action
+    control_methods:
+    - procedures for controlling
+    - mitigation
+    - containment
+    remediation:
+    - remediation procedures
+    water_supply:
+    - replace domestic water supply
+    investigation:
+    - source location procedures
   reference_queries:
-  - What does Class VI require for remedial actions?
-  - What does EPA guidance say about remedial actions?
+  - What does 40 CFR 146.94(b)(3)-(6) require for remedial actions?
+  - What remediation procedures should be in a Class VI emergency and remedial response plan?
   permit_precedent_queries:
   - How do applicants describe remedial actions?
   - What permit precedent exists for remedial actions?
-  recommended_fix: Add specific remedial actions for plausible emergency scenarios.
+  recommended_fix: Add specific remedial actions including procedures for controlling the release, remediation, and steps to replace domestic water supplies per 40 CFR 146.94(b)(3)-(6).
 - item_id: roles_responsibilities
   label: Roles and responsibilities
-  description: The plan should identify response roles and responsibilities.
-  requirement_level: recommended
+  description: Per 40 CFR 146.94(b)(7), the plan must identify contacts and 24-hour telephone numbers. Per 40 CFR 146.94(b)(8), the plan should describe how the emergency response plan will be tested.
+  requirement_level: required
   severity: moderate
   expected_evidence_terms:
   - roles
@@ -89,16 +156,33 @@ items:
   - incident commander
   - operator
   - contacts
+  - 24-hour telephone
+  - emergency contact list
+  - plan testing
+  - response exercises
+  evidence_groups:
+    personnel:
+    - incident commander
+    - operator
+    - roles
+    - responsibilities
+    contacts:
+    - contacts
+    - emergency contact list
+    - 24-hour telephone
+    plan_maintenance:
+    - plan testing
+    - response exercises
   reference_queries:
-  - What does Class VI require for roles and responsibilities?
-  - What does EPA guidance say about roles and responsibilities?
+  - What does 40 CFR 146.94(b)(7)(8) require for contacts and plan testing?
+  - What roles and responsibilities should be identified in a Class VI ERRP?
   permit_precedent_queries:
   - How do applicants describe roles and responsibilities?
   - What permit precedent exists for roles and responsibilities?
-  recommended_fix: Add roles, responsibilities, and communication chain for response actions.
+  recommended_fix: Add roles, responsibilities, 24-hour contact information, communication chain, and plan testing/exercise schedule per 40 CFR 146.94(b)(7)(8).
 - item_id: emergency_scenario_planning
   label: Emergency scenario planning
-  description: The plan should identify plausible emergency scenarios and response pathways, including releases, excursions, pressure anomalies, loss of mechanical integrity, and potential USDW endangerment.
+  description: Per 40 CFR 146.94(b)(1)-(2), the plan should identify expected chemical and physical characteristics of any CO2 or formation fluid that may be released, and procedures for locating the source of a release. Plausible scenarios including releases, excursions, pressure anomalies, loss of mechanical integrity, and USDW endangerment should be addressed.
   requirement_level: required
   severity: critical
   expected_evidence_terms:
@@ -111,6 +195,8 @@ items:
   - leakage
   - plume migration
   - response pathway
+  - chemical characteristics of release
+  - source location
   evidence_groups:
     scenarios:
     - emergency scenario
@@ -118,23 +204,24 @@ items:
     - excursion
     - pressure anomaly
     - leakage
+    - chemical characteristics of release
     integrity_event:
     - loss of mechanical integrity
     - plume migration
+    - source location
     protection:
     - USDW endangerment
     - response pathway
   reference_queries:
-  - What emergency scenarios should be addressed in a Class VI Emergency and Remedial Response Plan?
-  - What does Class VI guidance say about response planning for releases excursions and loss of mechanical integrity?
+  - What does 40 CFR 146.94(b)(1)-(2) require for emergency scenario planning?
+  - What scenarios should be addressed in a Class VI Emergency and Remedial Response Plan?
   permit_precedent_queries:
   - How do Class VI applicants describe emergency scenarios in ERRPs?
   - What permit precedent exists for release excursion and pressure anomaly response scenarios?
-  recommended_fix: Add plausible emergency scenarios and response pathways for releases, excursions, pressure anomalies, loss of mechanical integrity, leakage, plume migration, and USDW endangerment.
-
+  recommended_fix: Add plausible emergency scenarios and response pathways for releases, excursions, pressure anomalies, loss of mechanical integrity, and USDW endangerment per 40 CFR 146.94(b)(1)-(2).
 - item_id: usdws_protection_measures
   label: USDW protection measures
-  description: The plan should describe immediate and follow-up actions to protect underground sources of drinking water if an emergency or endangerment condition occurs.
+  description: Per 40 CFR 146.94(b)(6), the plan must include steps to replace domestic water supplies that may be adversely affected. The plan should describe immediate and follow-up actions to protect underground sources of drinking water if an emergency or endangerment condition occurs.
   requirement_level: required
   severity: critical
   expected_evidence_terms:
@@ -148,6 +235,7 @@ items:
   - mitigation
   - sampling
   - monitoring
+  - replace domestic water supply
   evidence_groups:
     protected_resource:
     - USDW
@@ -158,18 +246,18 @@ items:
     - groundwater protection
     - containment
     - mitigation
+    - replace domestic water supply
     investigation:
     - endangerment
     - sampling
     - monitoring
   reference_queries:
-  - What does Class VI require for protecting USDWs during emergency and remedial response?
+  - What does 40 CFR 146.94(b)(6) require for protecting water supplies during emergency response?
   - What response actions are expected when USDWs may be endangered?
   permit_precedent_queries:
   - How do Class VI applicants describe USDW protection measures in ERRPs?
   - What permit precedent exists for emergency groundwater protection and mitigation measures?
-  recommended_fix: Add immediate and follow-up actions to protect USDWs, including containment, mitigation, sampling, monitoring, and water-supply protection where applicable.
-
+  recommended_fix: Add immediate and follow-up actions to protect USDWs including containment, mitigation, sampling, monitoring, and steps to replace domestic water supplies per 40 CFR 146.94(b)(6).
 - item_id: post_event_investigation_monitoring
   label: Post-event investigation and monitoring
   description: The plan should describe investigation, sampling, monitoring, and evaluation steps after an emergency trigger, anomaly, release, or loss of mechanical integrity event.
@@ -207,10 +295,9 @@ items:
   - How do Class VI applicants describe post-event investigation and monitoring?
   - What permit precedent exists for follow-up sampling and monitoring after emergency triggers?
   recommended_fix: Add post-event investigation, sampling, monitoring, root-cause evaluation, and corrective-measure procedures.
-
 - item_id: restart_resumption_criteria
   label: Restart and resumption criteria
-  description: The plan should describe criteria and approvals required before injection can resume after shut-in, emergency response, remedial action, or investigation.
+  description: Per 40 CFR 146.94(a)(4), the owner/operator must not resume injection until Director approval is granted. The plan should describe criteria and approvals required before injection can resume after shut-in, emergency response, or remedial action.
   requirement_level: required
   severity: critical
   expected_evidence_terms:
@@ -239,16 +326,15 @@ items:
     - mechanical integrity demonstrated
     - safe operation
   reference_queries:
+  - What does 40 CFR 146.94(a)(4) require for Director approval before resuming injection?
   - What criteria should be met before Class VI injection resumes after emergency shut-in?
-  - What does Class VI guidance say about resuming injection after remedial response?
   permit_precedent_queries:
   - How do Class VI applicants describe restart or resumption criteria after shut-in?
   - What permit precedent exists for injection restart conditions after emergency response?
-  recommended_fix: Add criteria and approval steps for resuming injection, including corrective action completion, mechanical integrity demonstration, and UIC Program Director approval when required.
-
+  recommended_fix: Add criteria and approval steps for resuming injection, including corrective action completion, mechanical integrity demonstration, and Director approval per 40 CFR 146.94(a)(4).
 - item_id: emergency_documentation_reporting
   label: Emergency documentation and reporting
-  description: The plan should describe incident documentation, regulatory reporting, records, timelines, and follow-up report contents after emergency or remedial response actions.
+  description: Per 40 CFR 146.94(a)(3), the owner/operator must submit a written report within 30 days of any triggering event. The plan should describe incident documentation, regulatory reporting, records, timelines, and follow-up report contents.
   requirement_level: required
   severity: moderate
   expected_evidence_terms:
@@ -262,6 +348,7 @@ items:
   - regulatory reporting
   - corrective action report
   - submitted
+  - within 30 days
   evidence_groups:
     report_types:
     - incident report
@@ -276,10 +363,11 @@ items:
     - reporting timeline
     - regulatory reporting
     - submitted
+    - within 30 days
   reference_queries:
-  - What emergency documentation and reporting are expected for Class VI remedial response?
+  - What does 40 CFR 146.94(a)(3) require for emergency documentation and reporting?
   - What follow-up reports should be submitted after emergency or remedial response actions?
   permit_precedent_queries:
   - How do Class VI applicants describe emergency reporting and documentation?
   - What permit precedent exists for incident reports and corrective action reports?
-  recommended_fix: Add incident documentation, regulatory reporting timelines, records, and follow-up report contents for emergency and remedial response actions.
+  recommended_fix: Add incident documentation, 30-day written report requirement, regulatory reporting timelines, records, and follow-up report contents per 40 CFR 146.94(a)(3).

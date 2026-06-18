@@ -15,6 +15,14 @@ items:
   - injection project
   - CO2 storage
   - facility
+  evidence_groups:
+    project_identity:
+    - project description
+    - injection project
+    - facility
+    scope:
+    - project purpose
+    - CO2 storage
   reference_queries:
   - What does Class VI require for project description?
   - What does EPA guidance say about project description?
@@ -33,6 +41,14 @@ items:
   - facility
   - owner
   - contact
+  evidence_groups:
+    identity:
+    - applicant
+    - operator
+    - owner
+    - facility
+    contact:
+    - contact
   reference_queries:
   - What does Class VI require for applicant information?
   - What does EPA guidance say about applicant information?
@@ -42,7 +58,7 @@ items:
   recommended_fix: Add applicant/operator identity and contact information.
 - item_id: injection_overview
   label: Injection overview
-  description: The narrative should summarize injection operations.
+  description: Per 40 CFR 146.82(a)(7), the narrative should summarize injection operations including the average and maximum daily injection rates and volumes.
   requirement_level: required
   severity: critical
   expected_evidence_terms:
@@ -51,6 +67,18 @@ items:
   - injection rate
   - CO2 stream
   - storage
+  - average daily rate
+  - maximum daily rate
+  evidence_groups:
+    injection_parameters:
+    - injection
+    - injection wells
+    - injection rate
+    - CO2 stream
+    volumes:
+    - storage
+    - average daily rate
+    - maximum daily rate
   reference_queries:
   - What does Class VI require for injection overview?
   - What does EPA guidance say about injection overview?
@@ -70,6 +98,15 @@ items:
   - state
   - coordinates
   - map
+  evidence_groups:
+    location:
+    - location
+    - site
+    - county
+    - state
+    spatial:
+    - coordinates
+    - map
   reference_queries:
   - What does Class VI require for site location?
   - What does EPA guidance say about site location?
@@ -88,6 +125,14 @@ items:
   - attachment
   - appendix
   - plan
+  evidence_groups:
+    document_references:
+    - application
+    - attachment
+    - appendix
+    - plan
+    organization:
+    - section
   reference_queries:
   - What does Class VI require for application crosswalk?
   - What does EPA guidance say about application crosswalk?

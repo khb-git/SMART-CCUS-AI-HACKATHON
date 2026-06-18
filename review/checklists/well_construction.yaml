@@ -6,7 +6,7 @@ description: Review checklist for Class VI Well Construction Plans.
 items:
 - item_id: casing_program
   label: Casing program
-  description: The plan should describe casing strings, depths, sizes, and materials.
+  description: Per 40 CFR 146.86(b)(1), casing must meet or exceed API or ASTM standards and have sufficient structural strength for the life of the project. The plan should describe all casing strings including wall thickness, external diameter, nominal weight, joint specification, and construction material.
   requirement_level: required
   severity: critical
   expected_evidence_terms:
@@ -16,25 +16,40 @@ items:
   - depth
   - diameter
   - grade
+  - wall thickness
+  - nominal weight
+  - joint specification
+  - construction material
+  - axial loading
+  - API
+  - ASTM
   evidence_groups:
     casing_type:
-      - casing
-      - surface casing
-      - long-string casing
+    - casing
+    - surface casing
+    - long-string casing
     design_details:
-      - depth
-      - diameter
-      - grade
+    - depth
+    - diameter
+    - grade
+    - wall thickness
+    - nominal weight
+    - joint specification
+    - construction material
+    design_basis:
+    - axial loading
+    - API
+    - ASTM
   reference_queries:
-  - What does Class VI require for casing program?
+  - What does 40 CFR 146.86(b)(1) require for casing program?
   - What does EPA guidance say about casing program?
   permit_precedent_queries:
   - How do applicants describe casing program?
   - What permit precedent exists for casing program?
-  recommended_fix: Add casing design details, depths, sizes, grades, and design basis.
+  recommended_fix: Add casing design details including wall thickness, external diameter, nominal weight, joint specification, construction material, and API/ASTM standard compliance per 40 CFR 146.86(b)(1).
 - item_id: cementing_program
   label: Cementing program
-  description: The plan should describe cement type, placement, and verification.
+  description: Per 40 CFR 146.86(b)(3)-(5), long string casing must be cemented using centralizers and circulated to surface. Cement and additives must be compatible with the CO2 stream and formation fluids, and cement integrity must be verified using technology capable of evaluating cement quality radially.
   requirement_level: required
   severity: critical
   expected_evidence_terms:
@@ -43,25 +58,35 @@ items:
   - cement bond log
   - top of cement
   - centralizer
+  - centralizers
+  - circulated to surface
+  - cement additives
+  - CO2-compatible cement
+  - variable density log
   evidence_groups:
     cement_design:
-      - cement
-      - cementing
+    - cement
+    - cementing
+    - cement additives
+    - CO2-compatible cement
     placement:
-      - top of cement
-      - centralizer
+    - top of cement
+    - centralizer
+    - centralizers
+    - circulated to surface
     verification:
-      - cement bond log
+    - cement bond log
+    - variable density log
   reference_queries:
-  - What does Class VI require for cementing program?
+  - What does 40 CFR 146.86(b)(3)-(5) require for cementing program?
   - What does EPA guidance say about cementing program?
   permit_precedent_queries:
   - How do applicants describe cementing program?
   - What permit precedent exists for cementing program?
-  recommended_fix: Add cementing design, placement intervals, verification logs, and acceptance criteria.
+  recommended_fix: Add cementing design with centralizers, circulation to surface, CO2-compatible cement and additives, and cement quality verification using cement bond or variable density logs per 40 CFR 146.86(b)(3)-(5).
 - item_id: tubing_packer
   label: Tubing and packer
-  description: The plan should describe injection tubing and packer configuration.
+  description: Per 40 CFR 146.86(c), injection must occur through tubing with a packer set at depth opposite a cemented interval. Tubing and packer materials must meet API or ASTM standards. The plan should address tubing tensile, burst, and collapse strengths.
   requirement_level: required
   severity: critical
   expected_evidence_terms:
@@ -70,23 +95,37 @@ items:
   - injection tubing
   - corrosion
   - annulus
+  - tensile strength
+  - burst strength
+  - collapse strength
+  - cemented interval
+  - non-corrosive
+  - API
+  - ASTM
   evidence_groups:
     tubing:
-      - tubing
-      - injection tubing
+    - tubing
+    - injection tubing
+    - tensile strength
+    - burst strength
+    - collapse strength
     packer:
-      - packer
+    - packer
+    - cemented interval
     annulus:
-      - annulus
+    - annulus
+    - non-corrosive
     compatibility:
-      - corrosion
+    - corrosion
+    - API
+    - ASTM
   reference_queries:
-  - What does Class VI require for tubing and packer?
+  - What does 40 CFR 146.86(c) require for tubing and packer?
   - What does EPA guidance say about tubing and packer?
   permit_precedent_queries:
   - How do applicants describe tubing and packer?
   - What permit precedent exists for tubing and packer?
-  recommended_fix: Add tubing and packer design, materials, setting depth, and annulus configuration.
+  recommended_fix: Add tubing and packer design including tensile, burst, and collapse strengths, packer setting depth opposite a cemented interval, and API/ASTM standard compliance per 40 CFR 146.86(c).
 - item_id: well_schematic
   label: Well schematic
   description: The plan should include a well schematic.
@@ -100,12 +139,12 @@ items:
   - construction details
   evidence_groups:
     schematic:
-      - well schematic
-      - diagram
+    - well schematic
+    - diagram
     construction_context:
-      - completion
-      - wellbore
-      - construction details
+    - completion
+    - wellbore
+    - construction details
   reference_queries:
   - What does Class VI require for well schematic?
   - What does EPA guidance say about well schematic?
@@ -115,31 +154,42 @@ items:
   recommended_fix: Add a clear schematic showing casing, cement, tubing, packer, perforations, and depths.
 - item_id: materials_compatibility
   label: Materials compatibility
-  description: The plan should address compatibility with CO2 stream and formation fluids.
-  requirement_level: recommended
-  severity: moderate
+  description: Per 40 CFR 146.86(b)(1) and (c)(1), all casing, cement, tubing, and packer materials must be compatible with the CO2 stream and formation fluids, meet API or ASTM standards, and have sufficient structural strength for the life of the project.
+  requirement_level: required
+  severity: critical
   expected_evidence_terms:
   - corrosion
   - compatibility
   - CO2
   - materials
   - tubing material
+  - API
+  - ASTM
+  - life of project
+  - carbon dioxide compatible
+  - formation fluids
   evidence_groups:
     compatibility:
-      - compatibility
-      - materials
+    - compatibility
+    - materials
+    - carbon dioxide compatible
+    - formation fluids
     co2_service:
-      - CO2
+    - CO2
+    standards:
+    - API
+    - ASTM
     corrosion_control:
-      - corrosion
-      - tubing material
+    - corrosion
+    - tubing material
+    - life of project
   reference_queries:
-  - What does Class VI require for materials compatibility?
+  - What does 40 CFR 146.86(b)(1) and (c)(1) require for materials compatibility?
   - What does EPA guidance say about materials compatibility?
   permit_precedent_queries:
   - How do applicants describe materials compatibility?
   - What permit precedent exists for materials compatibility?
-  recommended_fix: Add materials compatibility and corrosion-control basis.
+  recommended_fix: Add materials compatibility demonstrating all components are compatible with CO2 stream and formation fluids, meet API/ASTM standards, and are designed for the full life of the project per 40 CFR 146.86(b)(1) and (c)(1).
 - item_id: mechanical_integrity_design
   label: Mechanical integrity design
   description: The plan should describe how the well design prevents fluid movement outside the injection zone and supports demonstration of mechanical integrity.
@@ -175,7 +225,6 @@ items:
   - How do Class VI applicants describe mechanical integrity design?
   - What permit precedent exists for mechanical integrity in well construction plans?
   recommended_fix: Add well design details showing how casing, cement, tubing, packer, and testing prevent fluid movement outside the injection zone and support mechanical integrity.
-
 - item_id: logging_workover_design
   label: Logging and workover design
   description: The plan should describe well design considerations that allow required logging, testing, monitoring, and workover activities.
@@ -211,10 +260,9 @@ items:
   - How do Class VI applicants describe logging workover and well intervention design?
   - What permit precedent exists for logging and workover access in well construction plans?
   recommended_fix: Add design information showing that the well can support required logging, monitoring, testing, and workover activities.
-
 - item_id: downhole_stress_design
   label: Down-hole stress and pressure design
-  description: The plan should evaluate down-hole stresses, injection pressure, formation pressure, fracture pressure, and material strength for the proposed well design.
+  description: Per 40 CFR 146.86(b)(1)(ii), the plan should evaluate injection pressure, external pressure, internal pressure, and axial loading. The plan should also address burst pressure, collapse pressure, tensile strength, fracture pressure, and safety factors for the proposed well design.
   requirement_level: required
   severity: critical
   expected_evidence_terms:
@@ -228,6 +276,9 @@ items:
   - fracture pressure
   - pressure rating
   - safety factor
+  - axial loading
+  - external pressure
+  - internal pressure
   evidence_groups:
     stress_design:
     - down-hole stress
@@ -235,6 +286,9 @@ items:
     - burst pressure
     - collapse pressure
     - tensile strength
+    - axial loading
+    - external pressure
+    - internal pressure
     pressure_basis:
     - injection pressure
     - formation pressure
@@ -243,13 +297,12 @@ items:
     - pressure rating
     - safety factor
   reference_queries:
-  - What does EPA well construction guidance say about designing Class VI wells for down-hole stresses?
+  - What does 40 CFR 146.86(b)(1)(ii) say about pressure and stress design for Class VI wells?
   - What pressure and stress design information is expected in a Class VI well construction plan?
   permit_precedent_queries:
   - How do Class VI applicants document down-hole stress and pressure design?
   - What permit precedent exists for pressure ratings and safety factors in Class VI well construction?
-  recommended_fix: Add down-hole stress, pressure rating, fracture pressure, material strength, and safety-factor information supporting the well design.
-
+  recommended_fix: Add down-hole stress evaluation including injection pressure, external pressure, internal pressure, axial loading, fracture pressure, material strength, and safety-factor information per 40 CFR 146.86(b)(1)(ii).
 - item_id: cement_verification_acceptance
   label: Cement verification and acceptance criteria
   description: The plan should describe how cement placement and integrity will be verified, including logs, top-of-cement confirmation, and acceptance criteria.
@@ -283,7 +336,6 @@ items:
   - How do Class VI applicants document cement verification and acceptance criteria?
   - What permit precedent exists for cement bond logs and cement acceptance criteria?
   recommended_fix: Add cement verification methods, top-of-cement confirmation, cement bond or variable density logging, acceptance criteria, and remedial cementing procedures if needed.
-
 - item_id: shutoff_safety_systems
   label: Surface and down-hole shutoff safety systems
   description: The plan should describe surface and down-hole shutoff devices, alarms, safety systems, and automatic shut-in conditions used to protect USDWs.

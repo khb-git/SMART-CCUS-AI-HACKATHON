@@ -6,7 +6,7 @@ description: Review checklist for Class VI Pre-Operational Testing Plans.
 items:
 - item_id: formation_testing
   label: Formation testing
-  description: The plan should describe formation testing before injection begins.
+  description: Per 40 CFR 146.87(c) and (e), the plan should describe formation testing before injection begins, including a pressure fall-off test, pump test or injectivity tests, and measurements of fluid temperature, pH, conductivity, reservoir pressure, and static fluid level.
   requirement_level: required
   severity: critical
   expected_evidence_terms:
@@ -14,17 +14,39 @@ items:
   - injectivity test
   - step-rate test
   - pressure falloff
+  - pressure fall-off test
+  - pump test
   - baseline
+  - pH
+  - conductivity
+  - reservoir pressure
+  - static fluid level
+  - fluid temperature
+  evidence_groups:
+    pre_operation_tests:
+    - pressure fall-off test
+    - pressure falloff
+    - pump test
+    - injectivity test
+    - step-rate test
+    - formation testing
+    baseline_measurements:
+    - baseline
+    - fluid temperature
+    - pH
+    - conductivity
+    - reservoir pressure
+    - static fluid level
   reference_queries:
-  - What does Class VI require for formation testing?
-  - What does EPA guidance say about formation testing?
+  - What does 40 CFR 146.87(c) and (e) require for formation testing?
+  - What does EPA guidance say about pre-operational formation tests?
   permit_precedent_queries:
   - How do applicants describe formation testing?
-  - What permit precedent exists for formation testing?
-  recommended_fix: Add formation testing methods, timing, parameters, and acceptance criteria.
+  - What permit precedent exists for pressure fall-off tests and injectivity tests?
+  recommended_fix: Add formation testing including pressure fall-off test, pump test or injectivity tests, and baseline measurements of fluid temperature, pH, conductivity, reservoir pressure, and static fluid level per 40 CFR 146.87(c) and (e).
 - item_id: mechanical_integrity_testing
   label: Mechanical integrity testing
-  description: The plan should describe pre-operational mechanical integrity testing.
+  description: Per 40 CFR 146.87(a)(4), the plan should describe pre-operational MIT methods including pressure testing with liquid or gas, oxygen-activation logging (tracer survey), temperature or noise logs, and casing inspection logs.
   requirement_level: required
   severity: critical
   expected_evidence_terms:
@@ -34,16 +56,37 @@ items:
   - temperature log
   - noise log
   - cement bond log
+  - oxygen-activation logging
+  - tracer survey
+  - casing inspection log
+  - liquid pressure test
+  - gas pressure test
+  evidence_groups:
+    pressure_testing:
+    - pressure test
+    - liquid pressure test
+    - gas pressure test
+    tracer_logging:
+    - oxygen-activation logging
+    - tracer survey
+    diagnostic_logs:
+    - temperature log
+    - noise log
+    - cement bond log
+    - casing inspection log
+    mi_status:
+    - mechanical integrity
+    - MIT
   reference_queries:
-  - What does Class VI require for mechanical integrity testing?
-  - What does EPA guidance say about mechanical integrity testing?
+  - What does 40 CFR 146.87(a)(4) require for pre-operational mechanical integrity testing?
+  - What does EPA guidance say about MIT for Class VI wells?
   permit_precedent_queries:
   - How do applicants describe mechanical integrity testing?
-  - What permit precedent exists for mechanical integrity testing?
-  recommended_fix: Add the planned MIT methods, test frequency, criteria, and response actions.
+  - What permit precedent exists for pre-operational MIT?
+  recommended_fix: Add pre-operational MIT methods including pressure test (liquid or gas), oxygen-activation logging (tracer survey), temperature or noise log, and casing inspection log per 40 CFR 146.87(a)(4).
 - item_id: baseline_monitoring
   label: Baseline monitoring
-  description: The plan should describe baseline measurements before injection.
+  description: Per 40 CFR 146.87(b) and (c), baseline measurements should include whole cores or sidewall cores of the injection zone and confining system, formation fluid samples, fluid temperature, pH, conductivity, reservoir pressure, and static fluid level.
   requirement_level: required
   severity: critical
   expected_evidence_terms:
@@ -53,18 +96,40 @@ items:
   - pressure
   - temperature
   - geochemical
+  - pH
+  - conductivity
+  - static fluid level
+  - core analysis
+  - formation fluid samples
+  - sidewall cores
+  evidence_groups:
+    baseline_parameters:
+    - baseline
+    - pre-injection
+    - temperature
+    - pressure
+    - geochemical
+    fluid_measurements:
+    - pH
+    - conductivity
+    - static fluid level
+    - groundwater
+    core_and_fluid_samples:
+    - core analysis
+    - formation fluid samples
+    - sidewall cores
   reference_queries:
-  - What does Class VI require for baseline monitoring?
+  - What does 40 CFR 146.87(b) and (c) require for baseline monitoring data?
   - What does EPA guidance say about baseline monitoring?
   permit_precedent_queries:
   - How do applicants describe baseline monitoring?
   - What permit precedent exists for baseline monitoring?
-  recommended_fix: Add baseline monitoring parameters, locations, and timing.
+  recommended_fix: Add baseline monitoring including cores, formation fluid samples, fluid temperature, pH, conductivity, reservoir pressure, and static fluid level per 40 CFR 146.87(b) and (c).
 - item_id: logging_program
   label: Logging program
-  description: The plan should identify logging tools and objectives.
+  description: Per 40 CFR 146.87(a)(2) and (a)(3), the plan should identify required well logs including resistivity, spontaneous potential, caliper, porosity, gamma ray, fracture finder, cement bond, and variable density logs.
   requirement_level: required
-  severity: moderate
+  severity: critical
   expected_evidence_terms:
   - logging
   - wireline
@@ -72,28 +137,162 @@ items:
   - temperature log
   - caliper
   - gamma ray
+  - resistivity log
+  - spontaneous potential
+  - porosity log
+  - fracture finder log
+  - variable density log
+  - cement bond log
+  evidence_groups:
+    surface_casing_logs:
+    - resistivity log
+    - spontaneous potential
+    - caliper
+    - temperature log
+    long_string_logs:
+    - porosity log
+    - gamma ray
+    - fracture finder log
+    cement_evaluation_logs:
+    - cement bond log
+    - variable density log
+    - cement bond
+    general:
+    - logging
+    - wireline
   reference_queries:
-  - What does Class VI require for logging program?
-  - What does EPA guidance say about logging program?
+  - What does 40 CFR 146.87(a)(2) and (a)(3) require for well logging programs?
+  - What specific logs does EPA require before Class VI well operation?
   permit_precedent_queries:
-  - How do applicants describe logging program?
-  - What permit precedent exists for logging program?
-  recommended_fix: Add logging tools, intervals, timing, and how results will be used.
+  - How do applicants describe logging programs?
+  - What permit precedent exists for pre-operational well logging?
+  recommended_fix: Add specific logs required by 40 CFR 146.87(a)(2) and (a)(3) including resistivity, SP, caliper, porosity, gamma ray, fracture finder, cement bond, and variable density logs.
 - item_id: test_acceptance_criteria
   label: Test acceptance criteria
-  description: The plan should state how pre-operational test results will be evaluated.
-  requirement_level: recommended
-  severity: moderate
+  description: The plan should state quantitative pass/fail criteria for pre-operational tests and describe how failed tests will be resolved before injection begins.
+  requirement_level: required
+  severity: critical
   expected_evidence_terms:
   - acceptance criteria
   - pass
   - fail
   - threshold
   - operating parameters
+  - pass/fail criteria
+  - remedial action
+  - failed test
+  evidence_groups:
+    criteria_definition:
+    - acceptance criteria
+    - pass/fail criteria
+    - threshold
+    - operating parameters
+    pass_fail:
+    - pass
+    - fail
+    remediation:
+    - remedial action
+    - failed test
   reference_queries:
   - What does Class VI require for test acceptance criteria?
   - What does EPA guidance say about test acceptance criteria?
   permit_precedent_queries:
   - How do applicants describe test acceptance criteria?
   - What permit precedent exists for test acceptance criteria?
-  recommended_fix: Add pass/fail criteria and how failed tests will be resolved before injection.
+  recommended_fix: Add quantitative pass/fail acceptance criteria for all pre-operational tests and describe how failed tests will be resolved before injection begins.
+- item_id: fracture_pressure_determination
+  label: Fracture pressure determination
+  description: Per 40 CFR 146.87(d)(1), the plan must include determination of the fracture pressure of the injection zone and confining system. This value is the technical basis for the Maximum Allowable Injection Pressure (MAIP) limit of 90 percent of fracture pressure required by 40 CFR 146.88(a).
+  requirement_level: required
+  severity: critical
+  expected_evidence_terms:
+  - fracture pressure
+  - maximum allowable injection pressure
+  - MAIP
+  - fracture gradient
+  - leak-off test
+  - formation breakdown pressure
+  - fracture pressure determination
+  - 90 percent
+  evidence_groups:
+    fracture_tests:
+    - leak-off test
+    - formation breakdown pressure
+    - fracture pressure determination
+    fracture_values:
+    - fracture pressure
+    - fracture gradient
+    maip_derivation:
+    - maximum allowable injection pressure
+    - MAIP
+    - 90 percent
+  reference_queries:
+  - What does 40 CFR 146.87(d)(1) require for fracture pressure determination?
+  - How is fracture pressure used to establish MAIP per 40 CFR 146.88(a)?
+  permit_precedent_queries:
+  - How do Class VI applicants document fracture pressure determination?
+  - What permit precedent exists for fracture pressure and MAIP calculations?
+  recommended_fix: Add fracture pressure determination per 40 CFR 146.87(d)(1) and show how fracture pressure is used to establish the 90 percent MAIP per 40 CFR 146.88(a).
+- item_id: formation_cores_and_samples
+  label: Formation cores and fluid samples
+  description: Per 40 CFR 146.87(b), the plan should describe collection of whole cores or sidewall cores of the injection zone and confining system, and formation fluid samples for baseline characterization.
+  requirement_level: required
+  severity: critical
+  expected_evidence_terms:
+  - whole cores
+  - sidewall cores
+  - formation fluid samples
+  - core samples
+  - confining system
+  - injection zone core
+  - core analysis
+  - fluid samples
+  evidence_groups:
+    core_collection:
+    - whole cores
+    - sidewall cores
+    - core samples
+    - injection zone core
+    - core analysis
+    fluid_sampling:
+    - formation fluid samples
+    - fluid samples
+    target_zones:
+    - confining system
+  reference_queries:
+  - What does 40 CFR 146.87(b) require for core and fluid sample collection?
+  - What does EPA guidance say about formation sampling for Class VI wells?
+  permit_precedent_queries:
+  - How do Class VI applicants describe core and fluid sampling programs?
+  - What permit precedent exists for formation core collection?
+  recommended_fix: Add whole core or sidewall core collection from the injection zone and confining system, and formation fluid sampling, per 40 CFR 146.87(b).
+- item_id: director_notification_witnessing
+  label: Director notification and witnessing
+  description: Per 40 CFR 146.87(f), the owner or operator must provide the Director opportunity to witness all pre-operational tests and logs, and must submit a schedule to the Director at least 30 days prior to conducting them.
+  requirement_level: required
+  severity: moderate
+  expected_evidence_terms:
+  - schedule submission
+  - Director notification
+  - 30 days
+  - witness
+  - opportunity to witness
+  - pre-operational schedule
+  - advance notice
+  evidence_groups:
+    advance_notice:
+    - schedule submission
+    - pre-operational schedule
+    - advance notice
+    - 30 days
+    director_opportunity:
+    - Director notification
+    - witness
+    - opportunity to witness
+  reference_queries:
+  - What does 40 CFR 146.87(f) require for Director notification before pre-operational testing?
+  - What advance notice must be provided to the Director for Class VI pre-operational testing?
+  permit_precedent_queries:
+  - How do Class VI applicants document Director notification for pre-operational testing?
+  - What permit precedent exists for witness schedules for pre-operational tests?
+  recommended_fix: Add Director notification requirements including schedule submission at least 30 days before testing and an opportunity to witness all pre-operational tests and logs per 40 CFR 146.87(f).

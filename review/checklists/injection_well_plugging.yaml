@@ -4,9 +4,40 @@ section_id: '9'
 title: Injection Well Plugging Plan Checklist
 description: Review checklist for Injection Well Plugging Plans.
 items:
+- item_id: pre_plugging_preparation
+  label: Pre-plugging preparation activities
+  description: Per 40 CFR 146.92(a), prior to plugging the owner or operator must flush each Class VI injection well with a buffer fluid, determine bottomhole reservoir pressure, and perform a final external mechanical integrity test.
+  requirement_level: required
+  severity: critical
+  expected_evidence_terms:
+  - buffer fluid
+  - flush
+  - bottomhole reservoir pressure
+  - final external mechanical integrity test
+  - pre-plugging preparation
+  - bottomhole pressure
+  - buffer flush
+  evidence_groups:
+    flush_procedure:
+    - buffer fluid
+    - flush
+    - buffer flush
+    pressure_determination:
+    - bottomhole reservoir pressure
+    - bottomhole pressure
+    final_mit:
+    - final external mechanical integrity test
+    - external mechanical integrity
+  reference_queries:
+  - What does 40 CFR 146.92(a) require for pre-plugging preparation activities?
+  - What does EPA guidance say about buffer fluid flush before well plugging?
+  permit_precedent_queries:
+  - How do Class VI applicants describe pre-plugging preparation including buffer fluid flush?
+  - What permit precedent exists for bottomhole reservoir pressure determination before plugging?
+  recommended_fix: Add pre-plugging activities including buffer fluid flush, bottomhole reservoir pressure determination, and final external mechanical integrity test per 40 CFR 146.92(a).
 - item_id: plugging_method
   label: Plugging method
-  description: The plan should describe plugging methods and materials.
+  description: Per 40 CFR 146.92(b)(3) and (b)(6), the plan should describe the type and number of plugs and the method of placement.
   requirement_level: required
   severity: critical
   expected_evidence_terms:
@@ -15,16 +46,34 @@ items:
   - plugging method
   - abandonment
   - well plugging
+  - type of plug
+  - number of plugs
+  - method of placement
+  - bridge plug
+  - mechanical plug
+  evidence_groups:
+    plug_types:
+    - cement plug
+    - bridge plug
+    - mechanical plug
+    - type of plug
+    plug_quantity:
+    - number of plugs
+    - well plugging
+    placement_method:
+    - plugging method
+    - method of placement
+    - abandonment
   reference_queries:
-  - What does Class VI require for plugging method?
+  - What does 40 CFR 146.92(b)(3) and (b)(6) require for plugging method?
   - What does EPA guidance say about plugging method?
   permit_precedent_queries:
   - How do applicants describe plugging method?
   - What permit precedent exists for plugging method?
-  recommended_fix: Add plugging sequence, materials, placement depths, and verification approach.
+  recommended_fix: Add plugging type, number of plugs, placement method, and technical basis per 40 CFR 146.92(b)(3) and (b)(6).
 - item_id: plugging_depths
   label: Plugging depths
-  description: The plan should identify intervals and depths for plugs.
+  description: Per 40 CFR 146.92(b)(4), the plan should identify the placement of each plug including the elevation of the top and bottom of each plug.
   requirement_level: required
   severity: critical
   expected_evidence_terms:
@@ -33,34 +82,64 @@ items:
   - plug placement
   - cement plug
   - perforations
+  - elevation of top
+  - elevation of bottom
+  - plug elevation
+  evidence_groups:
+    plug_location:
+    - plug placement
+    - plug elevation
+    - depth
+    - interval
+    plug_extent:
+    - elevation of top
+    - elevation of bottom
+    reference_features:
+    - cement plug
+    - perforations
   reference_queries:
-  - What does Class VI require for plugging depths?
+  - What does 40 CFR 146.92(b)(4) require for plug depth and placement?
   - What does EPA guidance say about plugging depths?
   permit_precedent_queries:
   - How do applicants describe plugging depths?
   - What permit precedent exists for plugging depths?
-  recommended_fix: Add plug depths and intervals relative to injection and confining zones.
+  recommended_fix: Add plug depths and intervals including elevation of top and bottom of each plug per 40 CFR 146.92(b)(4).
 - item_id: pre_plugging_conditions
   label: Pre-plugging conditions
-  description: The plan should describe well condition before plugging.
+  description: The plan should describe the well condition before plugging including mechanical integrity status, fluid levels, pressure conditions, and the results of pre-plugging assessments required by 40 CFR 146.92(a).
   requirement_level: required
-  severity: moderate
+  severity: critical
   expected_evidence_terms:
   - well condition
   - pre-plugging
   - mechanical integrity
   - fluid
   - pressure
+  - buffer fluid
+  - bottomhole reservoir pressure
+  - wellbore condition
+  evidence_groups:
+    well_state:
+    - well condition
+    - pre-plugging
+    - wellbore condition
+    mi_status:
+    - mechanical integrity
+    - pressure
+    fluid_conditions:
+    - fluid
+    - buffer fluid
+    - bottomhole reservoir pressure
   reference_queries:
   - What does Class VI require for pre-plugging conditions?
   - What does EPA guidance say about pre-plugging conditions?
   permit_precedent_queries:
   - How do applicants describe pre-plugging conditions?
   - What permit precedent exists for pre-plugging conditions?
-  recommended_fix: Add pre-plugging evaluation, pressure/fluid conditions, and well integrity status.
+  recommended_fix: Add pre-plugging evaluation including mechanical integrity status, wellbore fluid and pressure conditions, and the buffer fluid flush and bottomhole pressure measurement results per 40 CFR 146.92(a).
 - item_id: plugging_verification
   label: Plugging verification
-  description: The plan should describe verification of plugging success.
+  description: Per 40 CFR 146.92(b)(2), the plan should describe verification of external mechanical integrity following plugging using testing methods per 40 CFR 146.89.
   requirement_level: required
   severity: critical
   expected_evidence_terms:
@@ -69,31 +148,58 @@ items:
   - pressure test
   - cement bond
   - plug integrity
+  - external mechanical integrity
+  - external MIT
+  evidence_groups:
+    verification_methods:
+    - pressure test
+    - cement bond
+    - external mechanical integrity
+    - external MIT
+    success_criteria:
+    - verification
+    - plug integrity
+    - tag
   reference_queries:
-  - What does Class VI require for plugging verification?
+  - What does 40 CFR 146.92(b)(2) require for plugging verification?
   - What does EPA guidance say about plugging verification?
   permit_precedent_queries:
   - How do applicants describe plugging verification?
   - What permit precedent exists for plugging verification?
-  recommended_fix: Add verification tests, acceptance criteria, and reporting.
+  recommended_fix: Add external mechanical integrity testing methods per 40 CFR 146.89, verification criteria, and acceptance basis per 40 CFR 146.92(b)(2).
 - item_id: plugging_report
   label: Plugging report
-  description: The plan should describe final plugging documentation.
-  requirement_level: recommended
-  severity: minor
+  description: Per 40 CFR 146.92(d), within 60 days after plugging the owner or operator must submit a certified plugging report to the Director. Records must be retained for 10 years following site closure.
+  requirement_level: required
+  severity: moderate
   expected_evidence_terms:
   - plugging report
   - records
   - submitted
   - documentation
   - as-built
+  - within 60 days
+  - certified
+  - 10 years following site closure
+  evidence_groups:
+    report_submission:
+    - plugging report
+    - submitted
+    - within 60 days
+    - certified
+    documentation:
+    - records
+    - documentation
+    - as-built
+    retention:
+    - 10 years following site closure
   reference_queries:
-  - What does Class VI require for plugging report?
+  - What does 40 CFR 146.92(d) require for plugging report submission?
   - What does EPA guidance say about plugging report?
   permit_precedent_queries:
   - How do applicants describe plugging report?
   - What permit precedent exists for plugging report?
-  recommended_fix: Add final reporting requirements and as-built documentation.
+  recommended_fix: Add final plugging report requirements including certified submission within 60 days and 10-year records retention per 40 CFR 146.92(d).
 - item_id: plugging_materials_design
   label: Plugging materials and design basis
   description: The plan should identify plugging materials, cement formulations, additives, design basis, and how materials are selected for site-specific well and formation conditions.
@@ -131,10 +237,9 @@ items:
   - How do Class VI applicants describe plugging materials and cement formulations?
   - What permit precedent exists for plugging material design basis?
   recommended_fix: Add plugging materials, cement formulation, additives, design basis, and performance criteria for site-specific well and formation conditions.
-
 - item_id: co2_compatibility_for_plugging
   label: CO2 compatibility for plugging materials
-  description: The plan should address compatibility of plugging materials with the carbon dioxide stream, formation fluids, pressure, temperature, and geochemical conditions.
+  description: Per 40 CFR 146.92(b)(5), the type, grade, and quantity of plugging material must be compatible with the carbon dioxide stream. The plan should address compatibility with CO2, formation fluids, pressure, temperature, and geochemical conditions.
   requirement_level: required
   severity: critical
   expected_evidence_terms:
@@ -147,11 +252,13 @@ items:
   - pressure
   - temperature
   - cement compatibility
+  - compatible with carbon dioxide
   evidence_groups:
     compatibility:
     - CO2 compatibility
     - cement compatibility
     - carbon dioxide stream
+    - compatible with carbon dioxide
     fluids_conditions:
     - formation fluids
     - geochemical conditions
@@ -161,16 +268,15 @@ items:
     - corrosion
     - degradation
   reference_queries:
-  - What does Class VI require for plugging material compatibility with CO2 and formation fluids?
+  - What does 40 CFR 146.92(b)(5) require for plugging material compatibility with CO2?
   - What does EPA guidance say about cement compatibility for Class VI wells?
   permit_precedent_queries:
   - How do Class VI applicants discuss CO2 compatibility for plugging materials?
   - What permit precedent exists for cement compatibility in plugging plans?
-  recommended_fix: Add compatibility discussion for plugging materials with CO2, formation fluids, pressure, temperature, corrosion, and geochemical conditions.
-
+  recommended_fix: Add compatibility discussion for plugging materials with CO2 stream, formation fluids, pressure, temperature, and geochemical conditions per 40 CFR 146.92(b)(5).
 - item_id: plugging_schedule_notification
   label: Plugging schedule and notification
-  description: The plan should describe the anticipated plugging schedule, notification procedures, and regulatory coordination before plugging activities begin.
+  description: Per 40 CFR 146.92(c), the owner or operator must notify the Director in writing at least 60 days before plugging activities begin.
   requirement_level: required
   severity: moderate
   expected_evidence_terms:
@@ -183,6 +289,7 @@ items:
   - UIC Program Director
   - plugging activities
   - abandonment schedule
+  - 60 days
   evidence_groups:
     schedule:
     - plugging schedule
@@ -192,18 +299,18 @@ items:
     - notification
     - notify
     - prior notice
+    - 60 days
     regulatory_coordination:
     - regulatory approval
     - UIC Program Director
     - plugging activities
   reference_queries:
-  - What does Class VI require for notification before injection well plugging?
+  - What does 40 CFR 146.92(c) require for notification before injection well plugging?
   - What plugging schedule information is expected in a Class VI plugging plan?
   permit_precedent_queries:
   - How do Class VI applicants describe plugging schedule and notification procedures?
   - What permit precedent exists for regulatory notification before plugging?
-  recommended_fix: Add anticipated plugging schedule, notification timing, regulatory coordination, and required approvals before plugging activities begin.
-
+  recommended_fix: Add anticipated plugging schedule and 60-day written notification to the Director per 40 CFR 146.92(c).
 - item_id: post_plugging_site_condition
   label: Post-plugging site condition
   description: The plan should describe expected post-plugging site condition, wellhead removal or surface restoration, and transition to post-injection site care or site closure.
@@ -239,11 +346,10 @@ items:
   - How do Class VI applicants describe post-plugging site condition?
   - What permit precedent exists for wellhead removal and site restoration after plugging?
   recommended_fix: Add expected post-plugging site condition, wellhead removal or surface restoration steps, and transition to PISC/site closure.
-
 - item_id: plugging_records_retention
   label: Plugging records retention
-  description: The plan should describe records retained after plugging, including as-built plugging documentation, test records, materials records, and submission to the permitting authority.
-  requirement_level: recommended
+  description: Per 40 CFR 146.92(d), records of plugging must be retained for 10 years following site closure. The plan should describe as-built documentation, test records, materials records, and submission to the permitting authority.
+  requirement_level: required
   severity: moderate
   expected_evidence_terms:
   - records retention
@@ -255,10 +361,14 @@ items:
   - material records
   - submitted
   - permitting authority
+  - 10 years
+  - site closure
   evidence_groups:
     retention:
     - records retention
     - retain records
+    - 10 years
+    - site closure
     documentation:
     - as-built
     - plugging documentation
@@ -269,9 +379,9 @@ items:
     - submitted
     - permitting authority
   reference_queries:
-  - What plugging records should be retained for Class VI injection well plugging?
+  - What does 40 CFR 146.92(d) require for plugging records retention?
   - What final plugging documentation should be submitted to the UIC Program Director?
   permit_precedent_queries:
   - How do Class VI applicants describe plugging records retention?
   - What permit precedent exists for as-built plugging documentation?
-  recommended_fix: Add records retention requirements for as-built plugging documentation, test records, cement/material records, and permitting authority submission.
+  recommended_fix: Add 10-year records retention for as-built plugging documentation, test records, cement/material records, and submission to permitting authority per 40 CFR 146.92(d).
