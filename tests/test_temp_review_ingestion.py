@@ -119,6 +119,7 @@ def test_ingest_review_document_temporarily_can_keep_artifacts_for_debug(
     document = ingest_review_document_temporarily(
         source_file,
         keep_temporary_artifacts=True,
+        enable_ocr=False,
     )
 
     assert document.total_chunks() == 1
@@ -193,3 +194,114 @@ def test_load_chunks_from_temporary_output_enriches_table_chunks(tmp_path):
     assert chunks[0].metadata["table_aware"] is True
     assert "Table evidence | page 7 | table 1" in chunks[0].text
     assert "Table row: Annular pressure | Continuous | SCADA" in chunks[0].text
+
+def test_build_ocr_review_chunks_converts_pdf_ocr_results(monkeypatch, tmp_path):
+    from review.image_ocr import ImageOcrResult
+    from review.temp_ingestion import build_ocr_review_chunks
+
+    pdf_path = tmp_path / "review.pdf"
+    pdf_path.write_bytes(b"%PDF fake")
+
+    def fake_extract_pdf_page_ocr(
+        file_path,
+        *,
+        min_text_chars=100,
+        force_ocr=False,
+    ):
+        assert file_path == pdf_path
+        assert min_text_chars == 25
+        assert force_ocr is True
+
+        return [
+            ImageOcrResult(
+                page_number=2,
+                text="Figure 2-1 Area of Review Map",
+                source_type="image_ocr",
+                redaction_detected=False,
+                confidence="Low",
+            )
+        ]
+
+    monkeypatch.setattr(
+        "review.temp_ingestion.extract_pdf_page_ocr",
+        fake_extract_pdf_page_ocr,
+    )
+
+    chunks = build_ocr_review_chunks(
+        pdf_path,
+        file_name="review.pdf",
+        min_text_chars=25,
+        force_ocr=True,
+    )
+
+    assert len(chunks) == 1
+    assert chunks[0].text == "Figure 2-1 Area of Review Map"
+    assert chunks[0].metadata["file_name"] == "review.pdf"
+    assert chunks[0].metadata["page_number"] == 2
+    assert chunks[0].metadata["content_type"] == "image_ocr"
+    assert chunks[0].metadata["source_type"] == "image_ocr"
+    assert chunks[0].metadata["redaction_detected"] is False
+
+def test_build_ocr_review_chunks_skips_non_pdf(tmp_path):
+    from review.temp_ingestion import build_ocr_review_chunks
+
+    docx_path = tmp_path / "review.docx"
+    docx_path.write_text("fake", encoding="utf-8")
+
+    assert build_ocr_review_chunks(docx_path, file_name="review.docx") == []
+
+def test_ingest_review_document_temporarily_appends_ocr_chunks(monkeypatch, tmp_path):
+    from review.image_ocr import ImageOcrResult
+    from review.temp_ingestion import ingest_review_document_temporarily
+
+    source_file = tmp_path / "review.pdf"
+    source_file.write_bytes(b"%PDF fake")
+
+    def fake_process_temporary_file(
+        file_path,
+        output_root,
+        chunk_size=1000,
+        chunk_overlap=100,
+    ):
+        output_root = Path(output_root)
+        chunk_dir = output_root / "review" / "0"
+        chunk_dir.mkdir(parents=True, exist_ok=True)
+        (chunk_dir / "content.txt").write_text("Extracted PDF text.", encoding="utf-8")
+        (chunk_dir / "attribute.json").write_text(
+            '{"content_type": "text", "page": 1}',
+            encoding="utf-8",
+        )
+        return 1
+
+    def fake_extract_pdf_page_ocr(
+        file_path,
+        *,
+        min_text_chars=100,
+        force_ocr=False,
+    ):
+        return [
+            ImageOcrResult(
+                page_number=3,
+                text="Sensitive, Confidential, or Privileged Information",
+                source_type="redacted_image_ocr",
+                redaction_detected=True,
+                confidence="Low",
+            )
+        ]
+
+    monkeypatch.setattr(
+        "review.temp_ingestion.process_temporary_file",
+        fake_process_temporary_file,
+    )
+    monkeypatch.setattr(
+        "review.temp_ingestion.extract_pdf_page_ocr",
+        fake_extract_pdf_page_ocr,
+    )
+
+    document = ingest_review_document_temporarily(source_file)
+
+    assert document.total_chunks() == 2
+    assert document.chunks[0].text == "Extracted PDF text."
+    assert document.chunks[1].metadata["content_type"] == "redacted_image_ocr"
+    assert document.chunks[1].metadata["redaction_detected"] is True
+    assert "cannot inspect or infer hidden content" in document.chunks[1].metadata["reviewer_note"]
