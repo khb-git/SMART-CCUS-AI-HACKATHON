@@ -24,14 +24,15 @@ $backoff = $config.backoff_factor
 # ----------------------------
 # STEP 1: SCRAPE
 # ----------------------------
+# Read URLs from file into array
+$urls = Get-Content $urlsFile
+
 Write-Host "Running scraper..."
 python ./tools/scraper.py `
-    --urls-file $urlsFile `
+    $urls `
     --output $manifestPath `
-    --delay $delay `
-    --timeout $timeout `
-    --retries $retries `
-    --backoff $backoff
+    --request-delay $delay
+
 
 # ----------------------------
 # STEP 2: DOWNLOAD FILES

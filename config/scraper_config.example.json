@@ -2,10 +2,12 @@
   "urls_file": "data/docket_urls.txt",
   "manifest_path": "data/manifest.json",
   "download_dir": "data/raw_docs",
+
+  "chunked_dir": "data/chunked",
+  "persist_directory": "chroma_data",
+
   "delay_seconds": 1.0,
   "timeout_seconds": 30,
   "retries": 3,
-  "backoff_factor": 0.5,
-  "overwrite": false,
-  "render_js": false
+  "backoff_factor": 0.5
 }
