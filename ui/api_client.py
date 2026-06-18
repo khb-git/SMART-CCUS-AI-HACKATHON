@@ -224,6 +224,7 @@ def status_label(status: str) -> str:
         "evidence_found": "Evidence found",
         "missing": "Missing",
         "unclear": "Unclear",
+        "redacted_evidence": "Redacted evidence",
     }
 
     return labels.get(str(status or ""), str(status or "Unknown").replace("_", " ").title())
@@ -240,6 +241,7 @@ def status_icon(status: str) -> str:
         "evidence_found": "🟡",
         "missing": "🔴",
         "unclear": "⚪",
+        "redacted_evidence": "🔒",
     }
 
     return icons.get(str(status or ""), "ℹ️")

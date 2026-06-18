@@ -22,6 +22,7 @@ class MaipValidationStatus(str, Enum):
     WARNING = "warning"
     FAIL = "fail"
     MISSING_EVIDENCE = "missing_evidence"
+    REDACTED_EVIDENCE = "redacted_evidence"
 
 
 class MaipValidationSeverity(str, Enum):
@@ -143,6 +144,24 @@ def validate_maip_evidence_present(
     validation_input: MaipValidationInput,
 ) -> MaipValidationFinding:
     """Validate that proposed MAIP evidence is present."""
+    if has_redacted_evidence(validation_input.proposed_maip):
+        return MaipValidationFinding(
+            finding_id="maip_evidence_present",
+            status=MaipValidationStatus.REDACTED_EVIDENCE,
+            severity=MaipValidationSeverity.HIGH,
+            message=(
+                "The package appears to reference a proposed Maximum Allowable "
+                "Injection Pressure, but the numeric value is redacted or unreadable "
+                "in the reviewed text."
+            ),
+            recommended_action=(
+                "Reviewer should request the unredacted proposed MAIP value or "
+                "verify it in the confidential/unredacted submission before accepting "
+                "the operating pressure basis."
+            ),
+            supporting_values=available_values(validation_input.proposed_maip),
+        )
+
     if not has_numeric_value(validation_input.proposed_maip):
         return MaipValidationFinding(
             finding_id="maip_evidence_present",
@@ -197,6 +216,29 @@ def validate_fracture_pressure_evidence_present(
             ),
         )
 
+    if (
+        has_redacted_evidence(validation_input.fracture_pressure)
+        or has_redacted_evidence(validation_input.fracture_gradient)
+    ):
+        return MaipValidationFinding(
+            finding_id="fracture_pressure_evidence_present",
+            status=MaipValidationStatus.REDACTED_EVIDENCE,
+            severity=MaipValidationSeverity.HIGH,
+            message=(
+                "The package appears to reference fracture pressure or fracture "
+                "gradient evidence, but the numeric value is redacted or unreadable "
+                "in the reviewed text."
+            ),
+            recommended_action=(
+                "Reviewer should request the unredacted fracture-pressure basis or "
+                "verify it in the confidential/unredacted submission."
+            ),
+            supporting_values=available_values(
+                validation_input.fracture_pressure,
+                validation_input.fracture_gradient,
+            ),
+        )
+
     return MaipValidationFinding(
         finding_id="fracture_pressure_evidence_present",
         status=MaipValidationStatus.PASS,
@@ -218,6 +260,23 @@ def validate_maip_below_fracture_pressure_limit(
     """Validate proposed MAIP against 90 percent of fracture pressure."""
     proposed_maip = validation_input.proposed_maip
     fracture_pressure = validation_input.fracture_pressure
+
+    if has_redacted_evidence(proposed_maip) or has_redacted_evidence(fracture_pressure):
+        return MaipValidationFinding(
+            finding_id="maip_below_90_percent_fracture_pressure",
+            status=MaipValidationStatus.REDACTED_EVIDENCE,
+            severity=MaipValidationSeverity.HIGH,
+            message=(
+                "The package appears to contain MAIP or fracture-pressure evidence, "
+                "but redacted or unreadable numeric values prevent comparison against "
+                "90% of fracture pressure."
+            ),
+            recommended_action=(
+                "Reviewer should verify the unredacted proposed MAIP and fracture "
+                "pressure values before accepting the MAIP limit."
+            ),
+            supporting_values=available_values(proposed_maip, fracture_pressure),
+        )
 
     if not has_numeric_value(proposed_maip) or not has_numeric_value(fracture_pressure):
         return MaipValidationFinding(
@@ -288,6 +347,23 @@ def validate_maip_within_aor_model_pressure(
     proposed_maip = validation_input.proposed_maip
     aor_pressure = validation_input.aor_model_max_pressure
 
+    if has_redacted_evidence(proposed_maip) or has_redacted_evidence(aor_pressure):
+        return MaipValidationFinding(
+            finding_id="maip_within_aor_model_pressure",
+            status=MaipValidationStatus.REDACTED_EVIDENCE,
+            severity=MaipValidationSeverity.HIGH,
+            message=(
+                "The package appears to contain MAIP or AoR model pressure evidence, "
+                "but redacted or unreadable numeric values prevent comparison against "
+                "the AoR model pressure assumption."
+            ),
+            recommended_action=(
+                "Reviewer should verify the unredacted proposed MAIP and AoR model "
+                "pressure values before accepting the pressure-model consistency check."
+            ),
+            supporting_values=available_values(proposed_maip, aor_pressure),
+        )
+
     if not has_numeric_value(proposed_maip) or not has_numeric_value(aor_pressure):
         return MaipValidationFinding(
             finding_id="maip_within_aor_model_pressure",
@@ -338,6 +414,24 @@ def validate_maip_below_casing_rating(
     """Validate proposed MAIP against casing pressure rating."""
     proposed_maip = validation_input.proposed_maip
     casing_rating = validation_input.casing_pressure_rating
+
+    if has_redacted_evidence(proposed_maip) or has_redacted_evidence(casing_rating):
+        return MaipValidationFinding(
+            finding_id="maip_below_casing_pressure_rating",
+            status=MaipValidationStatus.REDACTED_EVIDENCE,
+            severity=MaipValidationSeverity.HIGH,
+            message=(
+                "The package appears to contain MAIP or casing pressure-rating evidence, "
+                "but redacted or unreadable numeric values prevent comparison against "
+                "the casing pressure rating."
+            ),
+            recommended_action=(
+                "Reviewer should verify the unredacted proposed MAIP and casing "
+                "pressure-rating values before accepting the well-construction "
+                "pressure consistency check."
+            ),
+            supporting_values=available_values(proposed_maip, casing_rating),
+        )
 
     if not has_numeric_value(proposed_maip) or not has_numeric_value(casing_rating):
         return MaipValidationFinding(
@@ -463,8 +557,14 @@ def determine_maip_overall_status(
         return MaipValidationStatus.FAIL
 
     if any(
-        finding.status == MaipValidationStatus.MISSING_EVIDENCE
-        for finding in findings
+            finding.status == MaipValidationStatus.REDACTED_EVIDENCE
+            for finding in findings
+    ):
+        return MaipValidationStatus.REDACTED_EVIDENCE
+
+    if any(
+            finding.status == MaipValidationStatus.MISSING_EVIDENCE
+            for finding in findings
     ):
         return MaipValidationStatus.MISSING_EVIDENCE
 
@@ -480,6 +580,7 @@ def build_maip_summary(findings: list[MaipValidationFinding]) -> str:
         MaipValidationStatus.PASS: 0,
         MaipValidationStatus.WARNING: 0,
         MaipValidationStatus.FAIL: 0,
+        MaipValidationStatus.REDACTED_EVIDENCE: 0,
         MaipValidationStatus.MISSING_EVIDENCE: 0,
     }
 
@@ -488,6 +589,11 @@ def build_maip_summary(findings: list[MaipValidationFinding]) -> str:
 
     if counts[MaipValidationStatus.FAIL]:
         next_step = "Resolve failed MAIP consistency checks first."
+    elif counts[MaipValidationStatus.REDACTED_EVIDENCE]:
+        next_step = (
+            "Verify redacted or unreadable MAIP validation evidence in the "
+            "confidential/unredacted submission."
+        )
     elif counts[MaipValidationStatus.MISSING_EVIDENCE]:
         next_step = "Locate or request missing MAIP validation evidence."
     elif counts[MaipValidationStatus.WARNING]:
@@ -500,6 +606,7 @@ def build_maip_summary(findings: list[MaipValidationFinding]) -> str:
         f"Pass: {counts[MaipValidationStatus.PASS]}; "
         f"Warnings: {counts[MaipValidationStatus.WARNING]}; "
         f"Failures: {counts[MaipValidationStatus.FAIL]}; "
+        f"Redacted evidence: {counts[MaipValidationStatus.REDACTED_EVIDENCE]}; "
         f"Missing evidence: {counts[MaipValidationStatus.MISSING_EVIDENCE]}. "
         f"Next step: {next_step}"
     )
@@ -509,6 +616,22 @@ PRESSURE_VALUE_PATTERN = re.compile(
     r"(?P<unit>psi|psig|pounds per square inch)\b",
     re.IGNORECASE,
 )
+
+REDACTION_INDICATOR_TERMS = [
+    "redacted",
+    "redaction",
+    "withheld",
+    "confidential",
+    "confidential business information",
+    "cbi",
+    "not publicly available",
+    "not available in public version",
+    "not shown",
+    "blanked",
+    "removed",
+    "[redacted]",
+    "(redacted)",
+]
 
 MAIP_CONCEPT_TERMS = {
     "proposed_maip": [
@@ -575,6 +698,31 @@ def normalize_maip_text(value: str) -> str:
     """Normalize text for conservative MAIP evidence matching."""
     return " ".join(str(value or "").lower().replace("-", " ").split())
 
+def text_contains_redaction_indicator(text: str) -> bool:
+    """Return whether text contains a redaction or unreadable-evidence indicator."""
+    normalized_text = normalize_maip_text(text)
+
+    return any(
+        normalize_maip_text(term) in normalized_text
+        for term in REDACTION_INDICATOR_TERMS
+    )
+
+
+def has_redacted_evidence(value: MaipEvidenceValue | None) -> bool:
+    """Return whether an evidence value marks redacted or unreadable evidence."""
+    if value is None:
+        return False
+
+    combined_text = "\n".join(
+        [
+            value.excerpt or "",
+            value.extraction_notes or "",
+            value.matched_term or "",
+            value.source_label or "",
+        ]
+    )
+
+    return value.value is None and text_contains_redaction_indicator(combined_text)
 
 NEGATED_CONCEPT_PHRASES = [
     "does not identify",
@@ -732,7 +880,33 @@ def maip_evidence_value_from_finding(
     parsed_pressure = parse_pressure_value(text)
 
     if parsed_pressure is None:
-        return None
+        if not text_contains_redaction_indicator(text):
+            return None
+
+        location = first_finding_location(finding)
+        matched_term = first_non_negated_maip_term(text, concept_terms)
+
+        return MaipEvidenceValue(
+            concept=concept,
+            value=None,
+            unit="",
+            source_file=location.get("file_name") or document_name,
+            page_number=location.get("page_number"),
+            excerpt=(
+                    location.get("excerpt")
+                    or (finding.get("supporting_excerpts", []) or [""])[0]
+            ),
+            confidence=finding.get("confidence", "Low"),
+            source_finding_id=finding.get("item_id", ""),
+            source_label=finding.get("label", ""),
+            matched_term=matched_term,
+            extraction_method="concept_term_plus_redaction_indicator",
+            extraction_notes=(
+                "Extracted as redacted/unreadable evidence because a MAIP-related "
+                "concept term appeared near a redaction, confidentiality, or "
+                "unreadable-value indicator. The numeric value was not validated."
+            ),
+        )
 
     numeric_value, unit = parsed_pressure
     location = first_finding_location(finding)
@@ -822,7 +996,11 @@ def collect_package_review_findings(
 def choose_first_maip_value(
     values: list[MaipEvidenceValue],
 ) -> MaipEvidenceValue | None:
-    """Return the first extracted value, preserving deterministic order."""
+    """Return the first numeric value, then first redacted/unreadable placeholder."""
+    for value in values:
+        if has_numeric_value(value):
+            return value
+
     return values[0] if values else None
 
 
