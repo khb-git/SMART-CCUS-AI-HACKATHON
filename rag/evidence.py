@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from rag.types import Collection, RetrievalResult
+from rag.rag_types import Collection, RetrievalResult
 
 
 DEFAULT_EXCERPT_CHARS = 800

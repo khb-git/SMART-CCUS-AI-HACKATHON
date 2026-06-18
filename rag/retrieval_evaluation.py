@@ -17,7 +17,7 @@ from typing import Any, Callable
 
 from rag.embeddings import DEFAULT_MODEL
 from rag.query_chroma import query_collection
-from rag.types import Collection, RetrievalResult
+from rag.rag_types import Collection, RetrievalResult
 
 
 DEFAULT_SCORE_THRESHOLD = 0.85

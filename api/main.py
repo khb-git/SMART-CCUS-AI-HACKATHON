@@ -36,6 +36,10 @@ from review.report_export import (
     collect_reviewer_action_items,
     package_review_metrics,
 )
+from review.checklist_population import (
+    build_markdown_populated_checklist,
+    build_populated_checklist_from_package_report,
+)
 
 app = FastAPI(
     title="SMART CCUS Class VI Review Assistant",
@@ -69,6 +73,8 @@ class AskResponse(BaseModel):
     reviewer_interpretation: str
     potential_follow_up: str
     evidence_items: list[dict[str, Any]]
+    detected_sections: list[str] = []
+
 
 class ReviewDocumentResponse(BaseModel):
     """Response body for uploaded document review."""
@@ -80,6 +86,7 @@ class ReviewDocumentResponse(BaseModel):
     report: dict[str, Any]
     storage_policy: str
 
+
 class ReviewPackageResponse(BaseModel):
     """Response body for uploaded package review."""
 
@@ -87,12 +94,37 @@ class ReviewPackageResponse(BaseModel):
     report: dict[str, Any]
     storage_policy: str
 
+
 class DemoMarkdownResponse(BaseModel):
     """Response body for deterministic demo Markdown outputs."""
 
     package_name: str
     markdown: str
     storage_policy: str
+
+
+class PopulatedChecklistRequest(BaseModel):
+    """Request body for populated checklist generation."""
+
+    package_response: dict[str, Any]
+    plan_types: list[str] = Field(default_factory=list)
+
+
+class PopulatedChecklistResponse(BaseModel):
+    """Response body for populated checklist data."""
+
+    package_name: str
+    populated_checklist: dict[str, Any]
+    storage_policy: str
+
+
+class PopulatedChecklistMarkdownResponse(BaseModel):
+    """Response body for populated checklist Markdown export."""
+
+    package_name: str
+    markdown: str
+    storage_policy: str
+
 
 class LlmNarrativeRequest(BaseModel):
     """Request body for optional LLM reviewer narrative."""
@@ -110,6 +142,7 @@ class LlmNarrativeResponse(BaseModel):
     model_name: str
     used_llm: bool
     boundary_notice: str
+
 
 @app.get("/health")
 def health():
@@ -145,6 +178,7 @@ def maip_demo_final_review_packet():
         "storage_policy": "Demo fixture only. No uploaded files are processed.",
     }
 
+
 @app.post("/review-narrative", response_model=LlmNarrativeResponse)
 def review_narrative(request: LlmNarrativeRequest):
     """Generate an optional reviewer narrative over deterministic findings."""
@@ -159,6 +193,115 @@ def review_narrative(request: LlmNarrativeRequest):
     )
 
     return narrative_result.to_dict()
+
+
+def default_plan_types_for_populated_checklist(
+    package_report: dict[str, Any],
+) -> list[str]:
+    """Return default plan types for populated checklist generation."""
+    detected_plan_types = package_report.get("detected_plan_types", []) or []
+
+    if detected_plan_types:
+        return [
+            str(plan_type)
+            for plan_type in detected_plan_types
+        ]
+
+    return [
+        "project_narrative",
+        "aor_corrective_action",
+        "financial_responsibility",
+        "well_construction",
+        "pre_operational_testing",
+        "testing_monitoring",
+        "injection_well_plugging",
+        "pisc_site_closure",
+        "emergency_remedial_response",
+    ]
+
+
+def load_checklists_for_populated_checklist(
+    plan_types: list[str],
+) -> list[Any]:
+    """Load default checklists for populated checklist generation."""
+    checklists = []
+
+    for plan_type in plan_types:
+        try:
+            checklists.append(load_default_checklist(plan_type))
+        except FileNotFoundError:
+            continue
+
+    return checklists
+
+
+def build_populated_checklist_from_request(
+    request: PopulatedChecklistRequest,
+):
+    """Build populated checklist object from a package response request."""
+    package_response = request.package_response or {}
+    package_report = package_response.get("report", {}) or {}
+
+    package_name = package_response.get(
+        "package_name",
+        package_report.get("package_name", "uploaded_package"),
+    )
+
+    plan_types = request.plan_types or default_plan_types_for_populated_checklist(
+        package_report
+    )
+    checklists = load_checklists_for_populated_checklist(plan_types)
+
+    if not checklists:
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                "No supported checklists were available for populated checklist "
+                "generation."
+            ),
+        )
+
+    return build_populated_checklist_from_package_report(
+        package_name=package_name,
+        checklists=checklists,
+        package_report=package_report,
+    )
+
+
+def populated_checklist_storage_policy() -> str:
+    """Return storage policy for populated checklist endpoints."""
+    return (
+        "Populated checklist outputs are generated from the provided package "
+        "response. No uploaded files are stored by this endpoint."
+    )
+
+
+@app.post("/populated-checklist", response_model=PopulatedChecklistResponse)
+def populated_checklist(request: PopulatedChecklistRequest):
+    """Build populated checklist JSON from a package review response."""
+    populated = build_populated_checklist_from_request(request)
+
+    return {
+        "package_name": populated.package_name,
+        "populated_checklist": populated.to_dict(),
+        "storage_policy": populated_checklist_storage_policy(),
+    }
+
+
+@app.post(
+    "/populated-checklist/markdown",
+    response_model=PopulatedChecklistMarkdownResponse,
+)
+def populated_checklist_markdown(request: PopulatedChecklistRequest):
+    """Build populated checklist Markdown from a package review response."""
+    populated = build_populated_checklist_from_request(request)
+
+    return {
+        "package_name": populated.package_name,
+        "markdown": build_markdown_populated_checklist(populated),
+        "storage_policy": populated_checklist_storage_policy(),
+    }
+
 
 @app.post("/ask", response_model=AskResponse)
 def ask(request: AskRequest):
@@ -183,6 +326,7 @@ def ask(request: AskRequest):
 
     return review_answer.to_dict()
 
+
 @app.post("/review-document", response_model=ReviewDocumentResponse)
 def review_document(
     file: UploadFile = File(...),
@@ -194,7 +338,10 @@ def review_document(
     filename = file.filename or ""
 
     if not filename:
-        raise HTTPException(status_code=400, detail="Uploaded file must have a filename.")
+        raise HTTPException(
+            status_code=400,
+            detail="Uploaded file must have a filename.",
+        )
 
     if not is_supported_review_file(filename):
         raise HTTPException(
@@ -257,6 +404,7 @@ def review_document(
             "and are not stored in permanent data folders or Chroma collections."
         ),
     }
+
 
 @app.post("/review-package", response_model=ReviewPackageResponse)
 def review_package(
@@ -348,6 +496,7 @@ def review_package(
         ),
     }
 
+
 def package_counts_from_report(package_report: dict[str, Any]) -> dict[str, Any]:
     """Return exact package counts for grounded reviewer narratives."""
     detected_document_types = package_report.get("detected_plan_types", []) or []
@@ -371,6 +520,7 @@ def package_counts_from_report(package_report: dict[str, Any]) -> dict[str, Any]
         "duplicate_document_types": duplicate_plan_types,
         "unknown_documents": unknown_documents,
     }
+
 
 def build_narrative_input_from_package_response(
     package_response: dict[str, Any],

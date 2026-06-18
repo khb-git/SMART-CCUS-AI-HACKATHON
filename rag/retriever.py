@@ -13,7 +13,7 @@ which the retriever uses as a where-clause filter.
 from collections import defaultdict
 
 from rag.reranker import rerank_results
-from rag.types import Collection
+from rag.rag_types import Collection
 
 
 class Retriever:

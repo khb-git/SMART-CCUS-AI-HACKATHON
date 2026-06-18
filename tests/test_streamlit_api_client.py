@@ -87,6 +87,8 @@ def test_status_label_formats_known_status():
     assert status_label("needs_revision") == "Needs revision"
     assert status_label("mostly_complete") == "Mostly complete"
     assert status_label("present") == "Present"
+    assert status_label("redacted") == "Redacted"
+    assert status_label("needs_reviewer_attention") == "Needs reviewer attention"
 
 
 def test_status_icon_formats_known_status():
@@ -95,6 +97,8 @@ def test_status_icon_formats_known_status():
     assert status_icon("present") == "✅"
     assert status_icon("missing") == "🔴"
     assert status_icon("unclear") == "⚪"
+    assert status_icon("redacted") == "🔒"
+    assert status_icon("needs_reviewer_attention") == "🟡"
 
 
 def test_review_document_api_posts_file_to_backend(monkeypatch):
@@ -319,3 +323,51 @@ def test_review_narrative_api_posts_package_response(monkeypatch):
     assert calls["json"]["use_llm"] is True
     assert calls["json"]["model_name"] == "fake-model"
     assert response["model_name"] == "deterministic-template"
+
+def test_populated_checklist_markdown_api_posts_to_backend(monkeypatch):
+    import ui.api_client as api_client
+
+    calls = {}
+
+    class FakeResponse:
+        def raise_for_status(self):
+            calls["raise_for_status"] = True
+
+        def json(self):
+            return {
+                "package_name": "uploaded_package",
+                "markdown": "# Populated Class VI Completeness Checklist",
+                "storage_policy": "not stored",
+            }
+
+    def fake_post(url, json, timeout):
+        calls["url"] = url
+        calls["json"] = json
+        calls["timeout"] = timeout
+        return FakeResponse()
+
+    monkeypatch.setattr(api_client.requests, "post", fake_post)
+
+    package_response = {
+        "package_name": "uploaded_package",
+        "report": {
+            "detected_plan_types": ["project_narrative"],
+        },
+    }
+
+    response = api_client.populated_checklist_markdown_api(
+        package_response=package_response,
+        plan_types=["project_narrative"],
+        api_url="http://localhost:8000",
+        timeout=10,
+    )
+
+    assert calls["url"] == "http://localhost:8000/populated-checklist/markdown"
+    assert calls["json"] == {
+        "package_response": package_response,
+        "plan_types": ["project_narrative"],
+    }
+    assert calls["timeout"] == 10
+    assert calls["raise_for_status"] is True
+    assert response["package_name"] == "uploaded_package"
+    assert "Populated Class VI Completeness Checklist" in response["markdown"]

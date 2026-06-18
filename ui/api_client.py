@@ -17,10 +17,11 @@ from review.report_export import (
     default_report_filename,
 )
 
-
+# Default API URL
 DEFAULT_API_URL = os.getenv("SMART_CCUS_API_URL", "http://127.0.0.1:8000")
 
-
+# API Client Functions
+# Build the request payload for the /ask endpoint
 def build_ask_payload(
     query: str,
     persist_directory: str = "chroma_data",
@@ -47,7 +48,7 @@ def build_ask_payload(
         "use_reranking": use_reranking,
     }
 
-
+# Call the backend /ask endpoint
 def ask_api(
     payload: dict[str, Any],
     api_url: str = DEFAULT_API_URL,
@@ -66,7 +67,7 @@ def ask_api(
 
     return response.json()
 
-
+# Call the backend /review-document endpoint
 def review_document_api(
     file_bytes: bytes,
     filename: str,
@@ -104,6 +105,7 @@ def review_document_api(
 
     return response.json()
 
+# Call the backend /review-package endpoint
 def review_package_api(
     files: list[tuple[str, bytes]],
     package_name: str = "uploaded_package",
@@ -188,6 +190,30 @@ def review_narrative_api(
 
     return response.json()
 
+def populated_checklist_markdown_api(
+    package_response: dict[str, Any],
+    plan_types: list[str] | None = None,
+    api_url: str = DEFAULT_API_URL,
+    timeout: int = 240,
+) -> dict[str, Any]:
+    """Call the backend /populated-checklist/markdown endpoint."""
+    endpoint = f"{api_url.rstrip('/')}/populated-checklist/markdown"
+
+    payload = {
+        "package_response": package_response,
+        "plan_types": plan_types or [],
+    }
+
+    response = requests.post(
+        endpoint,
+        json=payload,
+        timeout=timeout,
+    )
+
+    response.raise_for_status()
+
+    return response.json()
+
 def format_similarity_score(value) -> str:
     """Format a retrieval similarity score for display."""
     if value is None or value == "":
@@ -198,7 +224,7 @@ def format_similarity_score(value) -> str:
     except (TypeError, ValueError):
         return str(value)
 
-
+# Format evidence heading
 def format_evidence_heading(item: dict[str, Any]) -> str:
     """Create a compact evidence card heading."""
     evidence_id = item.get("evidence_id", "E?")
@@ -210,6 +236,7 @@ def format_evidence_heading(item: dict[str, Any]) -> str:
 
     return f"[{evidence_id}] {source_label}: {source_document}{page_text}"
 
+# Format review status
 def status_label(status: str) -> str:
     """Format review status labels for display."""
     labels = {
@@ -221,11 +248,15 @@ def status_label(status: str) -> str:
         "evidence_found": "Evidence found",
         "missing": "Missing",
         "unclear": "Unclear",
+        "redacted_evidence": "Redacted evidence",
+        "redacted": "Redacted",
+        "needs_reviewer_attention": "Needs reviewer attention",
+        "not_applicable_optional": "Not applicable / optional",
     }
 
     return labels.get(str(status or ""), str(status or "Unknown").replace("_", " ").title())
 
-
+# Return a compact icon for review status
 def status_icon(status: str) -> str:
     """Return a compact icon for review status."""
     icons = {
@@ -237,6 +268,10 @@ def status_icon(status: str) -> str:
         "evidence_found": "🟡",
         "missing": "🔴",
         "unclear": "⚪",
+        "redacted_evidence": "🔒",
+        "redacted": "🔒",
+        "needs_reviewer_attention": "🟡",
+        "not_applicable_optional": "⚪",
     }
 
     return icons.get(str(status or ""), "ℹ️")

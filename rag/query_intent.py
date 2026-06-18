@@ -12,7 +12,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from enum import Enum
 
-from rag.types import Collection
+from rag.rag_types import Collection
 
 
 class QueryIntent(str, Enum):

@@ -13,7 +13,7 @@ The retriever chooses which collection to query based on the review task.
 import logging
 from pathlib import Path
 
-from rag.types import Chunk, ChunkMetadata, Collection, DocumentType, RetrievalResult
+from rag.rag_types import Chunk, ChunkMetadata, Collection, DocumentType, RetrievalResult
 
 logger = logging.getLogger(__name__)
 
