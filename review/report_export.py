@@ -8,6 +8,11 @@ from typing import Any
 
 from review.regulatory_citations import format_item_regulatory_citations
 
+from review.reviewer_disclaimers import (
+    build_known_limitations_lines,
+    build_reviewer_disclaimer_lines,
+)
+
 def status_label(status: str) -> str:
     """Format status values for reports."""
     labels = {
@@ -807,11 +812,11 @@ def build_markdown_findings_section(
                 + ", ".join(f"`{group}`" for group in matched_groups)
             )
 
-            if finding_has_ocr_evidence(finding):
-                lines.append(
-                    "  - Reviewer note: OCR-derived evidence is visible text only. "
-                    "Verify it against the source page and do not infer redacted content."
-                )
+        if finding_has_ocr_evidence(finding):
+            lines.append(
+                "  - Reviewer note: OCR-derived evidence is visible text only. "
+                "Verify it against the source page and do not infer redacted content."
+            )
 
         related_evidence = finding.get("related_package_evidence", []) or []
         if related_evidence:
@@ -1264,12 +1269,15 @@ def build_final_review_packet(package_response: dict[str, Any]) -> str:
         "",
     ]
 
+    lines.extend(build_reviewer_disclaimer_lines())
+
     lines.extend(build_package_review_metrics_section(report))
     lines.extend(build_reviewer_action_items_section(report))
     lines.extend(build_maip_validation_section(report))
     lines.extend(build_deficiency_table_section(report))
     lines.extend(build_completeness_checklist_section(report))
     lines.extend(build_reviewer_signoff_section())
+    lines.extend(build_known_limitations_lines())
 
     lines.extend(
         [
@@ -1329,6 +1337,7 @@ def build_markdown_package_report(package_response: dict[str, Any]) -> str:
         "",
     ]
 
+    lines.extend(build_reviewer_disclaimer_lines())
     lines.extend(build_package_priority_summary_section(report))
     lines.extend(build_package_review_metrics_section(report))
     lines.extend(build_reviewer_action_items_section(report))
@@ -1500,6 +1509,8 @@ def build_markdown_package_report(package_response: dict[str, Any]) -> str:
 
             lines.extend(build_markdown_findings_section(findings))
 
+    lines.extend(build_known_limitations_lines())
+
     return "\n".join(lines).strip() + "\n"
 
 
@@ -1565,6 +1576,8 @@ def build_markdown_review_report(review_response: dict[str, Any]) -> str:
         "",
     ]
 
+    lines.extend(build_reviewer_disclaimer_lines())
+
     if storage_policy:
         lines.extend(
             [
@@ -1619,6 +1632,8 @@ def build_markdown_review_report(review_response: dict[str, Any]) -> str:
                 "",
             ]
         )
+
+    lines.extend(build_known_limitations_lines())
 
     return "\n".join(lines).strip() + "\n"
 

@@ -140,3 +140,63 @@ def test_build_markdown_review_report_shows_redacted_ocr_warning():
 
     assert "Redacted image OCR" in markdown
     assert "cannot inspect or infer hidden content" in markdown
+
+def test_build_markdown_package_report_includes_reviewer_disclaimers():
+    from review.report_export import build_markdown_package_report
+
+    package_response = {
+        "package_name": "test_package",
+        "report": {
+            "package_name": "test_package",
+            "overall_status": "needs_revision",
+            "summary": "Package review summary.",
+            "detected_plan_types": [],
+            "missing_required_plan_types": [],
+            "missing_expected_plan_types": [],
+            "duplicate_plan_types": [],
+            "unknown_documents": [],
+            "supporting_documents": [],
+            "expected_plan_types": [],
+            "required_plan_types": [],
+            "document_reviews": [],
+            "coverage_evidence": [],
+        },
+    }
+
+    markdown = build_markdown_package_report(package_response)
+
+    assert "## Reviewer Disclaimers" in markdown
+    assert "not a final regulatory determination" in markdown
+    assert "OCR-derived evidence is based on visible text only" in markdown
+    assert "## Known Limitations" in markdown
+
+
+def test_build_final_review_packet_includes_reviewer_disclaimers():
+    from review.report_export import build_final_review_packet
+
+    package_response = {
+        "package_name": "test_package",
+        "report": {
+            "package_name": "test_package",
+            "overall_status": "needs_revision",
+            "summary": "Final package summary.",
+            "detected_plan_types": [],
+            "missing_required_plan_types": [],
+            "missing_expected_plan_types": [],
+            "duplicate_plan_types": [],
+            "unknown_documents": [],
+            "supporting_documents": [],
+            "expected_plan_types": [],
+            "required_plan_types": [],
+            "document_reviews": [],
+            "coverage_evidence": [],
+        },
+    }
+
+    markdown = build_final_review_packet(package_response)
+
+    assert "# Class VI Final Review Packet" in markdown
+    assert "## Reviewer Disclaimers" in markdown
+    assert "not a final regulatory determination" in markdown
+    assert "## Known Limitations" in markdown
+    assert "## Reviewer Sign-Off" in markdown
