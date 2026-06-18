@@ -133,3 +133,47 @@ def test_build_markdown_populated_checklist_escapes_table_pipes():
     assert "GENERAL \\| INFORMATION" in markdown
     assert "Project\\|Narrative.pdf" in markdown
     assert "Facility \\| address evidence." in markdown
+
+def test_build_markdown_populated_checklist_labels_missing_row_evidence_as_related():
+    rows = [
+        PopulatedChecklistRow(
+            section_title="AoR and Corrective Action Plan Checklist",
+            checklist_item="Artificial penetration evaluation",
+            citation="40 CFR 146.84",
+            status=ChecklistPopulationStatus.MISSING,
+            gsdt_module_folder="aor corrective action",
+            file_name="Marquis_AoR_and_Corrective_Action_Plan.pdf",
+            page_number=5,
+            evidence_excerpt=(
+                "Figure 2-34: Map showing the modeled CO2 plume footprint, "
+                "AoR, and existing and proposed project wells within the AoR."
+            ),
+            system_notes="Populated from existing package review evidence.",
+            confidence="Medium",
+            evidence=[
+                PopulatedChecklistEvidence(
+                    file_name="Marquis_AoR_and_Corrective_Action_Plan.pdf",
+                    page_number=5,
+                    excerpt=(
+                        "Figure 2-34: Map showing the modeled CO2 plume footprint, "
+                        "AoR, and existing and proposed project wells within the AoR."
+                    ),
+                    confidence="Medium",
+                )
+            ],
+        )
+    ]
+
+    checklist = build_populated_checklist(
+        package_name="uploaded_package",
+        rows=rows,
+    )
+
+    markdown = build_markdown_populated_checklist(checklist)
+
+    assert "Status: **Missing**" in markdown
+    assert "**Related evidence excerpt**" in markdown
+    assert "**Related evidence note**" in markdown
+    assert "did not determine that it fully satisfies this checklist row" in markdown
+    assert "**Related evidence locations**" in markdown
+    assert "**Evidence excerpt**" not in markdown
