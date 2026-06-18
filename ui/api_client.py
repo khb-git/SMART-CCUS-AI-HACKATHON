@@ -190,6 +190,30 @@ def review_narrative_api(
 
     return response.json()
 
+def populated_checklist_markdown_api(
+    package_response: dict[str, Any],
+    plan_types: list[str] | None = None,
+    api_url: str = DEFAULT_API_URL,
+    timeout: int = 240,
+) -> dict[str, Any]:
+    """Call the backend /populated-checklist/markdown endpoint."""
+    endpoint = f"{api_url.rstrip('/')}/populated-checklist/markdown"
+
+    payload = {
+        "package_response": package_response,
+        "plan_types": plan_types or [],
+    }
+
+    response = requests.post(
+        endpoint,
+        json=payload,
+        timeout=timeout,
+    )
+
+    response.raise_for_status()
+
+    return response.json()
+
 def format_similarity_score(value) -> str:
     """Format a retrieval similarity score for display."""
     if value is None or value == "":
@@ -225,6 +249,9 @@ def status_label(status: str) -> str:
         "missing": "Missing",
         "unclear": "Unclear",
         "redacted_evidence": "Redacted evidence",
+        "redacted": "Redacted",
+        "needs_reviewer_attention": "Needs reviewer attention",
+        "not_applicable_optional": "Not applicable / optional",
     }
 
     return labels.get(str(status or ""), str(status or "Unknown").replace("_", " ").title())
@@ -242,6 +269,9 @@ def status_icon(status: str) -> str:
         "missing": "🔴",
         "unclear": "⚪",
         "redacted_evidence": "🔒",
+        "redacted": "🔒",
+        "needs_reviewer_attention": "🟡",
+        "not_applicable_optional": "⚪",
     }
 
     return icons.get(str(status or ""), "ℹ️")

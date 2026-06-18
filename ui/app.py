@@ -56,6 +56,7 @@ from ui.api_client import (
     format_evidence_heading,
     format_similarity_score,
     maip_demo_package_api,
+    populated_checklist_markdown_api,
     review_document_api,
     review_narrative_api,
     review_package_api,
@@ -1082,6 +1083,99 @@ def render_llm_review_narrative_panel(
         mime="text/markdown",
     )
 
+def render_populated_checklist_panel(
+    package_response: dict,
+    api_url: str,
+) -> None:
+    """Render populated checklist generation and download controls."""
+    st.markdown("### Populated Completeness Checklist")
+
+    st.caption(
+        "Generate a populated Class VI completeness checklist from the package "
+        "review response. This uses existing package review evidence and does not "
+        "store uploaded files."
+    )
+
+    package_report = package_response.get("report", {}) or {}
+    detected_plan_types = package_report.get("detected_plan_types", []) or []
+
+    with st.expander("Populated checklist settings", expanded=False):
+        use_detected_plan_types = st.checkbox(
+            "Use detected document/checklist types",
+            value=True,
+            key="populated_checklist_use_detected_plan_types",
+            help=(
+                "When checked, the backend uses detected plan types from the package "
+                "review. When unchecked, select checklist types manually."
+            ),
+        )
+
+        manual_plan_types = st.multiselect(
+            "Manual checklist types",
+            options=[
+                "project_narrative",
+                "aor_corrective_action",
+                "financial_responsibility",
+                "well_construction",
+                "pre_operational_testing",
+                "testing_monitoring",
+                "injection_well_plugging",
+                "pisc_site_closure",
+                "emergency_remedial_response",
+            ],
+            default=detected_plan_types,
+            disabled=use_detected_plan_types,
+            key="populated_checklist_manual_plan_types",
+        )
+
+    selected_plan_types = [] if use_detected_plan_types else manual_plan_types
+
+    generate_clicked = st.button(
+        "Generate populated checklist",
+        key="generate_populated_checklist",
+    )
+
+    if generate_clicked:
+        try:
+            with st.spinner("Generating populated checklist..."):
+                st.session_state["populated_checklist_markdown_response"] = (
+                    populated_checklist_markdown_api(
+                        package_response=package_response,
+                        plan_types=selected_plan_types,
+                        api_url=api_url,
+                    )
+                )
+        except Exception as exc:
+            st.error("The populated checklist request failed.")
+            st.exception(exc)
+        else:
+            st.success("Populated checklist generated.")
+
+    response = st.session_state.get("populated_checklist_markdown_response")
+
+    if not response:
+        st.info(
+            "Click **Generate populated checklist** to create a downloadable "
+            "checklist-style reviewer workpaper."
+        )
+        return
+
+    markdown = response.get("markdown", "")
+    package_name = response.get("package_name", "uploaded_package")
+
+    if response.get("storage_policy"):
+        st.info(response["storage_policy"])
+
+    with st.expander("Preview populated checklist Markdown", expanded=False):
+        st.markdown(markdown)
+
+    st.download_button(
+        label="Download populated checklist Markdown",
+        data=markdown,
+        file_name=f"{package_name}_populated_checklist.md",
+        mime="text/markdown",
+    )
+
 def render_package_review_response(package_response: dict) -> None:
     """Render a package review response in the Review Package tab."""
     package_report = package_response.get("report", {})
@@ -1193,6 +1287,11 @@ def render_package_review_response(package_response: dict) -> None:
     render_llm_review_narrative_panel(
         package_response=package_response,
         reviewer_confirmation_rows=all_reviewer_confirmation_rows,
+        api_url=api_url,
+    )
+
+    render_populated_checklist_panel(
+        package_response=package_response,
         api_url=api_url,
     )
 
