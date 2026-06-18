@@ -738,3 +738,215 @@ def build_populated_checklist_from_package_report(
         package_name=package_name,
         rows=rows,
     )
+
+CHECKLIST_STATUS_LABELS = {
+    ChecklistPopulationStatus.PRESENT: "Present",
+    ChecklistPopulationStatus.MISSING: "Missing",
+    ChecklistPopulationStatus.UNCLEAR: "Unclear",
+    ChecklistPopulationStatus.REDACTED: "Redacted",
+    ChecklistPopulationStatus.NEEDS_REVIEWER_ATTENTION: (
+        "Needs reviewer attention"
+    ),
+    ChecklistPopulationStatus.NOT_APPLICABLE_OPTIONAL: (
+        "Not applicable / optional"
+    ),
+}
+
+
+CHECKLIST_SECTION_STATUS_LABELS = {
+    ChecklistSectionStatus.GREEN: "Green",
+    ChecklistSectionStatus.YELLOW: "Yellow",
+    ChecklistSectionStatus.RED: "Red",
+    ChecklistSectionStatus.GRAY: "Gray",
+}
+
+
+def checklist_status_label(status: ChecklistPopulationStatus) -> str:
+    """Return reviewer-facing label for a populated checklist row status."""
+    return CHECKLIST_STATUS_LABELS.get(status, status.value)
+
+
+def checklist_section_status_label(status: ChecklistSectionStatus) -> str:
+    """Return reviewer-facing label for a checklist section status."""
+    return CHECKLIST_SECTION_STATUS_LABELS.get(status, status.value)
+
+
+def markdown_escape_cell(value: object) -> str:
+    """Escape simple Markdown table cell content."""
+    text = str(value if value is not None else "")
+    text = text.replace("\n", " ")
+    text = text.replace("|", "\\|")
+    return " ".join(text.split())
+
+
+def format_page_number(page_number: int | None) -> str:
+    """Format optional page number for reviewer-facing output."""
+    if page_number is None:
+        return ""
+
+    return str(page_number)
+
+
+def format_checklist_row_heading(row: PopulatedChecklistRow, index: int) -> str:
+    """Format one checklist row heading."""
+    return f"### {index}. {row.checklist_item}"
+
+
+def build_markdown_populated_checklist_summary(
+    checklist: PopulatedChecklist,
+) -> str:
+    """Build Markdown summary block for a populated checklist."""
+    total_rows = len(checklist.rows)
+    total_sections = len(checklist.section_summaries)
+
+    status_counts = status_counts_for_rows(checklist.rows)
+
+    return "\n".join(
+        [
+            f"# Populated Class VI Completeness Checklist: {checklist.package_name}",
+            "",
+            "## Package Summary",
+            "",
+            f"- Package name: `{checklist.package_name}`",
+            f"- Checklist sections: {total_sections}",
+            f"- Checklist rows: {total_rows}",
+            f"- Present rows: {status_counts[ChecklistPopulationStatus.PRESENT]}",
+            f"- Missing rows: {status_counts[ChecklistPopulationStatus.MISSING]}",
+            f"- Unclear rows: {status_counts[ChecklistPopulationStatus.UNCLEAR]}",
+            f"- Redacted rows: {status_counts[ChecklistPopulationStatus.REDACTED]}",
+            (
+                "- Needs reviewer attention rows: "
+                f"{status_counts[ChecklistPopulationStatus.NEEDS_REVIEWER_ATTENTION]}"
+            ),
+            (
+                "- Optional / not applicable rows: "
+                f"{status_counts[ChecklistPopulationStatus.NOT_APPLICABLE_OPTIONAL]}"
+            ),
+            "",
+        ]
+    )
+
+
+def build_markdown_section_summary_table(
+    checklist: PopulatedChecklist,
+) -> str:
+    """Build Markdown table of section summaries."""
+    lines = [
+        "## Section Summary",
+        "",
+        "| Section | Status | Total | Present | Missing | Unclear | Redacted | Reviewer Attention | Optional / N/A |",
+        "|---|---:|---:|---:|---:|---:|---:|---:|---:|",
+    ]
+
+    for summary in checklist.section_summaries:
+        lines.append(
+            "| "
+            f"{markdown_escape_cell(summary.section_title)} | "
+            f"{checklist_section_status_label(summary.status)} | "
+            f"{summary.total_rows} | "
+            f"{summary.present_rows} | "
+            f"{summary.missing_rows} | "
+            f"{summary.unclear_rows} | "
+            f"{summary.redacted_rows} | "
+            f"{summary.needs_reviewer_attention_rows} | "
+            f"{summary.optional_not_applicable_rows} |"
+        )
+
+    lines.append("")
+
+    return "\n".join(lines)
+
+
+def build_markdown_checklist_row(row: PopulatedChecklistRow, index: int) -> str:
+    """Build Markdown for one populated checklist row."""
+    lines = [
+        format_checklist_row_heading(row, index),
+        "",
+        f"- Status: **{checklist_status_label(row.status)}**",
+        f"- Citation: {row.citation or 'Not specified'}",
+        f"- GSDT Module/Folder: {row.gsdt_module_folder or ''}",
+        f"- File Name: {row.file_name or ''}",
+        f"- Page Number: {format_page_number(row.page_number)}",
+        f"- Confidence: {row.confidence}",
+        f"- Reviewer confirmation: {row.reviewer_confirmation.value}",
+        "",
+        "**Evidence excerpt**",
+        "",
+        row.evidence_excerpt or "_No evidence excerpt populated._",
+        "",
+        "**System notes**",
+        "",
+        row.system_notes or "_No system notes._",
+        "",
+        "**Reviewer notes**",
+        "",
+        row.reviewer_notes or "_No reviewer notes._",
+        "",
+    ]
+
+    if row.evidence:
+        lines.extend(
+            [
+                "**Evidence locations**",
+                "",
+                "| File | Page | Confidence | Excerpt |",
+                "|---|---:|---|---|",
+            ]
+        )
+
+        for evidence in row.evidence:
+            lines.append(
+                "| "
+                f"{markdown_escape_cell(evidence.file_name)} | "
+                f"{markdown_escape_cell(format_page_number(evidence.page_number))} | "
+                f"{markdown_escape_cell(evidence.confidence)} | "
+                f"{markdown_escape_cell(evidence.excerpt)} |"
+            )
+
+        lines.append("")
+
+    return "\n".join(lines)
+
+
+def build_markdown_populated_checklist_rows(
+    checklist: PopulatedChecklist,
+) -> str:
+    """Build Markdown grouped checklist rows by section."""
+    lines: list[str] = [
+        "## Populated Checklist Rows",
+        "",
+    ]
+
+    current_section = ""
+
+    for index, row in enumerate(checklist.rows, start=1):
+        if row.section_title != current_section:
+            current_section = row.section_title
+            lines.extend(
+                [
+                    f"## {current_section}",
+                    "",
+                ]
+            )
+
+        lines.append(
+            build_markdown_checklist_row(
+                row=row,
+                index=index,
+            )
+        )
+
+    return "\n".join(lines)
+
+
+def build_markdown_populated_checklist(
+    checklist: PopulatedChecklist,
+) -> str:
+    """Build a reviewer-facing Markdown populated checklist export."""
+    sections = [
+        build_markdown_populated_checklist_summary(checklist),
+        build_markdown_section_summary_table(checklist),
+        build_markdown_populated_checklist_rows(checklist),
+    ]
+
+    return "\n".join(section.rstrip() for section in sections).strip() + "\n"
