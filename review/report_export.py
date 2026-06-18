@@ -134,6 +134,108 @@ def format_page_numbers(locations: list[dict[str, Any]]) -> str:
 
     return ", ".join(str(page) for page in unique_pages)
 
+OCR_SOURCE_TYPE_LABELS = {
+    "image_ocr": "Image OCR",
+    "redacted_image_ocr": "Redacted image OCR",
+}
+
+
+def location_source_type_label(location: dict[str, Any]) -> str:
+    """Return reviewer-facing source type label for an evidence location."""
+    source_type = str(
+        location.get("source_type")
+        or location.get("content_type")
+        or "text"
+    )
+
+    return OCR_SOURCE_TYPE_LABELS.get(
+        source_type,
+        source_type.replace("_", " ").title(),
+    )
+
+
+def location_reviewer_note(location: dict[str, Any]) -> str:
+    """Return reviewer note for OCR-derived evidence locations."""
+    reviewer_note = str(location.get("reviewer_note") or "").strip()
+
+    if reviewer_note:
+        return reviewer_note
+
+    source_type = str(
+        location.get("source_type")
+        or location.get("content_type")
+        or ""
+    )
+
+    if source_type == "redacted_image_ocr":
+        return (
+            "OCR detected redaction/confidentiality markers. "
+            "The backend cannot inspect or infer hidden content."
+        )
+
+    if source_type == "image_ocr":
+        return (
+            "This evidence was extracted from image/OCR content and should be "
+            "verified against the source page."
+        )
+
+    return ""
+
+
+def finding_has_ocr_evidence(finding: dict[str, Any]) -> bool:
+    """Return whether a finding has OCR-derived evidence locations."""
+    locations = finding.get("evidence_locations", []) or []
+
+    return any(
+        str(location.get("source_type") or location.get("content_type") or "")
+        in {"image_ocr", "redacted_image_ocr"}
+        for location in locations
+    )
+
+
+def format_evidence_locations_table(
+    finding: dict[str, Any],
+    fallback_document_name: str = "",
+) -> list[str]:
+    """Build Markdown evidence location table for a finding."""
+    locations = finding.get("evidence_locations", []) or []
+
+    if not locations:
+        return ["None found."]
+
+    lines = [
+        "| File | Page | Source | Matched Terms | Reviewer Note |",
+        "| --- | ---: | --- | --- | --- |",
+    ]
+
+    for location in locations:
+        file_name = location.get("file_name") or fallback_document_name or "Unknown"
+        page_number = location.get("page_number")
+        if page_number in {"", None}:
+            page_number = "Not found"
+
+        matched_terms = location.get("matched_terms", []) or []
+        matched_terms_text = ", ".join(str(term) for term in matched_terms[:8])
+        if len(matched_terms) > 8:
+            matched_terms_text += f", +{len(matched_terms) - 8} more"
+        if not matched_terms_text:
+            matched_terms_text = "None"
+
+        lines.append(
+            "| "
+            + " | ".join(
+                [
+                    markdown_table_escape(file_name),
+                    markdown_table_escape(page_number),
+                    markdown_table_escape(location_source_type_label(location)),
+                    markdown_table_escape(matched_terms_text),
+                    markdown_table_escape(location_reviewer_note(location) or "None"),
+                ]
+            )
+            + " |"
+        )
+
+    return lines
 
 def format_location_file_names(
     finding: dict[str, Any],
@@ -684,6 +786,17 @@ def build_markdown_findings_section(
                 f"{finding.get('label', finding.get('item_id', 'Finding'))}**",
                 f"  - {finding.get('finding', '')}",
                 f"  - Confidence: {finding.get('confidence', 'Low')}",
+                "  - Evidence source types: "
+                + ", ".join(
+                    sorted(
+                        {
+                            location_source_type_label(location)
+                            for location in finding.get("evidence_locations", []) or []
+                        }
+                    )
+                )
+                if finding.get("evidence_locations")
+                else "  - Evidence source types: None",
             ]
         )
 
@@ -693,6 +806,12 @@ def build_markdown_findings_section(
                 "  - Matched evidence groups: "
                 + ", ".join(f"`{group}`" for group in matched_groups)
             )
+
+            if finding_has_ocr_evidence(finding):
+                lines.append(
+                    "  - Reviewer note: OCR-derived evidence is visible text only. "
+                    "Verify it against the source page and do not infer redacted content."
+                )
 
         related_evidence = finding.get("related_package_evidence", []) or []
         if related_evidence:
@@ -1489,6 +1608,10 @@ def build_markdown_review_report(review_response: dict[str, Any]) -> str:
                 "**Supporting excerpts:**",
                 "",
                 format_list(finding.get("supporting_excerpts", []) or []),
+                "",
+                "**Evidence locations:**",
+                "",
+                *format_evidence_locations_table(finding, fallback_document_name=document_name),
                 "",
                 "**Recommended fix:**",
                 "",

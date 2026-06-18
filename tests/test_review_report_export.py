@@ -92,3 +92,51 @@ def test_status_label_formats_report_status():
     assert status_label("needs_revision") == "Needs revision"
     assert status_label("mostly_complete") == "Mostly complete"
     assert status_label("present") == "Present"
+
+def test_build_markdown_review_report_shows_ocr_evidence_locations():
+    from review.report_export import build_markdown_review_report
+
+    response = make_review_response()
+    finding = response["report"]["findings"][1]
+    finding["evidence_locations"] = [
+        {
+            "file_name": "ADM_Testing_and_Monitoring_Plan.pdf",
+            "page_number": 12,
+            "content_type": "image_ocr",
+            "source_type": "image_ocr",
+            "matched_terms": ["injection pressure"],
+            "reviewer_note": (
+                "This evidence was extracted from image/OCR content and should "
+                "be verified against the source page."
+            ),
+        }
+    ]
+
+    markdown = build_markdown_review_report(response)
+
+    assert "**Evidence locations:**" in markdown
+    assert "Image OCR" in markdown
+    assert "ADM_Testing_and_Monitoring_Plan.pdf" in markdown
+    assert "This evidence was extracted from image/OCR content" in markdown
+
+
+def test_build_markdown_review_report_shows_redacted_ocr_warning():
+    from review.report_export import build_markdown_review_report
+
+    response = make_review_response()
+    finding = response["report"]["findings"][1]
+    finding["evidence_locations"] = [
+        {
+            "file_name": "ADM_Testing_and_Monitoring_Plan.pdf",
+            "page_number": 3,
+            "content_type": "redacted_image_ocr",
+            "source_type": "redacted_image_ocr",
+            "matched_terms": ["confidential"],
+            "redaction_detected": True,
+        }
+    ]
+
+    markdown = build_markdown_review_report(response)
+
+    assert "Redacted image OCR" in markdown
+    assert "cannot inspect or infer hidden content" in markdown
