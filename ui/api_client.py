@@ -25,6 +25,7 @@ DEFAULT_API_URL = os.getenv("SMART_CCUS_API_URL", "http://127.0.0.1:8000")
 def build_ask_payload(
     query: str,
     persist_directory: str = "chroma_data",
+    section_id: str = "",
     intent: str = "auto",
     k_reference: int = 3,
     k_permits: int = 5,
@@ -37,6 +38,7 @@ def build_ask_payload(
     return {
         "query": query,
         "persist_directory": persist_directory,
+        "section_id": section_id,
         "intent": intent,
         "k_reference": k_reference,
         "k_permits": k_permits,
