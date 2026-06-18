@@ -18,6 +18,7 @@ from typing import Any
 
 from ingestion.main import process_docx, process_pdf, process_xlsx
 
+from review.image_ocr import extract_pdf_page_ocr, image_ocr_results_to_chunks
 
 SUPPORTED_REVIEW_EXTENSIONS = {".pdf", ".docx", ".xlsx"}
 
@@ -100,6 +101,36 @@ def enrich_temporary_chunk_text(text: str, metadata: dict[str, Any]) -> str:
     table_label = " | ".join(table_label_parts)
 
     return f"{table_label}\n{normalized_table_text}"
+
+def build_ocr_review_chunks(
+    file_path: str | Path,
+    *,
+    file_name: str,
+    min_text_chars: int = 100,
+    force_ocr: bool = False,
+) -> list[TemporaryReviewChunk]:
+    """Build temporary review chunks from OCR-visible PDF page text."""
+    if Path(file_path).suffix.lower() != ".pdf":
+        return []
+
+    ocr_results = extract_pdf_page_ocr(
+        file_path,
+        min_text_chars=min_text_chars,
+        force_ocr=force_ocr,
+    )
+
+    ocr_chunk_dicts = image_ocr_results_to_chunks(
+        ocr_results,
+        file_name=file_name,
+    )
+
+    return [
+        TemporaryReviewChunk(
+            text=str(chunk["text"]),
+            metadata=dict(chunk["metadata"]),
+        )
+        for chunk in ocr_chunk_dicts
+    ]
 
 def copy_to_temporary_directory(source_path: str | Path, temp_dir: str | Path) -> Path:
     """Copy an uploaded file into a temporary directory for processing."""
@@ -220,6 +251,9 @@ def ingest_review_document_temporarily(
     chunk_size: int = 1000,
     chunk_overlap: int = 100,
     keep_temporary_artifacts: bool = False,
+    enable_ocr: bool = True,
+    force_ocr: bool = False,
+    ocr_min_text_chars: int = 100,
 ) -> TemporaryReviewDocument:
     """Temporarily ingest an uploaded review document.
 
@@ -245,6 +279,16 @@ def ingest_review_document_temporarily(
         )
         review_chunks = load_chunks_from_temporary_output(output_root)
 
+        if enable_ocr:
+            review_chunks.extend(
+                build_ocr_review_chunks(
+                    copied_file,
+                    file_name=file_path.name,
+                    min_text_chars=ocr_min_text_chars,
+                    force_ocr=force_ocr,
+                )
+            )
+
         return TemporaryReviewDocument(
             original_filename=file_path.name,
             file_extension=file_path.suffix.lower(),
@@ -266,6 +310,16 @@ def ingest_review_document_temporarily(
             chunk_overlap=chunk_overlap,
         )
         review_chunks = load_chunks_from_temporary_output(output_root)
+
+        if enable_ocr:
+            review_chunks.extend(
+                build_ocr_review_chunks(
+                    copied_file,
+                    file_name=file_path.name,
+                    min_text_chars=ocr_min_text_chars,
+                    force_ocr=force_ocr,
+                )
+            )
 
         # Return extracted content only. Temporary paths are intentionally
         # cleared because the uploaded file has already been deleted.
