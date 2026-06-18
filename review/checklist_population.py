@@ -15,6 +15,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from enum import Enum
 
+from review.types import ReviewChecklist, ReviewChecklistItem
 
 class ChecklistPopulationStatus(str, Enum):
     """Reviewer-facing status for one populated checklist row."""
@@ -264,3 +265,165 @@ def build_populated_checklist(
         rows=rows,
         section_summaries=build_section_summaries(rows),
     )
+
+@dataclass
+class ChecklistRowRetrievalQuery:
+    """Deterministic retrieval query for one checklist row."""
+
+    section_title: str
+    checklist_item_id: str
+    checklist_item: str
+    citation: str = ""
+    expected_plan_type: str = ""
+    query_text: str = ""
+    required_terms: list[str] = field(default_factory=list)
+    optional_terms: list[str] = field(default_factory=list)
+    reference_queries: list[str] = field(default_factory=list)
+    permit_precedent_queries: list[str] = field(default_factory=list)
+
+    def to_dict(self) -> dict:
+        """Return JSON-serializable query data."""
+        return {
+            "section_title": self.section_title,
+            "checklist_item_id": self.checklist_item_id,
+            "checklist_item": self.checklist_item,
+            "citation": self.citation,
+            "expected_plan_type": self.expected_plan_type,
+            "query_text": self.query_text,
+            "required_terms": self.required_terms,
+            "optional_terms": self.optional_terms,
+            "reference_queries": self.reference_queries,
+            "permit_precedent_queries": self.permit_precedent_queries,
+        }
+
+
+def normalize_query_part(value: str) -> str:
+    """Normalize one query part for deterministic query construction."""
+    return " ".join(str(value or "").replace("\n", " ").split())
+
+
+def unique_nonempty_strings(values: list[str]) -> list[str]:
+    """Return unique non-empty strings while preserving order."""
+    seen: set[str] = set()
+    unique_values: list[str] = []
+
+    for value in values:
+        normalized_value = normalize_query_part(value)
+
+        if not normalized_value:
+            continue
+
+        dedupe_key = normalized_value.lower()
+
+        if dedupe_key in seen:
+            continue
+
+        seen.add(dedupe_key)
+        unique_values.append(normalized_value)
+
+    return unique_values
+
+
+def citation_from_text(value: str) -> str:
+    """Extract bracketed CFR citation text from a checklist string, if present."""
+    text = str(value or "")
+    start = text.find("[")
+
+    if start < 0:
+        return ""
+
+    end = text.find("]", start + 1)
+
+    if end < 0:
+        return ""
+
+    citation = text[start + 1:end].strip()
+
+    if "CFR" not in citation and "cfr" not in citation:
+        return ""
+
+    return citation
+
+
+def build_checklist_row_query_text(
+    *,
+    section_title: str,
+    item: ReviewChecklistItem,
+    citation: str = "",
+    expected_plan_type: str = "",
+) -> str:
+    """Build a deterministic package-retrieval query for one checklist item."""
+    parts = [
+        section_title,
+        item.label,
+        item.description,
+        citation,
+        expected_plan_type.replace("_", " "),
+    ]
+
+    parts.extend(item.expected_evidence_terms)
+
+    return " ".join(unique_nonempty_strings(parts))
+
+
+def build_checklist_row_retrieval_query(
+    *,
+    checklist: ReviewChecklist,
+    item: ReviewChecklistItem,
+) -> ChecklistRowRetrievalQuery:
+    """Build one retrieval query from a checklist and checklist item."""
+    citation = citation_from_text(
+        " ".join(
+            [
+                item.label,
+                item.description,
+            ]
+        )
+    )
+
+    required_terms = unique_nonempty_strings(
+        [
+            item.label,
+            item.description,
+            citation,
+        ]
+    )
+
+    optional_terms = unique_nonempty_strings(
+        item.expected_evidence_terms
+    )
+
+    query_text = build_checklist_row_query_text(
+        section_title=checklist.title,
+        item=item,
+        citation=citation,
+        expected_plan_type=checklist.plan_type,
+    )
+
+    return ChecklistRowRetrievalQuery(
+        section_title=checklist.title,
+        checklist_item_id=item.item_id,
+        checklist_item=item.label,
+        citation=citation,
+        expected_plan_type=checklist.plan_type,
+        query_text=query_text,
+        required_terms=required_terms,
+        optional_terms=optional_terms,
+        reference_queries=unique_nonempty_strings(item.reference_queries),
+        permit_precedent_queries=unique_nonempty_strings(
+            item.permit_precedent_queries
+        ),
+    )
+
+
+def build_checklist_retrieval_queries(
+    checklist: ReviewChecklist,
+) -> list[ChecklistRowRetrievalQuery]:
+    """Build retrieval queries for every item in a checklist."""
+    return [
+        build_checklist_row_retrieval_query(
+            checklist=checklist,
+            item=item,
+        )
+        for item in checklist.items
+    ]
