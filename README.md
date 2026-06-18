@@ -12,11 +12,12 @@ The core architecture is:
 
 ```text
 Backend decides.
+Retriever finds.
 Reviewer confirms.
 LLM explains.
 ```
 
-The deterministic backend owns checklist status, evidence detection, confidence labels, regulatory citations, reviewer action items, and export structure. Human reviewers confirm or revise the system’s findings. The LLM layer is intentionally reserved for later narrative explanation and should not override backend findings.
+The deterministic backend owns checklist status, evidence detection, confidence labels, regulatory citations, reviewer action items, and export structure. The retrieval layer locates supporting evidence. Human reviewers confirm or revise the system’s findings. The LLM layer is intentionally reserved for later narrative explanation and should not override backend findings.
 
 ---
 
@@ -69,6 +70,8 @@ exports a Markdown document review report
 
 Uploaded review documents are processed temporarily and are not added to the permanent vector database.
 
+PDF review documents may also produce OCR-derived chunks when pages contain little selectable text. OCR evidence is labeled separately as `image_ocr` or `redacted_image_ocr` and should be verified against the source page.
+
 ### 3. Review Package
 
 Temporary review of multiple uploaded Class VI documents as one application package.
@@ -84,6 +87,7 @@ creates reviewer action items
 creates EPA-style completeness checklist rows
 adds regulatory citations
 adds evidence locations where available
+adds OCR-derived evidence labels and reviewer warnings where applicable
 supports reviewer confirmations and reviewer notes
 exports Markdown, CSV, JSON, and final packet outputs
 ```
@@ -104,6 +108,8 @@ Reviewer action items
 Completeness checklist review
 Regulatory citation mapping
 Evidence locations
+OCR evidence source labels
+OCR/redacted-content reviewer warnings
 Cross-document related evidence
 Reviewer confirmations
 Reviewer notes
@@ -115,6 +121,8 @@ Full completeness checklist CSV
 Focused deficiency CSV
 Package coverage evidence table
 Per-document review summaries
+Reviewer disclaimers
+Known limitations section
 ```
 
 ---
@@ -212,7 +220,11 @@ review/
   package_review.py            Multi-document package review orchestration
   regulatory_citations.py      Plan-level and item-level CFR citation mapping
   report_export.py             Markdown report, checklist, deficiency, and packet exports
+  reviewer_disclaimers.py      Centralized reviewer disclaimer and limitation text
   temp_ingestion.py            Temporary upload ingestion wrapper
+  image_ocr.py                 OCR helpers for visible image-derived PDF text
+  validation_log.py            Sanitized real-document validation summaries
+  regression_candidates.py     Validation-to-regression candidate helpers
 ```
 
 ### Ingestion
@@ -292,13 +304,27 @@ python -m venv .venv
 pip install -r requirements.txt
 ```
 
-### 3. Run tests
+### 3. Optional OCR setup
+
+OCR support uses Tesseract for image-derived PDF evidence.
+
+Confirm Tesseract is available:
+
+```powershell
+tesseract --version
+```
+
+If this command is not found, install Tesseract OCR and add it to your system `PATH`, then reopen PowerShell.
+
+OCR is used for review PDFs with image-only or low-text pages. OCR-derived evidence is visible text only; the system does not infer hidden redacted content.
+
+### 4. Run tests
 
 ```powershell
 python -m pytest tests/
 ```
 
-### 4. Start the FastAPI backend
+### 5. Start the FastAPI backend
 
 ```powershell
 python -m uvicorn api.main:app --reload
@@ -316,7 +342,7 @@ Swagger docs:
 http://127.0.0.1:8000/docs
 ```
 
-### 5. Start the Streamlit UI
+### 6. Start the Streamlit UI
 
 Open a second terminal:
 
@@ -354,18 +380,80 @@ Chroma persist directory: chroma_data
 8. Show reviewer action items.
 9. Show completeness checklist rows.
 10. Show regulatory citations and page locations.
-11. Add reviewer confirmations and notes.
-12. Download the final review packet.
-13. Download the deficiency CSV.
-14. Download reviewer state JSON.
+11. Show OCR source labels or redacted OCR warnings when applicable.
+12. Add reviewer confirmations and notes.
+13. Download the final review packet.
+14. Download the deficiency CSV.
+15. Download reviewer state JSON.
 ```
 
-This workflow demonstrates the strongest parts of the system: deterministic review, auditability, reviewer-in-the-loop workflow, and regulator-style exports.
+This workflow demonstrates the strongest parts of the system: deterministic review, auditability, reviewer-in-the-loop workflow, OCR-aware evidence handling, and regulator-style exports.
 
 For a step-by-step judge/demo runbook, see:
 
 ```text
 docs/demo_readiness_checklist.md
+```
+
+---
+
+## Validation Workflows
+
+The repository includes reviewer-safe validation workflows for improving the system without committing real permit files.
+
+### OCR validation
+
+Use the OCR validation runner on local PDFs:
+
+```powershell
+python scripts/validate_ocr_review_ingestion.py "C:\path\to\review.pdf"
+```
+
+Force OCR on all pages:
+
+```powershell
+python scripts/validate_ocr_review_ingestion.py "C:\path\to\review.pdf" --force-ocr
+```
+
+Documentation:
+
+```text
+docs/ocr_validation_workflow.md
+```
+
+### Real-document validation logs
+
+Use sanitized validation logs to record reviewer observations from local real-document runs without committing source PDFs or sensitive excerpts.
+
+Template:
+
+```text
+docs/validation/real_document_validation_template.md
+```
+
+Workflow:
+
+```text
+docs/real_document_validation_workflow.md
+```
+
+### Validation to regression candidates
+
+Repeatable validation issues should be converted into synthetic regression-test candidates.
+
+Workflow:
+
+```text
+docs/validation_to_regression_workflow.md
+```
+
+The regression workflow helps convert:
+
+```text
+real-document validation finding
+→ sanitized validation label
+→ regression-worthy candidate
+→ synthetic pytest regression
 ```
 
 ---
@@ -436,6 +524,8 @@ Checklist findings use four main statuses.
 
 Strong evidence was found for the checklist item.
 
+`Present` means deterministic checklist rules found enough evidence categories to credit the item, but reviewer confirmation is still required.
+
 ### Evidence found
 
 Relevant evidence was found, but reviewer confirmation is recommended.
@@ -446,9 +536,29 @@ This status is intentionally conservative. It may mean the system found potentia
 
 No expected evidence was found by the deterministic review engine.
 
+`Missing` means the backend did not determine that the reviewed document satisfies the checklist item. Related evidence may still exist elsewhere in the package.
+
 ### Unclear
 
 The item could not be evaluated clearly from extracted text or available evidence.
+
+---
+
+## Reviewer Disclaimers
+
+The system is a reviewer-support tool, not a final regulatory determination.
+
+Checklist findings, evidence locations, confidence labels, recommended fixes, and exported reports should be confirmed by a qualified reviewer before final disposition.
+
+OCR-derived evidence is based on visible text only. The system does not inspect, recover, or infer hidden content behind redactions.
+
+`Evidence found` means related evidence was detected, but the checklist item may still be incomplete. `Present` means deterministic checklist rules found enough evidence categories to credit the item, but reviewer confirmation is still required.
+
+More detail is documented in:
+
+```text
+docs/reviewer_disclaimers_and_limitations.md
+```
 
 ---
 
@@ -476,7 +586,7 @@ The system currently supports:
 
 ### Markdown Package Review Report
 
-Detailed package review output with package summary, metrics, action items, completeness checklist, coverage evidence, and per-document findings.
+Detailed package review output with package summary, metrics, action items, completeness checklist, coverage evidence, per-document findings, reviewer disclaimers, known limitations, and OCR evidence warnings where applicable.
 
 ### Final Review Packet
 
@@ -484,14 +594,18 @@ A regulator-style packet that includes:
 
 ```text
 Final package summary
+Reviewer disclaimers
 Package review metrics
 Reviewer action items
+MAIP cross-reference validation
 Deficiency table
 Completeness checklist
+Known limitations
 Reviewer sign-off section
 Reviewer confirmation summary
 Reviewer confirmation export
 Full package review appendix
+OCR evidence warnings where applicable
 ```
 
 ### Full Completeness Checklist CSV
@@ -694,6 +808,22 @@ Supported uploaded review file types are:
 .xlsx
 ```
 
+### OCR does not run or returns no OCR chunks
+
+Confirm Tesseract is installed and available:
+
+```powershell
+tesseract --version
+```
+
+For local validation, force OCR on all pages:
+
+```powershell
+python scripts/validate_ocr_review_ingestion.py "C:\path\to\review.pdf" --force-ocr
+```
+
+OCR output depends on page image quality, scan resolution, rotation, and layout.
+
 ### Review Package does not detect the expected document type
 
 Try:
@@ -721,6 +851,8 @@ chroma_data/
 __pycache__/
 ```
 
+Do not commit real permit documents, sensitive excerpts, screenshots from confidential documents, or generated outputs containing confidential applicant information.
+
 ---
 
 ## Known Limitations
@@ -735,9 +867,12 @@ RAG chunking/indexing path needs continued hardening
 No LLM narrative layer yet
 Rule-based review can return Evidence found for documents that need human interpretation
 PDF table extraction can be noisy
+OCR quality depends on source scan/image quality
+OCR is visible text only and does not infer redacted content
 Cross-page context can be incomplete
 Some findings depend heavily on checklist terms and anchor terms
 Package upload supports multi-file upload, not direct folder-path ingestion
+Reviewer confirmation is required before final disposition
 ```
 
 ---
@@ -753,7 +888,7 @@ Likely next development areas:
 4. Add FastAPI integration tests with fixture documents
 5. Improve checklist-specific evidence logic
 6. Add deployment configuration
-7. Add broader regression tests using real EPA documents
+7. Add broader synthetic regression tests from sanitized real-document validation findings
 ```
 
 The LLM should improve explanation quality, not replace the deterministic review pipeline.
@@ -787,6 +922,11 @@ Use review/gap_analysis.py to improve finding status logic.
 Use review/package_review.py to improve package-level completeness logic.
 Use review/regulatory_citations.py to improve citation mapping.
 Use review/report_export.py to improve Markdown and packet exports.
+Use review/image_ocr.py to improve OCR extraction helpers.
+Use review/temp_ingestion.py to improve temporary ingestion and OCR wiring.
+Use review/reviewer_disclaimers.py to update reviewer-facing safety text.
+Use review/validation_log.py to summarize sanitized validation findings.
+Use review/regression_candidates.py to convert validation findings into synthetic test candidates.
 Use ui/reviewer_workflow.py to improve reviewer confirmation, notes, JSON, and CSV workflows.
 Use ui/app.py to adjust Streamlit layout.
 Use api/main.py to adjust FastAPI endpoints.
@@ -795,6 +935,11 @@ Use api/main.py to adjust FastAPI endpoints.
 Recommended testing pattern:
 
 ```powershell
+python -m pytest tests/test_readme_documentation.py
+python -m pytest tests/test_reviewer_disclaimers.py
+python -m pytest tests/test_ocr_review_export_flow.py
+python -m pytest tests/test_validation_log.py
+python -m pytest tests/test_regression_candidates.py
 python -m pytest tests/test_api_routes.py
 python -m pytest tests/test_rag_status.py
 python -m pytest tests/test_streamlit_completeness_checklist_view.py
