@@ -856,6 +856,45 @@ def build_markdown_section_summary_table(
 
     return "\n".join(lines)
 
+def row_has_related_evidence(row: PopulatedChecklistRow) -> bool:
+    """Return whether a non-present row has related evidence to inspect."""
+    return (
+        row.status
+        in {
+            ChecklistPopulationStatus.MISSING,
+            ChecklistPopulationStatus.UNCLEAR,
+            ChecklistPopulationStatus.NEEDS_REVIEWER_ATTENTION,
+        }
+        and bool(row.evidence_excerpt or row.evidence)
+    )
+
+
+def evidence_excerpt_heading_for_row(row: PopulatedChecklistRow) -> str:
+    """Return evidence heading based on whether evidence satisfies the row."""
+    if row_has_related_evidence(row):
+        return "**Related evidence excerpt**"
+
+    return "**Evidence excerpt**"
+
+
+def evidence_empty_text_for_row(row: PopulatedChecklistRow) -> str:
+    """Return empty evidence text for a populated checklist row."""
+    if row_has_related_evidence(row):
+        return "_No related evidence excerpt populated._"
+
+    return "_No evidence excerpt populated._"
+
+
+def related_evidence_note_for_row(row: PopulatedChecklistRow) -> str:
+    """Return reviewer-facing related evidence note for a checklist row."""
+    if not row_has_related_evidence(row):
+        return ""
+
+    return (
+        "Related evidence was found, but the backend did not determine that it "
+        "fully satisfies this checklist row. Reviewer should inspect this evidence "
+        "before confirming the row disposition."
+    )
 
 def build_markdown_checklist_row(row: PopulatedChecklistRow, index: int) -> str:
     """Build Markdown for one populated checklist row."""
@@ -870,24 +909,47 @@ def build_markdown_checklist_row(row: PopulatedChecklistRow, index: int) -> str:
         f"- Confidence: {row.confidence}",
         f"- Reviewer confirmation: {row.reviewer_confirmation.value}",
         "",
-        "**Evidence excerpt**",
+        evidence_excerpt_heading_for_row(row),
         "",
-        row.evidence_excerpt or "_No evidence excerpt populated._",
+        row.evidence_excerpt or evidence_empty_text_for_row(row),
         "",
         "**System notes**",
         "",
         row.system_notes or "_No system notes._",
         "",
-        "**Reviewer notes**",
-        "",
-        row.reviewer_notes or "_No reviewer notes._",
-        "",
     ]
 
-    if row.evidence:
+    related_note = related_evidence_note_for_row(row)
+
+    if related_note:
         lines.extend(
             [
-                "**Evidence locations**",
+                "**Related evidence note**",
+                "",
+                related_note,
+                "",
+            ]
+        )
+
+    lines.extend(
+        [
+            "**Reviewer notes**",
+            "",
+            row.reviewer_notes or "_No reviewer notes._",
+            "",
+        ]
+    )
+
+    if row.evidence:
+        evidence_table_heading = (
+            "**Related evidence locations**"
+            if row_has_related_evidence(row)
+            else "**Evidence locations**"
+        )
+
+        lines.extend(
+            [
+                evidence_table_heading,
                 "",
                 "| File | Page | Confidence | Excerpt |",
                 "|---|---:|---|---|",
