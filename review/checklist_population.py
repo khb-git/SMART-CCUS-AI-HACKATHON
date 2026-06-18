@@ -427,3 +427,314 @@ def build_checklist_retrieval_queries(
         )
         for item in checklist.items
     ]
+
+REDACTED_TEXT_MARKERS = [
+    "redacted",
+    "redaction",
+    "withheld",
+    "confidential",
+    "confidential business information",
+    "cbi",
+    "[redacted]",
+    "(redacted)",
+]
+
+
+def package_finding_candidate_text(finding: dict) -> str:
+    """Collect searchable text from one package review finding."""
+    parts = [
+        finding.get("item_id", ""),
+        finding.get("label", ""),
+        finding.get("finding", ""),
+        finding.get("recommended_fix", ""),
+        finding.get("status", ""),
+        finding.get("confidence", ""),
+        finding.get("document_name", ""),
+    ]
+
+    parts.extend(finding.get("matched_terms", []) or [])
+    parts.extend(finding.get("supporting_excerpts", []) or [])
+
+    for location in finding.get("evidence_locations", []) or []:
+        parts.append(location.get("file_name", ""))
+        parts.append(str(location.get("page_number", "") or ""))
+        parts.append(location.get("excerpt", ""))
+
+    return "\n".join(str(part or "") for part in parts)
+
+
+def normalized_contains(text: str, term: str) -> bool:
+    """Return whether normalized text contains a normalized term."""
+    normalized_text = normalize_query_part(text).lower()
+    normalized_term = normalize_query_part(term).lower()
+
+    return bool(normalized_term) and normalized_term in normalized_text
+
+
+def text_has_redaction_marker(text: str) -> bool:
+    """Return whether text includes a redaction or confidentiality marker."""
+    return any(
+        normalized_contains(text, marker)
+        for marker in REDACTED_TEXT_MARKERS
+    )
+
+
+def score_query_against_package_finding(
+    query: ChecklistRowRetrievalQuery,
+    finding: dict,
+) -> int:
+    """Score how well one package finding matches a checklist row query."""
+    text = package_finding_candidate_text(finding)
+    score = 0
+
+    if normalized_contains(text, query.checklist_item_id):
+        score += 5
+
+    if query.citation and normalized_contains(text, query.citation):
+        score += 4
+
+    for term in query.optional_terms:
+        if normalized_contains(text, term):
+            score += 2
+
+    for term in query.required_terms:
+        if normalized_contains(text, term):
+            score += 1
+
+    if query.expected_plan_type and normalized_contains(
+        text,
+        query.expected_plan_type.replace("_", " "),
+    ):
+        score += 1
+
+    return score
+
+
+def choose_best_package_finding(
+    query: ChecklistRowRetrievalQuery,
+    package_findings: list[dict],
+    minimum_score: int = 2,
+) -> dict | None:
+    """Choose the best package finding for a checklist row query."""
+    best_finding: dict | None = None
+    best_score = 0
+
+    for finding in package_findings:
+        score = score_query_against_package_finding(
+            query=query,
+            finding=finding,
+        )
+
+        if score > best_score:
+            best_score = score
+            best_finding = finding
+
+    if best_score < minimum_score:
+        return None
+
+    return best_finding
+
+
+def first_package_evidence_location(finding: dict) -> dict:
+    """Return the first evidence location for a package finding."""
+    locations = finding.get("evidence_locations", []) or []
+
+    if not locations:
+        return {}
+
+    return locations[0] or {}
+
+
+def populated_evidence_from_package_finding(
+    finding: dict,
+) -> list[PopulatedChecklistEvidence]:
+    """Convert package finding evidence locations to populated checklist evidence."""
+    evidence_items: list[PopulatedChecklistEvidence] = []
+    locations = finding.get("evidence_locations", []) or []
+
+    if locations:
+        for location in locations:
+            evidence_items.append(
+                PopulatedChecklistEvidence(
+                    file_name=(
+                        location.get("file_name")
+                        or finding.get("document_name", "")
+                    ),
+                    page_number=location.get("page_number"),
+                    excerpt=location.get("excerpt", ""),
+                    source_label=finding.get("label", ""),
+                    confidence=finding.get("confidence", "Low"),
+                )
+            )
+
+        return evidence_items
+
+    excerpts = finding.get("supporting_excerpts", []) or []
+
+    for excerpt in excerpts:
+        evidence_items.append(
+            PopulatedChecklistEvidence(
+                file_name=finding.get("document_name", ""),
+                page_number=None,
+                excerpt=excerpt,
+                source_label=finding.get("label", ""),
+                confidence=finding.get("confidence", "Low"),
+            )
+        )
+
+    return evidence_items
+
+
+def infer_checklist_population_status_from_finding(
+    finding: dict,
+) -> ChecklistPopulationStatus:
+    """Infer populated checklist row status from an existing package finding."""
+    text = package_finding_candidate_text(finding)
+    raw_status = normalize_query_part(str(finding.get("status", ""))).lower()
+    raw_finding = normalize_query_part(str(finding.get("finding", ""))).lower()
+
+    if text_has_redaction_marker(text):
+        return ChecklistPopulationStatus.REDACTED
+
+    if raw_status in {"missing", "missing_evidence", "not_found"}:
+        return ChecklistPopulationStatus.MISSING
+
+    if raw_status in {"unclear", "needs_review", "needs_reviewer_attention"}:
+        return ChecklistPopulationStatus.NEEDS_REVIEWER_ATTENTION
+
+    missing_phrases = [
+        "does not provide",
+        "does not identify",
+        "does not document",
+        "not provided",
+        "not identified",
+        "missing",
+        "no clear",
+    ]
+
+    if any(phrase in raw_finding for phrase in missing_phrases):
+        return ChecklistPopulationStatus.MISSING
+
+    evidence_locations = finding.get("evidence_locations", []) or []
+    supporting_excerpts = finding.get("supporting_excerpts", []) or []
+
+    if evidence_locations or supporting_excerpts:
+        return ChecklistPopulationStatus.PRESENT
+
+    return ChecklistPopulationStatus.UNCLEAR
+
+
+def populate_checklist_row_from_query(
+    *,
+    query: ChecklistRowRetrievalQuery,
+    package_findings: list[dict],
+) -> PopulatedChecklistRow:
+    """Populate one checklist row from existing package review findings."""
+    finding = choose_best_package_finding(
+        query=query,
+        package_findings=package_findings,
+    )
+
+    if finding is None:
+        return PopulatedChecklistRow(
+            section_title=query.section_title,
+            checklist_item=query.checklist_item,
+            citation=query.citation,
+            status=ChecklistPopulationStatus.MISSING,
+            system_notes=(
+                "No matching package review evidence was found for this checklist row."
+            ),
+        )
+
+    evidence_items = populated_evidence_from_package_finding(finding)
+    first_location = first_package_evidence_location(finding)
+    first_evidence = evidence_items[0] if evidence_items else None
+
+    file_name = ""
+    page_number = None
+    evidence_excerpt = ""
+
+    if first_evidence is not None:
+        file_name = first_evidence.file_name
+        page_number = first_evidence.page_number
+        evidence_excerpt = first_evidence.excerpt
+    elif first_location:
+        file_name = first_location.get("file_name", "")
+        page_number = first_location.get("page_number")
+        evidence_excerpt = first_location.get("excerpt", "")
+
+    return PopulatedChecklistRow(
+        section_title=query.section_title,
+        checklist_item=query.checklist_item,
+        citation=query.citation,
+        status=infer_checklist_population_status_from_finding(finding),
+        gsdt_module_folder=query.expected_plan_type.replace("_", " "),
+        file_name=file_name,
+        page_number=page_number,
+        evidence_excerpt=evidence_excerpt,
+        system_notes=(
+            "Populated from existing package review evidence."
+        ),
+        reviewer_notes="",
+        reviewer_confirmation=ReviewerConfirmationStatus.PENDING_REVIEW,
+        confidence=finding.get("confidence", "Low"),
+        evidence=evidence_items,
+    )
+
+
+def collect_package_review_findings_for_population(
+    package_report: dict,
+) -> list[dict]:
+    """Collect package review findings from a package report dictionary."""
+    collected: list[dict] = []
+
+    for finding in package_report.get("findings", []) or []:
+        collected.append(dict(finding))
+
+    for document_review in package_report.get("document_reviews", []) or []:
+        document_name = document_review.get("document_name", "")
+        checklist_reports = document_review.get("checklist_reports", {}) or {}
+
+        if not checklist_reports and document_review.get("report"):
+            report = document_review.get("report") or {}
+            plan_type = report.get(
+                "plan_type",
+                document_review.get("document_type", "unknown"),
+            )
+            checklist_reports = {plan_type: report}
+
+        for checklist_report in checklist_reports.values():
+            for finding in checklist_report.get("findings", []) or []:
+                finding_copy = dict(finding)
+                finding_copy.setdefault("document_name", document_name)
+                collected.append(finding_copy)
+
+    return collected
+
+
+def build_populated_checklist_from_package_report(
+    *,
+    package_name: str,
+    checklists: list[ReviewChecklist],
+    package_report: dict,
+) -> PopulatedChecklist:
+    """Build a populated checklist from existing package review findings."""
+    package_findings = collect_package_review_findings_for_population(
+        package_report
+    )
+
+    rows: list[PopulatedChecklistRow] = []
+
+    for checklist in checklists:
+        for query in build_checklist_retrieval_queries(checklist):
+            rows.append(
+                populate_checklist_row_from_query(
+                    query=query,
+                    package_findings=package_findings,
+                )
+            )
+
+    return build_populated_checklist(
+        package_name=package_name,
+        rows=rows,
+    )
