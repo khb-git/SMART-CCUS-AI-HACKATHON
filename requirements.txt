@@ -19,6 +19,7 @@ chromadb>=0.5
 
 ## LLM serving (local)
 #llama-cpp-python>=0.2
+ollama>=0.1.0
 
 # Scraper dependencies
 requests>=2.31

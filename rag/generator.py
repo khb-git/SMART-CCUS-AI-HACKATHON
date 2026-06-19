@@ -1,33 +1,44 @@
 """
-LLM generator — placeholder.
-
-Final choice between Llama 3 and Mistral comes from LLM benchmarking
-in the next phase. Until then, this module just defines the interface.
+LLM generator using local Ollama (Llama 3.1).
 """
 
 import logging
+import ollama
 
 logger = logging.getLogger(__name__)
 
 
 class Generator:
-    """Generates completions from a local LLM."""
+    """Generates completions from a local Ollama LLM."""
 
-    def __init__(self, model_path=None, temperature=0.2, max_tokens=512):
-        self.model_path = model_path
+    def __init__(self, model_name="llama3", temperature=0.2, max_tokens=400):
+        self.model_name = model_name
         self.temperature = temperature
         self.max_tokens = max_tokens
-        self._llm = None
 
     def generate(self, prompt):
-        """Generate a completion for the given prompt."""
-        if self._llm is None:
-            # TODO: from llama_cpp import Llama
-            #       self._llm = Llama(model_path=str(self.model_path),
-            #                         n_ctx=4096, verbose=False)
-            logger.warning("Generator.generate not yet implemented")
-            return "[generator not yet implemented]"
-        # TODO: out = self._llm(prompt, max_tokens=self.max_tokens,
-        #                       temperature=self.temperature, stop=["</s>"])
-        #       return out["choices"][0]["text"].strip()
-        return ""
+        """Generate a completion using Ollama."""
+        try:
+            response = ollama.chat(
+                model=self.model_name,
+                messages=[
+                    {
+                        "role": "system",
+                        "content": "You are an expert EPA Class VI carbon storage permit reviewer assistant."
+                    },
+                    {
+                        "role": "user",
+                        "content": prompt
+                    }
+                ],
+                options={
+                    "temperature": self.temperature,
+                    "num_predict": self.max_tokens,
+                }
+            )
+
+            return response["message"]["content"].strip()
+
+        except Exception as e:
+            logger.error(f"Ollama generation failed: {e}")
+            return "Error generating response with local LLM."
