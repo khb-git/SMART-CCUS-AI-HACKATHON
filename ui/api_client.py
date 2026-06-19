@@ -166,7 +166,7 @@ def review_narrative_api(
     package_response: dict[str, Any],
     reviewer_confirmations: list[dict[str, Any]] | None = None,
     use_llm: bool = False,
-    model_name: str = "llama3.1",
+    model_name: str = "llama3",
     api_url: str = DEFAULT_API_URL,
     timeout: int = 240,
 ) -> dict[str, Any]:

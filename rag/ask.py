@@ -36,10 +36,13 @@ def build_llm_prompt(question, evidence_items):
     return f"""
 You are an expert EPA Class VI carbon storage permit reviewer.
 
-Answer the question using ONLY the evidence provided.
+Your task is to evaluate technical compliance using evidence.
 
-If the answer is not directly supported by the evidence, say:
-"Insufficient context based on retrieved evidence."
+Rules:
+- Only use the provided evidence
+- Do NOT hallucinate
+- If evidence is missing, say: "Insufficient context"
+
 
 Question:
 {question}
@@ -47,9 +50,11 @@ Question:
 Evidence:
 {context}
 
-Instructions:
-- Be precise and technical
-- Cite evidence like [1], [2]
+Output format:
+1. Direct answer (technical)
+2. Cite evidence like [1], [2]
+3. If incomplete → clearly state what is missing
+
 
 Answer:
 """

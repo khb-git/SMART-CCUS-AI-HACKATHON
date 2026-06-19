@@ -699,120 +699,145 @@ ask_tab, review_tab, package_tab = st.tabs(
 
 # Ask tab content
 with ask_tab:
+
+    DEFAULT_QUESTION = "How do applicants monitor injection pressure and flow rate?"
+
+    # Initialize chat
+    if "chat_history" not in st.session_state:
+        st.session_state.chat_history = []
+
+    if "query_input" not in st.session_state:
+        st.session_state.query_input = DEFAULT_QUESTION
+
+    # Warning
     st.warning(ASK_ASSISTANT_RAG_NOTICE)
 
-    with st.expander("Ask Assistant status", expanded=False):
-        st.write(ASK_ASSISTANT_RAG_GUIDANCE)
+    col_input = st.columns([2])[0]
 
-    default_question = "How do applicants monitor injection pressure and flow rate?"
-
-    query = st.text_area(
-        "Review question",
-        value=default_question,
-        height=100,
-    )
-
-    # Submit button
-    ask_clicked = st.button("Ask review assistant", type="primary")
-
-    if ask_clicked:
-        if not query.strip():
-            st.error("Please enter a review question.")
-            st.stop()
-
-        payload = build_ask_payload(
-            query=query,
-            persist_directory=persist_directory,
-            intent=intent,
-            k_reference=k_reference,
-            k_permits=k_permits,
-            fetch_k=fetch_k,
-            max_per_source=max_per_source,
-            expand_retrieval_query=expand_retrieval_query,
-            use_reranking=use_reranking,
+    with col_input:
+        user_input = st.text_input(
+            "Ask a Class VI review question",
+            key="query_input"
         )
 
-        try:
-            with st.spinner("Retrieving evidence and building answer..."):
-                response = ask_api(
-                    payload=payload,
-                    api_url=api_url,
-                )
+        # Buttons side-by-side BELOW input
+        btn_col1, btn_col2 = st.columns(2)
 
-        except Exception as exc:
-            st.error("The backend request failed.")
-            st.exception(exc)
-            st.stop()
+        with btn_col1:
+            ask_clicked = st.button(
+                "Ask Question",
+                type="primary",
+                use_container_width=True
+            )
 
-        st.subheader("Answer")
-        st.markdown(response.get("answer", ""))
-        
-        st.subheader("Detected Sections")
+        with btn_col2:
+            clear_clicked = st.button(
+                "Clear Chat",
+                type="secondary",
+                use_container_width=True
+            )
 
-        sections = response.get("detected_sections", [])
+    # CLEAR CHAT FIRST (safe)
+    if clear_clicked:
+        st.session_state.chat_history = []
+        st.session_state.query_input = DEFAULT_QUESTION
+        st.rerun()
 
-        if sections:
-            st.write(", ".join(f"`{s}`" for s in sections))
+    
+    # SEND LOGIC
+    if ask_clicked:
+        if not user_input.strip():
+            st.error("Please enter a review question.")
         else:
-            st.write("No sections detected.")
+            payload = build_ask_payload(
+                query=user_input,
+                persist_directory=persist_directory,
+                intent=intent,
+                k_reference=k_reference,
+                k_permits=k_permits,
+                fetch_k=fetch_k,
+                max_per_source=max_per_source,
+                expand_retrieval_query=expand_retrieval_query,
+                use_reranking=use_reranking,
+            )
 
-        col1, col2 = st.columns(2)
+            try:
+                with st.spinner("Retrieving evidence..."):
+                    response = ask_api(
+                        payload=payload,
+                        api_url=api_url,
+                    )
 
-        with col1:
-            st.subheader("Reviewer interpretation")
-            st.write(response.get("reviewer_interpretation", ""))
+                st.session_state.chat_history.append({
+                    "question": user_input,
+                    "answer": response.get("answer", ""),
+                    "evidence": response.get("evidence_items", [])
+                })
 
-        with col2:
-            st.subheader("Potential follow-up")
-            st.write(response.get("potential_follow_up", ""))
+                # SAFE CLEAR
+                st.session_state.reset_query = True
 
-        with st.expander("Evidence summary", expanded=False):
-            st.text(response.get("evidence_summary", ""))
+                st.rerun()
 
-        st.subheader("Evidence items")
+            except Exception as exc:
+                st.error("The backend request failed.")
+                st.exception(exc)
 
-        evidence_items = response.get("evidence_items", [])
+    # CHAT DISPLAY
+    for chat in st.session_state.chat_history:
 
-        if not evidence_items:
-            st.info("No evidence items returned.")
-        else:
-            for item in evidence_items:
-                heading = format_evidence_heading(item)
+        with st.chat_message("user", avatar="👤"):
+            st.write(chat["question"])
 
-                with st.expander(heading, expanded=False):
-                    left, right = st.columns([2, 1])
+        with st.chat_message("assistant", avatar=icon):
+            st.write(chat["answer"])
 
-                    with left:
-                        st.markdown("**Excerpt**")
-                        st.write(item.get("excerpt", ""))
+            evidence_items = chat.get("evidence", [])
 
-                    with right:
-                        st.markdown("**Metadata**")
-                        st.write(f"Collection: `{item.get('collection', '')}`")
-                        st.write(f"Content type: `{item.get('content_type', '')}`")
-                        st.write(f"Plan type: `{item.get('plan_type', '')}`")
-                        st.write(
-                            "Similarity score: "
-                            f"`{format_similarity_score(item.get('score'))}`"
-                        )
-                        st.write(f"Page: `{item.get('page_number', '')}`")
-                        st.write(f"Chunk index: `{item.get('chunk_index', '')}`")
-                        st.write(
-                            "Section: "
-                            f"`{item.get('schema_section_id', '')} "
-                            f"{item.get('schema_section_title', '')}`"
-                        )
+            if evidence_items:
+                with st.expander("Evidence items", expanded=False):
 
-                        online_link = item.get("online_link", "")
-                        source_page = item.get("source_page", "")
+                    for item in evidence_items:
 
-                        if online_link:
-                            st.link_button("Open source document", online_link)
+                        heading = format_evidence_heading(item)
 
-                        if source_page:
-                            st.link_button("Open source page", source_page)
-    else:
-        st.info("Enter a question and click **Ask review assistant**.")
+                        with st.expander(heading):
+
+                            left, right = st.columns([2, 1])
+
+                            with left:
+                                st.markdown("**Excerpt**")
+                                st.write(item.get("excerpt", ""))
+
+                            with right:
+                                st.markdown("**Metadata")
+
+                                st.write(f"Collection: `{item.get('collection', '')}`")
+                                st.write(f"Content type: `{item.get('content_type', '')}`")
+                                st.write(f"Plan type: `{item.get('plan_type', '')}`")
+
+                                st.write(
+                                    "Similarity score: "
+                                    f"`{format_similarity_score(item.get('score'))}`"
+                                )
+
+                                st.write(f"Page: `{item.get('page_number', '')}`")
+                                st.write(f"Chunk index: `{item.get('chunk_index', '')}`")
+
+                                st.write(
+                                    "Section: "
+                                    f"`{item.get('schema_section_id', '')} "
+                                    f"{item.get('schema_section_title', '')}`"
+                                )
+
+                                online_link = item.get("online_link", "")
+                                source_page = item.get("source_page", "")
+
+                                if online_link:
+                                    st.link_button("📄 Open source document", online_link)
+
+                                if source_page:
+                                    st.link_button("🔎 Open source page", source_page)
 
 # Review tab
 with review_tab:
