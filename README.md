@@ -394,6 +394,7 @@ For step-by-step judge/demo runbooks, see:
 ```text
 docs/demo_readiness_checklist.md
 docs/final_demo_release_checklist.md
+docs/docker_demo_stack.md
 ```
 
 ---
