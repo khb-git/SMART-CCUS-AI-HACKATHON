@@ -52,7 +52,7 @@ def build_ask_payload(
 def ask_api(
     payload: dict[str, Any],
     api_url: str = DEFAULT_API_URL,
-    timeout: int = 180,
+    timeout: int = 240,
 ) -> dict[str, Any]:
     """Call the backend /ask endpoint."""
     endpoint = f"{api_url.rstrip('/')}/ask"

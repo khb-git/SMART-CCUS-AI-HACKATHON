@@ -34,11 +34,13 @@ def build_llm_prompt(question, evidence_items):
     )
 
     return f"""
-You are an expert EPA Class VI carbon storage permit reviewer.
+You are an expert EPA Class VI carbon storage permit reviewer assistant.
 
-Your task is to evaluate technical compliance using evidence.
+Your task is to answer question from reviewers to help them review permits. 
 
 Rules:
+- Summarize technical aspects using reference and permits evidence.
+- Give specific examples using previous permit applications evidence and information.
 - Only use the provided evidence
 - Do NOT hallucinate
 - If evidence is missing, say: "Insufficient context"

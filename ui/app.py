@@ -712,77 +712,6 @@ with ask_tab:
     # Warning
     st.warning(ASK_ASSISTANT_RAG_NOTICE)
 
-    col_input = st.columns([2])[0]
-
-    with col_input:
-        user_input = st.text_input(
-            "Ask a Class VI review question",
-            key="query_input"
-        )
-
-        # Buttons side-by-side BELOW input
-        btn_col1, btn_col2 = st.columns(2)
-
-        with btn_col1:
-            ask_clicked = st.button(
-                "Ask Question",
-                type="primary",
-                use_container_width=True
-            )
-
-        with btn_col2:
-            clear_clicked = st.button(
-                "Clear Chat",
-                type="secondary",
-                use_container_width=True
-            )
-
-    # CLEAR CHAT FIRST (safe)
-    if clear_clicked:
-        st.session_state.chat_history = []
-        st.session_state.query_input = DEFAULT_QUESTION
-        st.rerun()
-
-    
-    # SEND LOGIC
-    if ask_clicked:
-        if not user_input.strip():
-            st.error("Please enter a review question.")
-        else:
-            payload = build_ask_payload(
-                query=user_input,
-                persist_directory=persist_directory,
-                intent=intent,
-                k_reference=k_reference,
-                k_permits=k_permits,
-                fetch_k=fetch_k,
-                max_per_source=max_per_source,
-                expand_retrieval_query=expand_retrieval_query,
-                use_reranking=use_reranking,
-            )
-
-            try:
-                with st.spinner("Retrieving evidence..."):
-                    response = ask_api(
-                        payload=payload,
-                        api_url=api_url,
-                    )
-
-                st.session_state.chat_history.append({
-                    "question": user_input,
-                    "answer": response.get("answer", ""),
-                    "evidence": response.get("evidence_items", [])
-                })
-
-                # SAFE CLEAR
-                st.session_state.reset_query = True
-
-                st.rerun()
-
-            except Exception as exc:
-                st.error("The backend request failed.")
-                st.exception(exc)
-
     # CHAT DISPLAY
     for chat in st.session_state.chat_history:
 
@@ -838,6 +767,81 @@ with ask_tab:
 
                                 if source_page:
                                     st.link_button("🔎 Open source page", source_page)
+
+    st.markdown("---")
+    
+    col_input = st.columns([2])[0]
+
+    with col_input:
+        user_input = st.text_input(
+            "Ask a Class VI review question",
+            key="query_input"
+        )
+
+        # Buttons side-by-side BELOW input
+        btn_col1, btn_col2 = st.columns(2)
+
+        with btn_col1:
+            ask_clicked = st.button(
+                "Ask Question",
+                type="primary",
+                use_container_width=True
+            )
+
+        with btn_col2:
+            clear_clicked = st.button(
+                "Clear Chat",
+                type="secondary",
+                use_container_width=True
+            )
+
+    # CLEAR CHAT FIRST (safe)
+    if clear_clicked:
+        st.session_state.chat_history = []
+        st.session_state.query_input = DEFAULT_QUESTION
+        st.rerun()
+
+    
+    # SEND LOGIC
+    if ask_clicked:
+        if not user_input.strip():
+            st.error("Please enter a review question.")
+        else:
+            payload = build_ask_payload(
+                query=user_input,
+                persist_directory=persist_directory,
+                intent=intent,
+                k_reference=k_reference,
+                k_permits=k_permits,
+                fetch_k=fetch_k,
+                max_per_source=max_per_source,
+                expand_retrieval_query=expand_retrieval_query,
+                use_reranking=use_reranking,
+            )
+
+            try:
+                with st.spinner("Retrieving evidence and answering..."):
+                    response = ask_api(
+                        payload=payload,
+                        api_url=api_url,
+                    )
+
+                st.session_state.chat_history.append({
+                    "question": user_input,
+                    "answer": response.get("answer", ""),
+                    "evidence": response.get("evidence_items", [])
+                })
+
+                # SAFE CLEAR
+                st.session_state.reset_query = True
+
+                st.rerun()
+
+            except Exception as exc:
+                st.error("The backend request failed.")
+                st.exception(exc)
+
+    
 
 # Review tab
 with review_tab:

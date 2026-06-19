@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 class Generator:
     """Generates completions from a local Ollama LLM."""
 
-    def __init__(self, model_name="llama3", temperature=0.2, max_tokens=128):
+    def __init__(self, model_name="llama3", temperature=0.2, max_tokens=400):
         self.model_name = model_name
         self.temperature = temperature
         self.max_tokens = max_tokens
@@ -24,7 +24,7 @@ class Generator:
                 messages=[
                     {
                         "role": "system",
-                        "content": "You are an expert EPA Class VI carbon storage permit reviewer."
+                        "content": "You are an expert EPA Class VI carbon storage permit reviewer assistant."
                     },
                     {
                         "role": "user",
