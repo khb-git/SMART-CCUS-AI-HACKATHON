@@ -389,10 +389,11 @@ Chroma persist directory: chroma_data
 
 This workflow demonstrates the strongest parts of the system: deterministic review, auditability, reviewer-in-the-loop workflow, OCR-aware evidence handling, and regulator-style exports.
 
-For a step-by-step judge/demo runbook, see:
+For step-by-step judge/demo runbooks, see:
 
 ```text
 docs/demo_readiness_checklist.md
+docs/final_demo_release_checklist.md
 ```
 
 ---
