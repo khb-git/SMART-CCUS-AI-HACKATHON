@@ -1,0 +1,47 @@
+# Keep the build context small and ensure dev-only / generated / secret files
+# never enter the image.
+
+# Version control & IDE
+.git
+.gitignore
+.idea
+.DS_Store
+
+# Virtual environments & caches
+.venv
+venv
+__pycache__
+*.pyc
+.pytest_cache
+
+# Test caches and local reports
+.coverage
+htmlcov
+
+# Tests are not needed in the runtime image
+tests
+
+# Local docs are not needed at runtime
+*.md
+
+# Secrets and local environment files
+.env
+.env.*
+requirements-dev.txt
+
+# Generated scraper / ingestion outputs
+data/raw_docs
+data/chunked
+data/chunked_section_test
+data/manifest.json
+
+# Local vector stores are persisted through Docker volumes instead
+chroma_data
+chroma_data_section_test
+
+# Local exports / generated review outputs
+*_review_report.md
+*_package_review_report.md
+*_final_review_packet.md
+*_checklist.csv
+*_deficiencies.csv

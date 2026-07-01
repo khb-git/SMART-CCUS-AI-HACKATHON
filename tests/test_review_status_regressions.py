@@ -150,8 +150,8 @@ def test_complete_financial_responsibility_evidence_is_present():
             "Financial Responsibility Demonstration. "
             "The document provides a cost estimate and estimated cost for closure cost, "
             "corrective action cost, and PISC cost. "
-            "The financial instrument is a letter of credit with a face value and "
-            "coverage amount based on the cost estimate."
+            "The financial instrument is a letter of credit payable to the Director "
+            "with a face value and coverage amount based on the cost estimate."
         ),
         filename="financial_responsibility.pdf",
     )

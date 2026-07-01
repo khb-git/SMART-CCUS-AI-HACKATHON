@@ -1,0 +1,64 @@
+# NittCarb AI — local Docker demo stack.
+#
+# Services:
+#   backend  FastAPI review engine.
+#   ui       Streamlit reviewer interface.
+#   ollama   Optional local LLM runtime for future narrative generation.
+#
+# The Review Document and Review Package workflows do not require Ollama.
+# The MAIP demo endpoints do not require uploaded files, RAG, Ollama, or an LLM.
+
+name: nittcarb-ai
+
+services:
+  backend:
+    build: .
+    image: nittcarb-app
+    command: uvicorn api.main:app --host 0.0.0.0 --port 8000
+    environment:
+      OLLAMA_HOST: http://ollama:11434
+      ANONYMIZED_TELEMETRY: "False"
+      HF_HOME: /opt/hf-cache
+      HF_HUB_OFFLINE: "1"
+      TRANSFORMERS_OFFLINE: "1"
+    volumes:
+      - chroma_data:/app/chroma_data
+    ports:
+      - "8000:8000"
+    depends_on:
+      - ollama
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')",
+        ]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 45s
+
+  ui:
+    build: .
+    image: nittcarb-app
+    command: streamlit run ui/app.py --server.port 8501 --server.address 0.0.0.0
+    environment:
+      SMART_CCUS_API_URL: http://backend:8000
+    ports:
+      - "8501:8501"
+    depends_on:
+      backend:
+        condition: service_healthy
+
+  ollama:
+    image: ollama/ollama
+    volumes:
+      - ollama_models:/root/.ollama
+    # Ollama is intentionally not published to the host.
+    # The backend can reach it privately at http://ollama:11434.
+
+volumes:
+  chroma_data:
+  ollama_models:
